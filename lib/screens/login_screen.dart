@@ -34,8 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/');
-
-    setState(() => _isLoading = false);
+    // Se eliminó el setState de aquí para evitar fallos de compilación con rutas constantes
   }
 
   @override

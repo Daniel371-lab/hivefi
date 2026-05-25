@@ -6,6 +6,7 @@ import 'theme/app_theme.dart';
 import 'providers/app_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/login_screen.dart'; // 👈 AGREGADO: Importamos tu nueva pantalla
 import 'screens/register_screen.dart';
 import 'screens/categorias_screen.dart';
 import 'screens/ingreso_screen.dart';
@@ -60,18 +61,18 @@ class HivefiApp extends StatelessWidget {
         Locale('es'),
         Locale('en'),
       ],
-      initialRoute: '/login',
+      initialRoute: '/login', // 👈 Perfecto, ahora arranca acá primero
       routes: {
         '/': (_) => const HomeScreen(),
         '/settings': (_) => const SettingsScreen(),
-		'/login': (_) => const LoginScreen(),
+        '/login': (_) => LoginScreen(), // 👈 CORREGIDO: Le sacamos el 'const'
         '/register': (_) => const RegisterScreen(),
-		'/categorias': (_) => const CategoriasScreen(),
-		'/ingreso': (_) => const IngresoScreen(),
-		'/gasto': (_) => const GastoScreen(),
-		'/destinar': (_) => const DestinarScreen(),
-		'/reparto': (_) => const RepartoScreen(),
-		'/historial': (_) => const HistorialScreen(),
+        '/categorias': (_) => const CategoriasScreen(),
+        '/ingreso': (_) => const IngresoScreen(),
+        '/gasto': (_) => const GastoScreen(),
+        '/destinar': (_) => const DestinarScreen(),
+        '/reparto': (_) => const RepartoScreen(),
+        '/historial': (_) => const HistorialScreen(),
       },
     );
   }
