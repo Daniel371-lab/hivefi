@@ -22,7 +22,38 @@ jobs:
           channel: 'stable'
 
       - name: Crear google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+        run: |
+          cat << 'EOF' > android/app/google-services.json
+          {
+            "project_info": {
+              "project_number": "836237128631",
+              "project_id": "hivefi-39b81",
+              "storage_bucket": "hivefi-39b81.firebasestorage.app"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:836237128631:android:13c18bbf1a90f69e8c6e32",
+                  "android_client_info": {
+                    "package_name": "com.jplabs.hivefi"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyBGN6x4bwMqGDSaWyutU5QCY3cuZyWYgp4"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
 
       - name: Flutter pub get
         run: flutter pub get
