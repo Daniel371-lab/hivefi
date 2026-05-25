@@ -6,6 +6,13 @@ import 'theme/app_theme.dart';
 import 'providers/app_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/categorias_screen.dart';
+import 'screens/ingreso_screen.dart';
+import 'screens/gasto_screen.dart';
+import 'screens/destinar_screen.dart';
+import 'screens/reparto_screen.dart';
+import 'screens/historial_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,10 +60,18 @@ class HivefiApp extends StatelessWidget {
         Locale('es'),
         Locale('en'),
       ],
-      initialRoute: '/',
+      initialRoute: '/login',
       routes: {
         '/': (_) => const HomeScreen(),
         '/settings': (_) => const SettingsScreen(),
+		'/login': (_) => const LoginScreen(),
+        '/register': (_) => const RegisterScreen(),
+		'/categorias': (_) => const CategoriasScreen(),
+		'/ingreso': (_) => const IngresoScreen(),
+		'/gasto': (_) => const GastoScreen(),
+		'/destinar': (_) => const DestinarScreen(),
+		'/reparto': (_) => const RepartoScreen(),
+		'/historial': (_) => const HistorialScreen(),
       },
     );
   }
