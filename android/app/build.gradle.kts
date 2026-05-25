@@ -30,6 +30,10 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            
+            // Forzamos a Gradle a usar la firma de debug para que el APK no salga "unsigned"
+            signingConfig = signingConfigs.getByName("debug")
+            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
