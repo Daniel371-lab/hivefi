@@ -47,7 +47,7 @@ class HomeScreen extends StatelessWidget {
                 _HexGrid(),
                 const SizedBox(height: 32),
                 Text(
-                  context.tr.savings,
+                  context.tr('savings'),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: honey,
                     fontWeight: FontWeight.w700,
@@ -64,8 +64,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
-// ─── Tarjeta Balance ────────────────────────────────────────────────────────
 
 class _BalanceCard extends StatelessWidget {
   final AppProvider provider;
@@ -88,7 +86,7 @@ class _BalanceCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  context.tr.balanceGeneral,
+                  context.tr('balanceGeneral'),
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
@@ -119,7 +117,7 @@ class _BalanceCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                context.tr.assignedToExpenses,
+                context.tr('assignedToExpenses'),
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
@@ -143,8 +141,6 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-// ─── Selector de moneda ─────────────────────────────────────────────────────
-
 class _CurrencySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -153,7 +149,7 @@ class _CurrencySelector extends StatelessWidget {
 
     return Row(
       children: [
-        Text(context.tr.currency, style: theme.textTheme.bodySmall),
+        Text(context.tr('currency'), style: theme.textTheme.bodySmall),
         const SizedBox(width: 12),
         DropdownButton<String>(
           value: provider.currency,
@@ -173,19 +169,16 @@ class _CurrencySelector extends StatelessWidget {
   }
 }
 
-// ─── Grid Hexagonal ─────────────────────────────────────────────────────────
-
 class _HexGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final tr = context.tr;
     final items = [
-      _HexItem(icon: Icons.arrow_downward_rounded, label: tr.income, route: '/transaction'),
-      _HexItem(icon: Icons.arrow_upward_rounded, label: tr.expense, route: '/transaction'),
-      _HexItem(icon: Icons.pie_chart_rounded, label: tr.destinar, route: '/transaction'),
-      _HexItem(icon: Icons.grid_view_rounded, label: tr.categories, route: '/transaction'),
-      _HexItem(icon: Icons.compare_arrows_rounded, label: tr.reparto, route: '/transaction'),
-      _HexItem(icon: Icons.history_rounded, label: tr.history, route: '/transaction'),
+      _HexItem(icon: Icons.arrow_downward_rounded, label: context.tr('income'), route: '/ingreso'),
+      _HexItem(icon: Icons.arrow_upward_rounded, label: context.tr('expense'), route: '/gasto'),
+      _HexItem(icon: Icons.pie_chart_rounded, label: context.tr('destinar'), route: '/destinar'),
+      _HexItem(icon: Icons.grid_view_rounded, label: context.tr('categories'), route: '/categorias'),
+      _HexItem(icon: Icons.compare_arrows_rounded, label: context.tr('reparto'), route: '/reparto'),
+      _HexItem(icon: Icons.history_rounded, label: context.tr('history'), route: '/historial'),
     ];
 
     return GridView.builder(
@@ -267,8 +260,6 @@ class _HexClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(_HexClipper old) => false;
 }
-
-// ─── Placeholder Ahorros ────────────────────────────────────────────────────
 
 class _SavingsPlaceholder extends StatelessWidget {
   @override

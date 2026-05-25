@@ -24,7 +24,7 @@ class SettingsScreen extends StatelessWidget {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: Text(context.tr.settings),
+          title: Text(context.tr('settings')),
         ),
         body: SafeArea(
           child: ListView(
@@ -33,7 +33,7 @@ class SettingsScreen extends StatelessWidget {
               _SectionHeader(label: 'CUENTA'),
               _SettingsTile(
                 icon: Icons.person_outline_rounded,
-                label: context.tr.profile,
+                label: context.tr('profile'),
                 onTap: () {},
               ),
               _SectionHeader(label: 'APARIENCIA'),
@@ -42,29 +42,29 @@ class SettingsScreen extends StatelessWidget {
               _SectionHeader(label: 'BENEFICIOS'),
               _SettingsTile(
                 icon: Icons.workspace_premium_outlined,
-                label: context.tr.premium,
+                label: context.tr('premium'),
                 onTap: () {},
                 trailing: _BadgePremium(),
               ),
               _SettingsTile(
                 icon: Icons.block_outlined,
-                label: context.tr.adFreeMode,
+                label: context.tr('adFreeMode'),
                 onTap: () {},
               ),
               _SettingsTile(
                 icon: Icons.favorite_border_rounded,
-                label: context.tr.donate,
+                label: context.tr('donate'),
                 onTap: () {},
               ),
               _SectionHeader(label: 'SESIÓN'),
               _SettingsTile(
                 icon: Icons.logout_rounded,
-                label: context.tr.logout,
+                label: context.tr('logout'),
                 onTap: () => _confirmLogout(context),
               ),
               _SettingsTile(
                 icon: Icons.delete_outline_rounded,
-                label: context.tr.deleteAccount,
+                label: context.tr('deleteAccount'),
                 onTap: () => _confirmDeleteAccount(context),
                 isDestructive: true,
               ),
@@ -80,16 +80,16 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(context.tr.logout),
+        title: Text(context.tr('logout')),
         content: const Text('¿Seguro que querés cerrar sesión?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(context.tr.cancel),
+            child: Text(context.tr('cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(context.tr.confirm),
+            child: Text(context.tr('confirm')),
           ),
         ],
       ),
@@ -100,25 +100,23 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(context.tr.deleteAccount),
+        title: Text(context.tr('deleteAccount')),
         content: const Text('Esta acción es irreversible. ¿Querés eliminar tu cuenta?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(context.tr.cancel),
+            child: Text(context.tr('cancel')),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.pop(context),
-            child: Text(context.tr.confirm),
+            child: Text(context.tr('confirm')),
           ),
         ],
       ),
     );
   }
 }
-
-// ─── Section Header ──────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   final String label;
@@ -140,8 +138,6 @@ class _SectionHeader extends StatelessWidget {
     );
   }
 }
-
-// ─── Tile genérico ───────────────────────────────────────────────────────────
 
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
@@ -176,8 +172,6 @@ class _SettingsTile extends StatelessWidget {
   }
 }
 
-// ─── Tile Tema ───────────────────────────────────────────────────────────────
-
 class _ThemeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -192,9 +186,8 @@ class _ThemeTile extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: Icon(Icons.brightness_6_outlined,
-          color: theme.colorScheme.onSurface),
-      title: Text(context.tr.darkMode, style: theme.textTheme.bodyMedium),
+      leading: Icon(Icons.brightness_6_outlined, color: theme.colorScheme.onSurface),
+      title: Text(context.tr('darkMode'), style: theme.textTheme.bodyMedium),
       trailing: DropdownButton<ThemeMode>(
         value: provider.themeMode,
         underline: const SizedBox(),
@@ -210,8 +203,6 @@ class _ThemeTile extends StatelessWidget {
   }
 }
 
-// ─── Tile Idioma ─────────────────────────────────────────────────────────────
-
 class _LanguageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -221,7 +212,7 @@ class _LanguageTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       leading: Icon(Icons.language_rounded, color: theme.colorScheme.onSurface),
-      title: Text(context.tr.language, style: theme.textTheme.bodyMedium),
+      title: Text(context.tr('language'), style: theme.textTheme.bodyMedium),
       trailing: DropdownButton<Locale>(
         value: provider.locale,
         underline: const SizedBox(),
@@ -237,8 +228,6 @@ class _LanguageTile extends StatelessWidget {
     );
   }
 }
-
-// ─── Badge Premium ───────────────────────────────────────────────────────────
 
 class _BadgePremium extends StatelessWidget {
   @override
