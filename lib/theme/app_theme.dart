@@ -42,7 +42,7 @@ class AppTheme {
         ),
 
         // Cards
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: _bgLight,
           elevation: 4,
           shadowColor: _darkBrown.withOpacity(0.12),
@@ -143,14 +143,14 @@ class AppTheme {
         ),
 
         // Cards
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: _cardDark,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
         ),
-
+		
         // Texto
         textTheme: const TextTheme(
           displayLarge: TextStyle(color: _textDark, fontWeight: FontWeight.w700),

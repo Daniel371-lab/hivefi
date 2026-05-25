@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'providers/app_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/transaction_form_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Edge-to-edge: status bar y nav bar transparentes
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -43,16 +40,11 @@ class HivefiApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hivefi',
       debugShowCheckedModeBanner: false,
-
-      // Tema
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: provider.themeMode,
-
-      // Localización
       locale: provider.locale,
       localizationsDelegates: const [
-        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -61,13 +53,10 @@ class HivefiApp extends StatelessWidget {
         Locale('es'),
         Locale('en'),
       ],
-
-      // Rutas
       initialRoute: '/',
       routes: {
         '/': (_) => const HomeScreen(),
         '/settings': (_) => const SettingsScreen(),
-        '/transaction': (_) => const TransactionFormScreen(),
       },
     );
   }
