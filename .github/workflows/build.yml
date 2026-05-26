@@ -26,13 +26,17 @@ jobs:
       - name: Recrear entorno nativo limpio
         run: flutter create . --platforms=android
 
+      # 👈 SOLUCIÓN INFA LIBLE: Inyecta el minSdk directamente donde Flutter lo lee obligatoriamente
+      - name: Configurar SDK mínimo para Firebase
+        run: |
+          echo "flutter.minSdkVersion=23" >> android/local.properties
+
       - name: Crear google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
       - run: flutter pub get
 
-      # 👈 SOLUCIÓN DIRECTA: Fuerza a la herramienta nativa a compilar con SDK 23 sin editar archivos nativos
-      - run: flutter build apk --release --min-sdk=23
+      - run: flutter build apk --release
 
       - uses: actions/upload-artifact@v4
         with:
