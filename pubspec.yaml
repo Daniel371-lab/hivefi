@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+11
 
 environment:
-  sdk: ^3.10.4
+  sdk: '>=3.0.0 <4.0.0' # 👈 CORREGIDO: Ahora acepta cualquier SDK de Dart de la rama 3 (como el 3.6.0 de tu pipeline)
 
 dependencies:
   flutter:
