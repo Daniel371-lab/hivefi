@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
+import '../utils/currency_formatter.dart';
 
 class CategoriasScreen extends StatefulWidget {
   const CategoriasScreen({super.key});
@@ -9,110 +13,120 @@ class CategoriasScreen extends StatefulWidget {
   State<CategoriasScreen> createState() => _CategoriasScreenState();
 }
 
-class _CategoriasScreenState extends State<CategoriasScreen> {
-  final _nombreController = TextEditingController();
-  String _tipoSeleccionado = 'gasto';
-  bool _isLoading = false;
-  String? _errorMessage;
+class _CategoriasScreenState extends State<CategoriasScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
 
   @override
   void dispose() {
-    _nombreController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
-  Future<void> _crearCategoria() async {
-    if (_nombreController.text.trim().isEmpty) {
-      setState(() => _errorMessage = context.tr('categoryEmptyError'));
-      return;
-    }
-    setState(() { _isLoading = true; _errorMessage = null; });
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    _nombreController.clear();
-    setState(() => _tipoSeleccionado = 'gasto');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(context.tr('categoryCreated')),
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      behavior: SnackBarBehavior.floating,
-    ));
+  void _mostrarFormulario(BuildContext context, String tipoInicial) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _FormularioCategoria(tipoInicial: tipoInicial),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
+    final provider = context.read<AppProvider>();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: theme.brightness == Brightness.dark
-          ? SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent, systemNavigationBarColor: Colors.transparent)
-          : SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent, systemNavigationBarColor: Colors.transparent),
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (didPop) return;
-          if (_nombreController.text.trim().isNotEmpty) {
-            showDialog(
-              context: context,
-              builder: (_) => AlertDialog(
-                title: Text(context.tr('exitWithoutSaving')),
-                content: Text(context.tr('unsavedChanges')),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('cancel'))),
-                  TextButton(onPressed: () { Navigator.pop(context); Navigator.pop(context); }, child: Text(context.tr('confirm'))),
-                ],
-              ),
-            );
-          } else {
-            Navigator.pop(context);
-          }
-        },
-        child: Scaffold(
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(context.tr('newCategory'), style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w700, height: 1.1)),
-                  const SizedBox(height: 32),
-                  Text(context.tr('categoryType'), style: theme.textTheme.bodySmall?.copyWith(color: honey, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
-                  const SizedBox(height: 12),
-                  _TipoOption(label: context.tr('categoryIngreso'), descripcion: context.tr('categoryIngresoDesc'), valor: 'ingreso', seleccionado: _tipoSeleccionado, onTap: () => setState(() => _tipoSeleccionado = 'ingreso')),
-                  const SizedBox(height: 8),
-                  _TipoOption(label: context.tr('categoryGasto'), descripcion: context.tr('categoryGastoDesc'), valor: 'gasto', seleccionado: _tipoSeleccionado, onTap: () => setState(() => _tipoSeleccionado = 'gasto')),
-                  const SizedBox(height: 8),
-                  _TipoOption(label: context.tr('categoryAhorro'), descripcion: context.tr('categoryAhorroDesc'), valor: 'ahorro', seleccionado: _tipoSeleccionado, onTap: () => setState(() => _tipoSeleccionado = 'ahorro')),
-                  const SizedBox(height: 32),
-                  Text(context.tr('categoryName'), style: theme.textTheme.bodySmall?.copyWith(color: honey, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _nombreController,
-                    textCapitalization: TextCapitalization.words,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _crearCategoria(),
-                    decoration: InputDecoration(hintText: context.tr('categoryNameHint')),
-                    onChanged: (_) { if (_errorMessage != null) setState(() => _errorMessage = null); },
-                  ),
-                  if (_errorMessage != null) ...[const SizedBox(height: 8), Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13))],
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _crearCategoria,
-                      child: _isLoading
-                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                          : Text(context.tr('createCategory'), style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1)),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                ],
-              ),
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              systemNavigationBarColor: Colors.transparent,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              systemNavigationBarColor: Colors.transparent,
             ),
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text('Categorías'),
+        ),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: honey,
+          foregroundColor: theme.colorScheme.onPrimary,
+          onPressed: () => _mostrarFormulario(
+            context,
+            ['ingreso', 'gasto', 'ahorro'][_tabController.index],
+          ),
+          child: const Icon(Icons.add),
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tus sobres',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Organizá tu dinero en categorías.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 16),
+                    TabBar(
+                      controller: _tabController,
+                      labelColor: honey,
+                      unselectedLabelColor:
+                          theme.colorScheme.onSurface.withOpacity(0.5),
+                      indicatorColor: honey,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      tabs: const [
+                        Tab(text: 'Ingresos'),
+                        Tab(text: 'Gastos'),
+                        Tab(text: 'Ahorros'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _ListaCategorias(
+                      tipo: 'ingreso',
+                      currency: provider.currency,
+                    ),
+                    _ListaCategorias(
+                      tipo: 'gasto',
+                      currency: provider.currency,
+                    ),
+                    _ListaCategorias(
+                      tipo: 'ahorro',
+                      currency: provider.currency,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -120,14 +134,539 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
   }
 }
 
-class _TipoOption extends StatelessWidget {
+// ─── Lista de categorías ─────────────────────────────────────────────────────
+
+class _ListaCategorias extends StatelessWidget {
+  final String tipo;
+  final String currency;
+
+  const _ListaCategorias({required this.tipo, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.read<AppProvider>();
+    final theme = Theme.of(context);
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: provider.firestoreService.getCategoriasPorTipo(tipo),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.inbox_outlined,
+                  size: 48,
+                  color: theme.colorScheme.onSurface.withOpacity(0.3),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Sin categorías aún.',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tocá + para crear una.',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+          itemCount: docs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, i) {
+            final data = docs[i].data() as Map<String, dynamic>;
+            final id = docs[i].id;
+            final nombre = data['nombre'] as String;
+            final disponible = (data['disponible'] as num).toDouble();
+            final meta = (data['meta'] as num?)?.toDouble() ?? 0;
+            final esAhorro = tipo == 'ahorro';
+
+            return _TarjetaCategoria(
+              id: id,
+              nombre: nombre,
+              disponible: disponible,
+              meta: meta,
+              esAhorro: esAhorro,
+              currency: currency,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// ─── Tarjeta de categoría ────────────────────────────────────────────────────
+
+class _TarjetaCategoria extends StatelessWidget {
+  final String id;
+  final String nombre;
+  final double disponible;
+  final double meta;
+  final bool esAhorro;
+  final String currency;
+
+  const _TarjetaCategoria({
+    required this.id,
+    required this.nombre,
+    required this.disponible,
+    required this.meta,
+    required this.esAhorro,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
+    final provider = context.read<AppProvider>();
+    final progreso = (meta > 0) ? (disponible / meta).clamp(0.0, 1.0) : 0.0;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  nombre,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  color: Colors.red.withOpacity(0.7),
+                  onPressed: () => _confirmarEliminar(context, provider, id, disponible),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              CurrencyFormatter.format(disponible, currency),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: honey,
+              ),
+            ),
+            if (esAhorro && meta > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Meta: ${CurrencyFormatter.format(meta, currency)}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  Text(
+                    '${(progreso * 100).toInt()}%',
+                    style: TextStyle(
+                      color: honey,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: progreso,
+                  minHeight: 6,
+                ),
+              ),
+              if (progreso >= 1.0) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: honey),
+                      foregroundColor: honey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () => _usarAhorro(context, provider, id, nombre, disponible),
+                    child: const Text('Usar ahorro'),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmarEliminar(
+    BuildContext context,
+    AppProvider provider,
+    String id,
+    double disponible,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Eliminar categoría'),
+        content: Text(
+          disponible > 0
+              ? 'Esta categoría tiene dinero disponible. Al eliminarla, el dinero volverá al ingreso original.'
+              : '¿Seguro que querés eliminar esta categoría?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context);
+              await provider.firestoreService.eliminarCategoria(id, disponible);
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _usarAhorro(
+    BuildContext context,
+    AppProvider provider,
+    String id,
+    String nombre,
+    double disponible,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) => _DialogoUsarAhorro(
+        categoriaId: id,
+        categoriaNombre: nombre,
+        disponible: disponible,
+      ),
+    );
+  }
+}
+
+// ─── Diálogo usar ahorro ─────────────────────────────────────────────────────
+
+class _DialogoUsarAhorro extends StatefulWidget {
+  final String categoriaId;
+  final String categoriaNombre;
+  final double disponible;
+
+  const _DialogoUsarAhorro({
+    required this.categoriaId,
+    required this.categoriaNombre,
+    required this.disponible,
+  });
+
+  @override
+  State<_DialogoUsarAhorro> createState() => _DialogoUsarAhorroState();
+}
+
+class _DialogoUsarAhorroState extends State<_DialogoUsarAhorro> {
+  String? _destinoId;
+  List<Map<String, dynamic>> _gastosDisponibles = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarGastos();
+  }
+
+  Future<void> _cargarGastos() async {
+    final provider = context.read<AppProvider>();
+    final snapshot = await provider.firestoreService
+        .getCategoriasPorTipo('gasto')
+        .first;
+    setState(() {
+      _gastosDisponibles = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {'id': doc.id, 'nombre': data['nombre']};
+      }).toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final provider = context.read<AppProvider>();
+
+    return AlertDialog(
+      title: const Text('Usar ahorro'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '¿A qué sobre de gasto querés enviar el dinero?',
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          if (_gastosDisponibles.isEmpty)
+            const Text('No tenés categorías de gasto creadas.')
+          else
+            DropdownButton<String>(
+              value: _destinoId,
+              isExpanded: true,
+              hint: const Text('Seleccioná un sobre'),
+              items: _gastosDisponibles
+                  .map((g) => DropdownMenuItem(
+                        value: g['id'] as String,
+                        child: Text(g['nombre'] as String),
+                      ))
+                  .toList(),
+              onChanged: (val) => setState(() => _destinoId = val),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: _destinoId == null || _isLoading
+              ? null
+              : () async {
+                  setState(() => _isLoading = true);
+                  final destino = _gastosDisponibles
+                      .firstWhere((g) => g['id'] == _destinoId);
+                  await provider.firestoreService.repartirDinero(
+                    origenId: widget.categoriaId,
+                    origenNombre: widget.categoriaNombre,
+                    destinoId: _destinoId!,
+                    destinoNombre: destino['nombre'] as String,
+                    monto: widget.disponible,
+                  );
+                  if (mounted) Navigator.pop(context);
+                },
+          child: const Text('Confirmar'),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Formulario crear categoría ──────────────────────────────────────────────
+
+class _FormularioCategoria extends StatefulWidget {
+  final String tipoInicial;
+
+  const _FormularioCategoria({required this.tipoInicial});
+
+  @override
+  State<_FormularioCategoria> createState() => _FormularioCategoriaState();
+}
+
+class _FormularioCategoriaState extends State<_FormularioCategoria> {
+  final _nombreController = TextEditingController();
+  final _metaController = TextEditingController();
+  late String _tipo;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _tipo = widget.tipoInicial;
+  }
+
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _metaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _crear() async {
+    if (_nombreController.text.trim().isEmpty) {
+      setState(() => _errorMessage = 'El nombre no puede estar vacío.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final provider = context.read<AppProvider>();
+      final meta = double.tryParse(
+            _metaController.text.replaceAll('.', '').replaceAll(',', '.'),
+          ) ??
+          0;
+
+      await provider.firestoreService.crearCategoria(
+        nombre: _nombreController.text,
+        tipo: _tipo,
+        meta: meta,
+      );
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      setState(() => _errorMessage = 'Error al crear la categoría.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Nueva categoría',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Tipo
+            Text(
+              'Tipo',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _ChipTipo(label: 'Ingreso', valor: 'ingreso', seleccionado: _tipo, onTap: () => setState(() => _tipo = 'ingreso')),
+                const SizedBox(width: 8),
+                _ChipTipo(label: 'Gasto', valor: 'gasto', seleccionado: _tipo, onTap: () => setState(() => _tipo = 'gasto')),
+                const SizedBox(width: 8),
+                _ChipTipo(label: 'Ahorro', valor: 'ahorro', seleccionado: _tipo, onTap: () => setState(() => _tipo = 'ahorro')),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // Nombre
+            Text(
+              'Nombre',
+              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _nombreController,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: _tipo == 'ahorro' ? TextInputAction.next : TextInputAction.done,
+              decoration: const InputDecoration(hintText: 'Ej: Sueldo, Comida, Viaje...'),
+              onChanged: (_) { if (_errorMessage != null) setState(() => _errorMessage = null); },
+              onSubmitted: (_) { if (_tipo != 'ahorro') _crear(); },
+            ),
+
+            // Meta (solo ahorro)
+            if (_tipo == 'ahorro') ...[
+              const SizedBox(height: 20),
+              Text(
+                'Meta de ahorro (opcional)',
+                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _metaController,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(hintText: 'Ej: 1000000'),
+                onSubmitted: (_) => _crear(),
+              ),
+            ],
+
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _crear,
+                child: _isLoading
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                    : const Text('Crear categoría'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChipTipo extends StatelessWidget {
   final String label;
-  final String descripcion;
   final String valor;
   final String seleccionado;
   final VoidCallback onTap;
 
-  const _TipoOption({required this.label, required this.descripcion, required this.valor, required this.seleccionado, required this.onTap});
+  const _ChipTipo({
+    required this.label,
+    required this.valor,
+    required this.seleccionado,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -139,33 +678,18 @@ class _TipoOption extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? honey.withOpacity(0.12) : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? honey : Colors.transparent, width: 2),
+          color: isSelected ? honey : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Row(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 20, height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: isSelected ? honey : theme.colorScheme.onSurface.withOpacity(0.4), width: 2),
-                color: isSelected ? honey : Colors.transparent,
-              ),
-              child: isSelected ? Icon(Icons.check, size: 12, color: theme.colorScheme.onPrimary) : null,
-            ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: isSelected ? honey : theme.colorScheme.onSurface)),
-                Text(descripcion, style: theme.textTheme.bodySmall),
-              ],
-            ),
-          ],
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface.withOpacity(0.7),
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
         ),
       ),
     );

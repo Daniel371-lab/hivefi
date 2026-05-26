@@ -12,7 +12,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  intl: ^0.19.0 # 👈 CORREGIDO: Bajado de ^0.20.2 a ^0.19.0 para que coincida con el SDK de Flutter 3.27.0
+  intl: ^0.19.0
   cupertino_icons: ^1.0.8
   provider: ^6.1.2
   shared_preferences: ^2.3.2

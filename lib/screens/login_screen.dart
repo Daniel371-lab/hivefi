@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../utils/app_translator.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,17 +25,53 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
+    if (_emailController.text.trim().isEmpty) {
+      setState(() => _errorMessage = 'Ingresá tu correo.');
+      return;
+    }
+
+    if (_passwordController.text.isEmpty) {
+      setState(() => _errorMessage = 'Ingresá tu contraseña.');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    // Por ahora navega directo, luego conectamos Firebase Auth
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      final provider = context.read<AppProvider>();
+      await provider.authService.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
 
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/');
-    // Se eliminó el setState de aquí para evitar fallos de compilación con rutas constantes
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/');
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    if (_emailController.text.trim().isEmpty) {
+      setState(() => _errorMessage = 'Ingresá tu correo para restablecer la contraseña.');
+      return;
+    }
+
+    try {
+      final provider = context.read<AppProvider>();
+      await provider.authService.resetPassword(_emailController.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Correo de restablecimiento enviado.')),
+      );
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    }
   }
 
   @override
@@ -63,7 +100,6 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 40),
 
-                // Logo / título
                 Center(
                   child: Column(
                     children: [
@@ -85,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Hivefi',
                         style: theme.textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 1,
+                          letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -99,12 +135,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 48),
 
-                // Email
                 Text(
-                  'CORREO ELECTRÓNICO',
+                  'Correo electrónico',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -112,19 +147,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    hintText: 'ejemplo@correo.com',
-                  ),
+                  decoration: const InputDecoration(hintText: 'ejemplo@correo.com'),
+                  onChanged: (_) { if (_errorMessage != null) setState(() => _errorMessage = null); },
                 ),
 
                 const SizedBox(height: 20),
 
-                // Contraseña
                 Text(
-                  'CONTRASEÑA',
+                  'Contraseña',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -141,29 +174,32 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
                       ),
-                      onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
+                  onChanged: (_) { if (_errorMessage != null) setState(() => _errorMessage = null); },
                 ),
 
                 const SizedBox(height: 12),
 
-                // Error
                 if (_errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: Text(
                       _errorMessage!,
                       style: const TextStyle(color: Colors.red, fontSize: 13),
                     ),
                   ),
 
-                // Olvidé contraseña
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: _resetPassword,
                     child: Text(
                       '¿Olvidaste tu contraseña?',
                       style: TextStyle(color: honey, fontSize: 13),
@@ -173,7 +209,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 8),
 
-                // Botón login
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -188,35 +223,24 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'INICIAR SESIÓN',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
-                            ),
-                          ),
+                        : const Text('Iniciar sesión'),
                   ),
                 ),
 
                 const SizedBox(height: 24),
 
-                // Registro
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        '¿No tenés cuenta? ',
-                        style: theme.textTheme.bodySmall,
-                      ),
+                      Text('¿No tenés cuenta? ', style: theme.textTheme.bodySmall),
                       GestureDetector(
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/register'),
+                        onTap: () => Navigator.pushNamed(context, '/register'),
                         child: Text(
                           'Registrate',
                           style: TextStyle(
                             color: honey,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
                         ),

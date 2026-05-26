@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'dart:async'; // Necesario para atrapar errores globales
-
+import 'dart:async';
 import 'theme/app_theme.dart';
 import 'providers/app_provider.dart';
 import 'screens/home_screen.dart';
@@ -19,12 +19,10 @@ import 'screens/reparto_screen.dart';
 import 'screens/historial_screen.dart';
 
 void main() {
-  // Envolvemos toda la app en una zona segura para atrapar cualquier crash
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
     try {
-      // Inicialización de Firebase
       await Firebase.initializeApp(
         options: const FirebaseOptions(
           apiKey: 'AIzaSyBGN6x4bwMqGDSaWyutU5QCY3cuZyWYgp4',
@@ -54,62 +52,13 @@ void main() {
         ),
       );
     } catch (e, stackTrace) {
-      // Si explota en la inicialización, mostramos la pantalla de error
       runApp(PantallaDeError(error: e.toString(), stack: stackTrace.toString()));
     }
   }, (error, stackTrace) {
-    // Si explota en cualquier parte asíncrona de Dart, atrapamos el crash acá
     runApp(PantallaDeError(error: error.toString(), stack: stackTrace.toString()));
   });
 }
 
-// ----------------------------------------------------------------------
-// PANTALLA DE EMERGENCIA: Reemplaza al crash silencioso
-// ----------------------------------------------------------------------
-class PantallaDeError extends StatelessWidget {
-  final String error;
-  final String stack;
-
-  const PantallaDeError({super.key, required this.error, required this.stack});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '🚨 CRASH DETECTADO',
-                  style: TextStyle(color: Colors.red, fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  error,
-                  style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  stack,
-                  style: const TextStyle(color: Colors.black54, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ----------------------------------------------------------------------
-// TU APP ORIGINAL
-// ----------------------------------------------------------------------
 class HivefiApp extends StatelessWidget {
   const HivefiApp({super.key});
 
@@ -133,7 +82,7 @@ class HivefiApp extends StatelessWidget {
         Locale('es'),
         Locale('en'),
       ],
-      initialRoute: '/login',
+      home: const AuthWrapper(),
       routes: {
         '/': (_) => const HomeScreen(),
         '/settings': (_) => const SettingsScreen(),
@@ -146,6 +95,68 @@ class HivefiApp extends StatelessWidget {
         '/reparto': (_) => const RepartoScreen(),
         '/historial': (_) => const HistorialScreen(),
       },
+    );
+  }
+}
+
+// Decide si mostrar Home o Login según sesión
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasData) {
+          return const HomeScreen();
+        }
+        return const LoginScreen();
+      },
+    );
+  }
+}
+
+class PantallaDeError extends StatelessWidget {
+  final String error;
+  final String stack;
+
+  const PantallaDeError({super.key, required this.error, required this.stack});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Error de inicio',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(error, style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 16),
+                Text(stack, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

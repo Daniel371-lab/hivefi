@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 
 class AppProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
@@ -9,6 +11,9 @@ class AppProvider extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
   String get currency => _currency;
+
+  final AuthService authService = AuthService();
+  final FirestoreService firestoreService = FirestoreService();
 
   AppProvider() {
     _loadPrefs();
