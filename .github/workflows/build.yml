@@ -23,7 +23,6 @@ jobs:
           flutter-version: '3.27.0'
           channel: 'stable'
 
-      # 👈 CLAVE: GitHub sí tiene Flutter, así que acá se va a recrear la carpeta android 100% limpia de fábrica
       - name: Recrear entorno nativo limpio
         run: flutter create . --platforms=android
 
@@ -32,7 +31,8 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build apk --release
+      # 👈 SOLUCIÓN DIRECTA: Fuerza a la herramienta nativa a compilar con SDK 23 sin editar archivos nativos
+      - run: flutter build apk --release --min-sdk=23
 
       - uses: actions/upload-artifact@v4
         with:
