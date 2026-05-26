@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.jplabs.hivefi"
-        minSdk = 23 // 👈 CORREGIDO: Subido de 21 a 23 para que Firebase Auth compile sin error
+        minSdk = 23
         targetSdk = 35
         versionCode = 11
         versionName = "1.0.0"
@@ -30,10 +30,7 @@ android {
         release {
             isMinifyEnabled = false
             isShrinkResources = false
-            
-            // Mantiene la configuración de firma de debug para el build en GitHub Actions
             signingConfig = signingConfigs.getByName("debug")
-            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -42,6 +39,7 @@ android {
     }
 }
 
+// 👈 CONFIGURACIÓN CORREGIDA: Vincula el SDK de Flutter al compilador de Kotlin de la app
 flutter {
     source = "../.."
 }
@@ -50,4 +48,12 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    
+    // Vincula explícitamente las librerías nativas de Flutter incrustadas
+    implementation(files("${project.property("flutter.sdk")}/packages/flutter_tools/gradle/flutter.jar")) {
+        System.getenv("FLUTTER_ROOT")?.let {
+            // En GitHub Actions, si local.properties no provee la propiedad, usa la ruta de la nube
+            return@implementation files("$it/packages/flutter_tools/gradle/flutter.jar")
+        }
+    }
 }
