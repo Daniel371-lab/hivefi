@@ -26,10 +26,18 @@ jobs:
       - name: Recrear entorno nativo limpio
         run: flutter create . --platforms=android
 
-      # 👈 SOLUCIÓN INFA LIBLE: Inyecta el minSdk directamente donde Flutter lo lee obligatoriamente
-      - name: Configurar SDK mínimo para Firebase
+      # 👈 CORREGIDO: Inyección nativa compatible con la estructura real de Flutter 3.27
+      - name: Configurar Gradle para Firebase y minSdk 23
         run: |
-          echo "flutter.minSdkVersion=23" >> android/local.properties
+          # 1. Forzar el minSdk a 23 en el build.gradle de la app
+          sed -i 's/\(minSdk[[:space:]]*=[[:space:]]*\).*/\123/' android/app/build.gradle
+          sed -i 's/\(minSdkVersion[[:space:]]*=[[:space:]]*\).*/\123/' android/app/build.gradle
+          
+          # 2. Agregar el classpath de Google Services en el buildscript del proyecto
+          sed -i '/dependencies {/a \        classpath "com.google.gms:google-services:4.4.2"' android/build.gradle
+          
+          # 3. Aplicar el plugin de Google Services abajo de la configuración de la app
+          echo 'apply plugin: "com.google.gms.google-services"' >> android/app/build.gradle
 
       - name: Crear google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
