@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'dart:async'; // Necesario para atrapar errores globales
+
 import 'theme/app_theme.dart';
 import 'providers/app_provider.dart';
 import 'screens/home_screen.dart';
@@ -16,43 +18,98 @@ import 'screens/destinar_screen.dart';
 import 'screens/reparto_screen.dart';
 import 'screens/historial_screen.dart';
 
-void main() async {
-  // 1. Asegurar la inicialización del motor de Flutter
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // 2. Inicializar Firebase de forma manual con los datos de tu JSON
-  await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: 'AIzaSyBGN6x4bwMqGDSaWyutU5QCY3cuZyWYgp4',
-      appId: '1:836237128631:android:13c18bbf1a90f69e8c6e32',
-      messagingSenderId: '836237128631',
-      projectId: 'hivefi-39b81',
-      storageBucket: 'hivefi-39b81.firebasestorage.app',
-    ),
-  );
+void main() {
+  // Envolvemos toda la app en una zona segura para atrapar cualquier crash
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // 3. Configurar el estilo de la barra de estado y navegación
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-    statusBarBrightness: Brightness.light,
-    systemNavigationBarColor: Colors.transparent,
-    systemNavigationBarIconBrightness: Brightness.dark,
-    systemNavigationBarDividerColor: Colors.transparent,
-  ));
+    try {
+      // Inicialización de Firebase
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: 'AIzaSyBGN6x4bwMqGDSaWyutU5QCY3cuZyWYgp4',
+          appId: '1:836237128631:android:13c18bbf1a90f69e8c6e32',
+          messagingSenderId: '836237128631',
+          projectId: 'hivefi-39b81',
+          storageBucket: 'hivefi-39b81.firebasestorage.app',
+        ),
+      );
 
-  // 4. Arrancar la aplicación
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AppProvider()),
-      ],
-      child: const HivefiApp(),
-    ),
-  );
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarDividerColor: Colors.transparent,
+      ));
+
+      runApp(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => AppProvider()),
+          ],
+          child: const HivefiApp(),
+        ),
+      );
+    } catch (e, stackTrace) {
+      // Si explota en la inicialización, mostramos la pantalla de error
+      runApp(PantallaDeError(error: e.toString(), stack: stackTrace.toString()));
+    }
+  }, (error, stackTrace) {
+    // Si explota en cualquier parte asíncrona de Dart, atrapamos el crash acá
+    runApp(PantallaDeError(error: error.toString(), stack: stackTrace.toString()));
+  });
 }
 
+// ----------------------------------------------------------------------
+// PANTALLA DE EMERGENCIA: Reemplaza al crash silencioso
+// ----------------------------------------------------------------------
+class PantallaDeError extends StatelessWidget {
+  final String error;
+  final String stack;
+
+  const PantallaDeError({super.key, required this.error, required this.stack});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '🚨 CRASH DETECTADO',
+                  style: TextStyle(color: Colors.red, fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  error,
+                  style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  stack,
+                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------------------------
+// TU APP ORIGINAL
+// ----------------------------------------------------------------------
 class HivefiApp extends StatelessWidget {
   const HivefiApp({super.key});
 
