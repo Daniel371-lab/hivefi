@@ -5,14 +5,14 @@ publish_to: 'none'
 version: 1.0.0+11
 
 environment:
-  sdk: '>=3.5.0 <4.0.0' # 👈 AJUSTADO: Piso intermedio perfecto que cubre tu código y la 3.6.0 de GitHub
+  sdk: '>=3.5.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  intl: ^0.20.2
+  intl: ^0.19.0 # 👈 CORREGIDO: Bajado de ^0.20.2 a ^0.19.0 para que coincida con el SDK de Flutter 3.27.0
   cupertino_icons: ^1.0.8
   provider: ^6.1.2
   shared_preferences: ^2.3.2
@@ -23,7 +23,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0 # 👈 CORREGIDO: Bajado de ^6.0.0 a ^3.0.0 para que sea compatible con Dart 3.6.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
