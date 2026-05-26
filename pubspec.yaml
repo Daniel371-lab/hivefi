@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+11
 
 environment:
-  sdk: '>=3.0.0 <4.0.0' # 👈 CORREGIDO: Ahora acepta cualquier SDK de Dart de la rama 3 (como el 3.6.0 de tu pipeline)
+  sdk: '>=3.5.0 <4.0.0' # 👈 AJUSTADO: Piso intermedio perfecto que cubre tu código y la 3.6.0 de GitHub
 
 dependencies:
   flutter:
@@ -23,7 +23,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^3.0.0 # 👈 CORREGIDO: Bajado de ^6.0.0 a ^3.0.0 para que sea compatible con Dart 3.6.0
 
 flutter:
   uses-material-design: true
