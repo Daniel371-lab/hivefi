@@ -20,8 +20,12 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0' # 👈 CAMBIADO: Subido de 3.22.3 a 3.27.0 para actualizar Dart
+          flutter-version: '3.27.0'
           channel: 'stable'
+
+      # 👈 CLAVE: GitHub sí tiene Flutter, así que acá se va a recrear la carpeta android 100% limpia de fábrica
+      - name: Recrear entorno nativo limpio
+        run: flutter create . --platforms=android
 
       - name: Crear google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
