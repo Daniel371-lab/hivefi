@@ -17,9 +17,21 @@ import 'screens/reparto_screen.dart';
 import 'screens/historial_screen.dart';
 
 void main() async {
+  // 1. Asegurar la inicialización del motor de Flutter
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  
+  // 2. Inicializar Firebase de forma manual con los datos de tu JSON
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: 'AIzaSyBGN6x4bwMqGDSaWyutU5QCY3cuZyWYgp4',
+      appId: '1:836237128631:android:13c18bbf1a90f69e8c6e32',
+      messagingSenderId: '836237128631',
+      projectId: 'hivefi-39b81',
+      storageBucket: 'hivefi-39b81.firebasestorage.app',
+    ),
+  );
 
+  // 3. Configurar el estilo de la barra de estado y navegación
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -30,6 +42,7 @@ void main() async {
     systemNavigationBarDividerColor: Colors.transparent,
   ));
 
+  // 4. Arrancar la aplicación
   runApp(
     MultiProvider(
       providers: [
