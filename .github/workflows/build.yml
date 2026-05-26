@@ -26,18 +26,51 @@ jobs:
       - name: Recrear entorno nativo limpio
         run: flutter create . --platforms=android
 
-      # 👈 CORREGIDO: Inyección nativa compatible con la estructura real de Flutter 3.27
+      # 👈 CONFIGURACIÓN GARANTIZADA: Modifica los archivos reales de Flutter usando Python para evitar fallos de sintaxis
       - name: Configurar Gradle para Firebase y minSdk 23
         run: |
-          # 1. Forzar el minSdk a 23 en el build.gradle de la app
-          sed -i 's/\(minSdk[[:space:]]*=[[:space:]]*\).*/\123/' android/app/build.gradle
-          sed -i 's/\(minSdkVersion[[:space:]]*=[[:space:]]*\).*/\123/' android/app/build.gradle
-          
-          # 2. Agregar el classpath de Google Services en el buildscript del proyecto
-          sed -i '/dependencies {/a \        classpath "com.google.gms:google-services:4.4.2"' android/build.gradle
-          
-          # 3. Aplicar el plugin de Google Services abajo de la configuración de la app
-          echo 'apply plugin: "com.google.gms.google-services"' >> android/app/build.gradle
+          cat << 'EOF' > patch.py
+          import os
+          import re
+
+          # 1. Modificar settings.gradle de la raíz (Registrar el plugin global de Google Services)
+          settings_path = 'android/settings.gradle'
+          if os.path.exists(settings_path):
+              with open(settings_path, 'r') as f:
+                  content = f.read()
+              if 'plugins {' in content:
+                  content = content.replace('plugins {', 'plugins {\n    id "com.google.gms.google-services" version "4.4.2" apply false')
+                  with open(settings_path, 'w') as f:
+                      f.write(content)
+                  print("✅ Google Services registrado en settings.gradle")
+
+          # 2. Modificar build.gradle de la app (Aplicar plugin, minSdk 23 y asegurar package name)
+          app_path = 'android/app/build.gradle'
+          if os.path.exists(app_path):
+              with open(app_path, 'r') as f:
+                  content = f.read()
+              
+              # Aplicar el plugin en la app
+              if 'plugins {' in content:
+                  content = content.replace('plugins {', 'plugins {\n    id "com.google.gms.google-services"')
+                  print("✅ Plugin aplicado en app/build.gradle")
+              
+              # Forzar minSdk a 23 de forma directa reemplazando la variable de Flutter
+              content = content.replace('minSdk = flutter.minSdkVersion', 'minSdk = 23')
+              content = content.replace('minSdkVersion = flutter.minSdkVersion', 'minSdk = 23')
+              content = content.replace('minSdkVersion flutter.minSdkVersion', 'minSdk = 23')
+              print("✅ minSdkVersion forzado a 23")
+              
+              # Asegurar que el applicationId coincida con tu google-services.json de Firebase
+              content = re.sub(r'applicationId\s*=\s*".*"', 'applicationId = "com.jplabs.hivefi"', content)
+              content = re.sub(r'namespace\s*=\s*".*"', 'namespace = "com.jplabs.hivefi"', content)
+              print("✅ Package name sincronizado a com.jplabs.hivefi")
+              
+              with open(app_path, 'w') as f:
+                  f.write(content)
+          EOF
+          python3 patch.py
+          rm patch.py
 
       - name: Crear google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
