@@ -18,10 +18,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Flutter
-        run: |
-          git clone https://github.com/flutter/flutter.git --depth 1 --branch 3.22.3 $HOME/flutter
-          echo "$HOME/flutter/bin" >> $GITHUB_PATH
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0' # 👈 CAMBIADO: Subido de 3.22.3 a 3.27.0 para actualizar Dart
+          channel: 'stable'
 
       - name: Crear google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
