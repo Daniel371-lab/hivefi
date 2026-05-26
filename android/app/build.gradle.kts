@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.jplabs.hivefi"
-        minSdk = 21
+        minSdk = 23 // 👈 CORREGIDO: Subido de 21 a 23 para que Firebase Auth compile sin error
         targetSdk = 35
         versionCode = 11
         versionName = "1.0.0"
@@ -30,7 +30,10 @@ android {
         release {
             isMinifyEnabled = false
             isShrinkResources = false
+            
+            // Mantiene la configuración de firma de debug para el build en GitHub Actions
             signingConfig = signingConfigs.getByName("debug")
+            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
