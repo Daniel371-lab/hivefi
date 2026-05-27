@@ -1,4 +1,4 @@
-name: Build APK
+Name: Build APK
 
 on:
   push:
@@ -26,6 +26,13 @@ jobs:
       # 👈 EL FIX MAESTRO: Se crea el entorno nativo ya con tu paquete correcto en MainActivity
       - name: Recrear entorno nativo limpio
         run: flutter create --org com.jplabs --project-name hivefi . --platforms=android
+
+      # 📦 PASO NUEVO Y SEGURO: Copia tu logo y le cambia el nombre al que Android espera por defecto
+      - name: Inyectar logo de Hivefi como icono de la app
+        run: |
+          mkdir -p android/app/src/main/res/mipmap-hdpi
+          cp assets/images/logo_hivefi.webp android/app/src/main/res/mipmap-hdpi/ic_launcher.webp
+          cp assets/images/logo_hivefi.webp android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp
 
       - name: Configurar Gradle para Firebase y minSdk 23
         run: |
