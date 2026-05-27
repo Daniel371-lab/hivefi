@@ -6,8 +6,15 @@ import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
 
-class RepartoScreen extends StatelessWidget {
+class RepartoScreen extends StatefulWidget {
   const RepartoScreen({super.key});
+
+  @override
+  State<RepartoScreen> createState() => _RepartoScreenState();
+}
+
+class _RepartoScreenState extends State<RepartoScreen> {
+  bool _yaSeAbrio = false;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +97,9 @@ class RepartoScreen extends StatelessWidget {
                     );
                   }
 
-                  if (origenInicial != null) {
+                  // 💡 AQUÍ ESTÁ LA MAGIA QUE EVITA QUE SE QUEDE TRABADO
+                  if (origenInicial != null && !_yaSeAbrio) {
+                    _yaSeAbrio = true; // Registra que ya se abrió una vez
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       _mostrarFormulario(context, provider, origenInicial, null);
                     });

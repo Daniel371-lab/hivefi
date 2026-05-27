@@ -91,7 +91,7 @@ class _BalanceCarouselState extends State<_BalanceCarousel> {
         return Column(
           children: [
             SizedBox(
-              height: 200,
+              height: 160,
               child: PageView(
                 controller: _pageController,
                 onPageChanged: (i) => setState(() => _currentPage = i),
@@ -175,6 +175,7 @@ class _BalanceCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // <-- Esto evita que la tarjeta se estire
           children: [
             Text(
               titulo.toUpperCase(),
@@ -195,18 +196,17 @@ class _BalanceCard extends StatelessWidget {
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              subtitulo,
-              style: const TextStyle(
-                color: Color(0xFFB0C9C2),
-                fontSize: 13,
-              ),
-            ),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            const SizedBox(height: 24), // <-- Reemplazamos el Spacer() por un espacio fijo
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Text(
+                  subtitulo,
+                  style: const TextStyle(
+                    color: Color(0xFFB0C9C2),
+                    fontSize: 13,
+                  ),
+                ),
                 Text(
                   '$porcentaje%',
                   style: const TextStyle(
@@ -215,17 +215,17 @@ class _BalanceCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progreso,
-                    minHeight: 6,
-                    backgroundColor: _trackColor,
-                    valueColor: const AlwaysStoppedAnimation<Color>(_progressColor),
-                  ),
-                ),
               ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progreso,
+                minHeight: 6,
+                backgroundColor: _trackColor,
+                valueColor: const AlwaysStoppedAnimation<Color>(_progressColor),
+              ),
             ),
           ],
         ),
@@ -233,6 +233,7 @@ class _BalanceCard extends StatelessWidget {
     );
   }
 }
+
 
 // ─── Grid Hexagonal ──────────────────────────────────────────────────────────
 
