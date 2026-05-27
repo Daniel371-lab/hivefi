@@ -234,79 +234,113 @@ class _TarjetaCategoria extends StatelessWidget {
     final provider = context.read<AppProvider>();
     final progreso = (meta > 0) ? (disponible / meta).clamp(0.0, 1.0) : 0.0;
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  nombre,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nombre,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        CurrencyFormatter.format(disponible, currency),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: honey,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                // Botón para editar (solo si no registra dinero)
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  color: Colors.red.withOpacity(0.7),
-                  onPressed: () => _confirmarEliminar(context, provider, id, disponible),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                  onPressed: disponible != 0 
+                      ? null 
+                      : () => _editarNombre(context, provider, id, nombre),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
+                  splashRadius: 20,
+                ),
+                const SizedBox(width: 12),
+                // Botón para eliminar (solo si no registra dinero)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  color: disponible != 0 
+                      ? theme.colorScheme.onSurface.withOpacity(0.2) 
+                      : Colors.red.withOpacity(0.6),
+                  onPressed: disponible != 0 
+                      ? null 
+                      : () => _confirmarEliminar(context, provider, id, disponible),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  splashRadius: 20,
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              CurrencyFormatter.format(disponible, currency),
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: honey,
-              ),
-            ),
             if (esAhorro && meta > 0) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Meta: ${CurrencyFormatter.format(meta, currency)}',
-                    style: theme.textTheme.bodySmall,
+                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                   ),
                   Text(
                     '${(progreso * 100).toInt()}%',
                     style: TextStyle(
                       color: honey,
                       fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: progreso,
-                  minHeight: 6,
+                  minHeight: 4,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 ),
               ),
               if (progreso >= 1.0) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
+                  height: 36,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: honey),
+                      side: BorderSide(color: honey, width: 1),
                       foregroundColor: honey,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      padding: EdgeInsets.zero,
                     ),
                     onPressed: () => _usarAhorro(context, provider, id, nombre, disponible),
-                    child: const Text('Usar ahorro'),
+                    child: const Text('Usar ahorro', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
@@ -350,6 +384,41 @@ class _TarjetaCategoria extends StatelessWidget {
     );
   }
 
+  void _editarNombre(
+    BuildContext context,
+    AppProvider provider,
+    String id,
+    String nombreActual,
+  ) {
+    final controller = TextEditingController(text: nombreActual);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar nombre'),
+        content: TextField(
+          controller: controller,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(hintText: 'Nuevo nombre'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (controller.text.trim().isNotEmpty) {
+                Navigator.pop(context);
+                await provider.firestoreService.updateCategoriaNombre(id, controller.text.trim());
+              }
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
+  
   void _usarAhorro(
     BuildContext context,
     AppProvider provider,
@@ -482,6 +551,24 @@ class _FormularioCategoria extends StatefulWidget {
 }
 
 class _FormularioCategoriaState extends State<_FormularioCategoria> {
+	  // Formateador para separar miles con puntos en tiempo real
+  void _formatMeta(String value) {
+    if (value.isEmpty) return;
+    final cleanValue = value.replaceAll('.', '');
+    final numValue = int.tryParse(cleanValue);
+    if (numValue == null) return;
+    
+    final formatted = CurrencyFormatter.format(numValue.toDouble(), widget.tipoInicial)
+        .replaceAll(RegExp(r'[^0-9.]'), ''); // Extrae solo los números y puntos
+        
+    if (_metaController.text != formatted) {
+      _metaController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  }
+  
   final _nombreController = TextEditingController();
   final _metaController = TextEditingController();
   late String _tipo;
@@ -512,15 +599,30 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
       _errorMessage = null;
     });
 
-    try {
+        try {
       final provider = context.read<AppProvider>();
+      
+      // Validar si ya existe una categoría con el mismo nombre en este tipo
+      final existe = await provider.firestoreService.getCategoriasPorTipo(_tipo).first.then(
+        (snap) => snap.docs.any((doc) => 
+          (doc.data() as Map<String, dynamic>)['nombre'].toString().trim().toLowerCase() == 
+          _nombreController.text.trim().toLowerCase()
+        )
+      );
+
+      if (existe) {
+        setState(() => _errorMessage = 'Ya existe una categoría con este nombre.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
       final meta = double.tryParse(
             _metaController.text.replaceAll('.', '').replaceAll(',', '.'),
           ) ??
           0;
 
       await provider.firestoreService.crearCategoria(
-        nombre: _nombreController.text,
+        nombre: _nombreController.text.trim(),
         tipo: _tipo,
         meta: meta,
       );
@@ -614,11 +716,12 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
                 style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              TextField(
+                TextField(
                 controller: _metaController,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(hintText: 'Ej: 1000000'),
+                decoration: const InputDecoration(hintText: 'Ej: 1.000.000'),
+                onChanged: _formatMeta,
                 onSubmitted: (_) => _crear(),
               ),
             ],

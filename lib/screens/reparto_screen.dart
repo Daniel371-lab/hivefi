@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/thousands_formatter.dart'; // Tu formateador oficial de miles
 
 class RepartoScreen extends StatelessWidget {
   const RepartoScreen({super.key});
@@ -37,15 +38,11 @@ class RepartoScreen extends StatelessWidget {
             stream: provider.firestoreService.getCategoriasPorTipo('gasto'),
             builder: (context, snapshotGastos) {
               return StreamBuilder<QuerySnapshot>(
-                stream: provider.firestoreService
-                    .getCategoriasPorTipo('ahorro'),
+                stream: provider.firestoreService.getCategoriasPorTipo('ahorro'),
                 builder: (context, snapshotAhorros) {
-                  if (snapshotGastos.connectionState ==
-                          ConnectionState.waiting ||
-                      snapshotAhorros.connectionState ==
-                          ConnectionState.waiting) {
-                    return const Center(
-                        child: CircularProgressIndicator());
+                  if (snapshotGastos.connectionState == ConnectionState.waiting ||
+                      snapshotAhorros.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   final gastos = snapshotGastos.data?.docs ?? [];
@@ -62,8 +59,7 @@ class RepartoScreen extends StatelessWidget {
                             Icon(
                               Icons.compare_arrows_rounded,
                               size: 48,
-                              color: theme.colorScheme.onSurface
-                                  .withOpacity(0.3),
+                              color: theme.colorScheme.onSurface.withOpacity(0.3),
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -84,8 +80,7 @@ class RepartoScreen extends StatelessWidget {
                   }
 
                   return SingleChildScrollView(
-                    padding:
-                        const EdgeInsets.fromLTRB(24, 8, 24, 100),
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -200,8 +195,9 @@ class _SeccionSobres extends StatelessWidget {
       children: [
         Text(
           titulo,
-          style: theme.textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.w700),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 12),
         ...docs.map((doc) {
@@ -213,121 +209,101 @@ class _SeccionSobres extends StatelessWidget {
 
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    nombre,
-                                    style: theme.textTheme.bodyMedium
-                                        ?.copyWith(
-                                            fontWeight:
-                                                FontWeight.w600),
-                                  ),
-                                  if (tipo == 'ahorro') ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding:
-                                          const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: metaAlcanzada
-                                            ? Colors.green
-                                                .withOpacity(0.15)
-                                            : honey.withOpacity(0.15),
-                                        borderRadius:
-                                            BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        metaAlcanzada
-                                            ? 'Meta alcanzada'
-                                            : 'En progreso',
-                                        style: TextStyle(
-                                          color: metaAlcanzada
-                                              ? Colors.green
-                                              : honey,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                        Row(
+                          children: [
+                            Text(
+                              nombre,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                CurrencyFormatter.format(
-                                    disponible, currency),
-                                style: TextStyle(
-                                  color: disponible > 0
-                                      ? honey
-                                      : theme.colorScheme.onSurface
-                                          .withOpacity(0.4),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
+                            ),
+                            if (tipo == 'ahorro') ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: metaAlcanzada
+                                      ? Colors.green.withOpacity(0.15)
+                                      : honey.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
-                              ),
-                              if (tipo == 'ahorro' && meta > 0) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Meta: ${CurrencyFormatter.format(meta, currency)}',
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                                const SizedBox(height: 4),
-                                ClipRRect(
-                                  borderRadius:
-                                      BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: (disponible / meta)
-                                        .clamp(0.0, 1.0),
-                                    minHeight: 4,
-                                    color: metaAlcanzada
-                                        ? Colors.green
-                                        : honey,
+                                child: Text(
+                                  metaAlcanzada ? 'Meta alcanzada' : 'En progreso',
+                                  style: TextStyle(
+                                    color: metaAlcanzada ? Colors.green : honey,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              ],
+                              ),
                             ],
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: disponible > 0
-                              ? () => onRepartir(
-                                  doc.id, nombre, disponible)
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                            backgroundColor: disponible > 0
+                        const SizedBox(height: 4),
+                        Text(
+                          CurrencyFormatter.format(disponible, currency),
+                          style: TextStyle(
+                            color: disponible > 0
                                 ? honey
-                                : theme.colorScheme
-                                    .surfaceContainerHighest,
-                            foregroundColor: disponible > 0
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.onSurface
-                                    .withOpacity(0.4),
+                                : theme.colorScheme.onSurface.withOpacity(0.4),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
                           ),
-                          child: const Text('Mover'),
                         ),
+                        if (tipo == 'ahorro' && meta > 0) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Meta: ${CurrencyFormatter.format(meta, currency)}',
+                            style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                          ),
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: (disponible / meta).clamp(0.0, 1.0),
+                              minHeight: 4,
+                              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                              color: metaAlcanzada ? Colors.green : honey,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: disponible > 0
+                        ? () => onRepartir(doc.id, nombre, disponible)
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      backgroundColor: disponible > 0
+                          ? honey
+                          : theme.colorScheme.surfaceContainerHighest,
+                      foregroundColor: disponible > 0
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSurface.withOpacity(0.4),
+                      elevation: 0,
+                    ),
+                    child: const Text('Mover'),
+                  ),
+                ],
               ),
             ),
           );
@@ -548,8 +524,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
       child: Container(
         decoration: BoxDecoration(
           color: theme.scaffoldBackgroundColor,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: SingleChildScrollView(
@@ -589,12 +564,10 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 value: _origenId,
                 hint: const Text('Seleccioná el origen'),
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                        color: theme.colorScheme.surfaceContainerHighest),
+                    borderSide: BorderSide(color: theme.colorScheme.surfaceContainerHighest),
                   ),
                 ),
                 items: _sobres
@@ -615,8 +588,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                               ),
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 5, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: honey.withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(4),
@@ -636,8 +608,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 onChanged: (val) {
                   setState(() {
                     _origenId = val;
-                    final sobre =
-                        _sobres.firstWhere((s) => s['id'] == val);
+                    final sobre = _sobres.firstWhere((s) => s['id'] == val);
                     _origenNombre = sobre['nombre'] as String;
                     _origenDisponible = sobre['disponible'] as double;
                     _origenTipo = sobre['tipo'] as String;
@@ -657,9 +628,8 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                         color: honey,
                         fontWeight: FontWeight.w600,
                         fontSize: 13),
-                  ),
                 ),
-              ],
+              ),
 
               const SizedBox(height: 20),
 
@@ -672,12 +642,10 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 value: _destinoId,
                 hint: const Text('Seleccioná el destino'),
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                        color: theme.colorScheme.surfaceContainerHighest),
+                    borderSide: BorderSide(color: theme.colorScheme.surfaceContainerHighest),
                   ),
                 ),
                 items: _sobresSinOrigen
@@ -688,8 +656,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                               Expanded(child: Text(s['nombre'] as String)),
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 5, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: honey.withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(4),
@@ -710,8 +677,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                   setState(() {
                     _destinoId = val;
                     _destinoNombre = _sobres
-                        .firstWhere((s) => s['id'] == val)['nombre']
-                        as String;
+                        .firstWhere((s) => s['id'] == val)['nombre'] as String;
                   });
                 },
               ),
@@ -728,9 +694,12 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _confirmar(),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  ThousandsFormatter(), // Integrado directamente
+                ],
                 decoration: InputDecoration(
-                  hintText: CurrencyFormatter.format(
-                      0, widget.provider.currency),
+                  hintText: CurrencyFormatter.format(0, widget.provider.currency),
                 ),
                 onChanged: (_) {
                   if (_errorMessage != null) {
@@ -749,8 +718,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(_errorMessage!,
-                      style: const TextStyle(
-                          color: Colors.red, fontSize: 13)),
+                      style: const TextStyle(color: Colors.red, fontSize: 13)),
                 ),
               ],
 

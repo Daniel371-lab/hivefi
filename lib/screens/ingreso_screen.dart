@@ -73,6 +73,10 @@ class IngresoScreen extends StatelessWidget {
                   final nombre = data['nombre'] as String;
                   final disponible = (data['disponible'] as num).toDouble();
 
+                  // Convertimos el disponible numérico a texto formateado para que rellene el input de edición
+                  final disponibleString = CurrencyFormatter.format(disponible, provider.currency)
+                      .replaceAll(RegExp(r'[^0-9.]'), '');
+
                   return _TarjetaIngreso(
                     id: id,
                     nombre: nombre,
@@ -82,10 +86,7 @@ class IngresoScreen extends StatelessWidget {
                       context, provider, id, nombre, disponible,
                     ),
                     onEditar: () => _mostrarEditar(
-                      context, provider, id, nombre,
-                    ),
-                    onEliminar: () => _confirmarEliminar(
-                      context, provider, id, nombre, disponible,
+                      context, provider, id, disponibleString,
                     ),
                   );
                 },
@@ -130,7 +131,7 @@ class IngresoScreen extends StatelessWidget {
     BuildContext context,
     AppProvider provider,
     String id,
-    String nombre,
+    String nombreActual,
   ) {
     showModalBottomSheet(
       context: context,
@@ -139,42 +140,7 @@ class IngresoScreen extends StatelessWidget {
       builder: (_) => _FormularioEditarCategoria(
         provider: provider,
         categoriaId: id,
-        nombreActual: nombre,
-      ),
-    );
-  }
-
-  void _confirmarEliminar(
-    BuildContext context,
-    AppProvider provider,
-    String id,
-    String nombre,
-    double disponible,
-  ) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Eliminar categoría'),
-        content: Text(
-          disponible > 0
-              ? 'Esta categoría tiene dinero disponible. No podés eliminarla hasta que el saldo sea cero.'
-              : '¿Seguro que querés eliminar "$nombre"?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          if (disponible == 0)
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              onPressed: () async {
-                Navigator.pop(context);
-                await provider.firestoreService.eliminarCategoria(id, disponible);
-              },
-              child: const Text('Eliminar'),
-            ),
-        ],
+        nombreActual: nombreActual,
       ),
     );
   }
@@ -189,7 +155,6 @@ class _TarjetaIngreso extends StatelessWidget {
   final String currency;
   final VoidCallback onAgregar;
   final VoidCallback onEditar;
-  final VoidCallback onEliminar;
 
   const _TarjetaIngreso({
     required this.id,
@@ -198,7 +163,6 @@ class _TarjetaIngreso extends StatelessWidget {
     required this.currency,
     required this.onAgregar,
     required this.onEditar,
-    required this.onEliminar,
   });
 
   @override
@@ -206,59 +170,68 @@ class _TarjetaIngreso extends StatelessWidget {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  nombre,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nombre,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        CurrencyFormatter.format(disponible, currency),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: honey,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
-                      onPressed: onEditar,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      color: Colors.red.withOpacity(0.7),
-                      onPressed: onEliminar,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  onPressed: onEditar,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  splashRadius: 20,
                 ),
               ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              CurrencyFormatter.format(disponible, currency),
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: honey,
-              ),
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
+              height: 36,
               child: ElevatedButton.icon(
                 onPressed: onAgregar,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Agregar ingreso'),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Agregar ingreso', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: EdgeInsets.zero,
+                  elevation: 0,
+                  backgroundColor: honey.withOpacity(0.08),
+                  foregroundColor: honey,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ),
@@ -324,6 +297,23 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
   void dispose() {
     _montoController.dispose();
     super.dispose();
+  }
+
+  void _formatMonto(String value) {
+    if (value.isEmpty) return;
+    final cleanValue = value.replaceAll('.', '');
+    final numValue = int.tryParse(cleanValue);
+    if (numValue == null) return;
+    
+    final formatted = CurrencyFormatter.format(numValue.toDouble(), widget.provider.currency)
+        .replaceAll(RegExp(r'[^0-9.]'), '');
+        
+    if (_montoController.text != formatted) {
+      _montoController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
   }
 
   Future<void> _confirmar() async {
@@ -439,8 +429,9 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
               decoration: InputDecoration(
                 hintText: CurrencyFormatter.format(0, widget.provider.currency),
               ),
-              onChanged: (_) {
+              onChanged: (val) {
                 if (_errorMessage != null) setState(() => _errorMessage = null);
+                _formatMonto(val);
               },
             ),
 
@@ -511,9 +502,26 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
     super.dispose();
   }
 
+  void _formatMonto(String value) {
+    if (value.isEmpty) return;
+    final cleanValue = value.replaceAll('.', '');
+    final numValue = int.tryParse(cleanValue);
+    if (numValue == null) return;
+    
+    final formatted = CurrencyFormatter.format(numValue.toDouble(), widget.provider.currency)
+        .replaceAll(RegExp(r'[^0-9.]'), '');
+        
+    if (_nombreController.text != formatted) {
+      _nombreController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  }
+
   Future<void> _guardar() async {
     if (_nombreController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'El nombre no puede estar vacío.');
+      setState(() => _errorMessage = 'El monto no puede estar vacío.');
       return;
     }
 
@@ -561,17 +569,20 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
               ),
             ),
             const SizedBox(height: 20),
-            Text('Editar categoría',
+            Text('Monto de ingreso',
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
-            Text('Nombre', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+            Text('Monto disponible', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextField(
               controller: _nombreController,
-              textCapitalization: TextCapitalization.words,
+              keyboardType: TextInputType.number,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _guardar(),
-              onChanged: (_) { if (_errorMessage != null) setState(() => _errorMessage = null); },
+              onChanged: (val) {
+                if (_errorMessage != null) setState(() => _errorMessage = null);
+                _formatMonto(val);
+              },
             ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 8),

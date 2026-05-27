@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/thousands_formatter.dart'; // Tu formateador oficial de miles
 
 class DestinarScreen extends StatelessWidget {
   const DestinarScreen({super.key});
@@ -29,7 +30,7 @@ class DestinarScreen extends StatelessWidget {
         floatingActionButton: FloatingActionButton(
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
-          onPressed: () => _mostrarFormulario(context, provider, null),
+          onPressed: () => _mostrarFormulario(context, provider),
           child: const Icon(Icons.add),
         ),
         body: SafeArea(
@@ -82,7 +83,7 @@ class DestinarScreen extends StatelessWidget {
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  cross CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Distribuí tu dinero',
@@ -119,16 +120,6 @@ class DestinarScreen extends StatelessWidget {
                       tipo: 'gasto',
                       provider: provider,
                       ingresosDisponibles: ingresosConDinero,
-                      onDestinar: (destinoId, destinoNombre) =>
-                          _mostrarFormulario(
-                        context,
-                        provider,
-                        _DestinoInfo(
-                          id: destinoId,
-                          nombre: destinoNombre,
-                          tipo: 'gasto',
-                        ),
-                      ),
                     ),
 
                     const SizedBox(height: 24),
@@ -140,16 +131,6 @@ class DestinarScreen extends StatelessWidget {
                       tipo: 'ahorro',
                       provider: provider,
                       ingresosDisponibles: ingresosConDinero,
-                      onDestinar: (destinoId, destinoNombre) =>
-                          _mostrarFormulario(
-                        context,
-                        provider,
-                        _DestinoInfo(
-                          id: destinoId,
-                          nombre: destinoNombre,
-                          tipo: 'ahorro',
-                        ),
-                      ),
                     ),
                   ],
                 ),
@@ -161,19 +142,12 @@ class DestinarScreen extends StatelessWidget {
     );
   }
 
-  void _mostrarFormulario(
-    BuildContext context,
-    AppProvider provider,
-    _DestinoInfo? destino,
-  ) {
+  void _mostrarFormulario(BuildContext context, AppProvider provider) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _FormularioDestinar(
-        provider: provider,
-        destinoPreseleccionado: destino,
-      ),
+      builder: (_) => _FormularioDestinar(provider: provider),
     );
   }
 }
@@ -235,7 +209,6 @@ class _SeccionDestino extends StatelessWidget {
   final String tipo;
   final AppProvider provider;
   final List<QueryDocumentSnapshot> ingresosDisponibles;
-  final Function(String, String) onDestinar;
 
   const _SeccionDestino({
     required this.titulo,
@@ -243,7 +216,6 @@ class _SeccionDestino extends StatelessWidget {
     required this.tipo,
     required this.provider,
     required this.ingresosDisponibles,
-    required this.onDestinar,
   });
 
   @override
@@ -282,62 +254,79 @@ class _SeccionDestino extends StatelessWidget {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                nombre,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              nombre,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSurface,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                CurrencyFormatter.format(
-                                    disponible, provider.currency),
-                                style: TextStyle(
-                                  color: honey,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              if (tipo == 'ahorro' && meta > 0) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Meta: ${CurrencyFormatter.format(meta, provider.currency)}',
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                                const SizedBox(height: 4),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: meta > 0
-                                        ? (disponible / meta).clamp(0.0, 1.0)
-                                        : 0,
-                                    minHeight: 4,
+                            ),
+                            const SizedBox(height: 4),
+                            if (tipo == 'ahorro' && meta > 0) ...[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Meta: ${CurrencyFormatter.format(meta, provider.currency)}',
+                                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                                   ),
+                                  Text(
+                                    '${((disponible / meta) * 100).toStringAsFixed(0)}%',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: honey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: (disponible / meta).clamp(0.0, 1.0),
+                                  minHeight: 4,
+                                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                                  valueColor: AlwaysStoppedAnimation<Color>(honey),
                                 ),
-                              ],
+                              ),
+                            ] else ...[
+                              Text(
+                                'Fondo acumulado',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                  fontSize: 11,
+                                ),
+                              ),
                             ],
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: () => onDestinar(doc.id, nombre),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                          ),
-                          child: const Text('Destinar'),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        CurrencyFormatter.format(disponible, provider.currency),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: honey,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -351,26 +340,10 @@ class _SeccionDestino extends StatelessWidget {
 
 // ─── Formulario destinar ─────────────────────────────────────────────────────
 
-class _DestinoInfo {
-  final String id;
-  final String nombre;
-  final String tipo;
-
-  const _DestinoInfo({
-    required this.id,
-    required this.nombre,
-    required this.tipo,
-  });
-}
-
 class _FormularioDestinar extends StatefulWidget {
   final AppProvider provider;
-  final _DestinoInfo? destinoPreseleccionado;
 
-  const _FormularioDestinar({
-    required this.provider,
-    this.destinoPreseleccionado,
-  });
+  const _FormularioDestinar({required this.provider});
 
   @override
   State<_FormularioDestinar> createState() => _FormularioDestinarState();
@@ -391,16 +364,13 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
   @override
   void initState() {
     super.initState();
-    if (widget.destinoPreseleccionado != null) {
-      _destinoId = widget.destinoPreseleccionado!.id;
-      _destinoNombre = widget.destinoPreseleccionado!.nombre;
-    }
     _cargarDatos();
   }
 
   Future<void> _cargarDatos() async {
+    // Corregido: Cambio de 'ingresos' a 'ingreso' para coincidir con tu BD
     final snapshotIngresos = await widget.provider.firestoreService
-        .getCategoriasPorTipo('ingresos')
+        .getCategoriasPorTipo('ingreso')
         .first;
 
     final snapshotGastos = await widget.provider.firestoreService
@@ -410,6 +380,8 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
     final snapshotAhorros = await widget.provider.firestoreService
         .getCategoriasPorTipo('ahorro')
         .first;
+
+    if (!mounted) return;
 
     setState(() {
       _ingresos = snapshotIngresos.docs
@@ -698,6 +670,10 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
               keyboardType: TextInputType.number,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _confirmar(),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                ThousandsFormatter(), // Formateador en tiempo real incorporado
+              ],
               decoration: InputDecoration(
                 hintText:
                     CurrencyFormatter.format(0, widget.provider.currency),
