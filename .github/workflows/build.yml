@@ -23,14 +23,15 @@ jobs:
           flutter-version: '3.27.0'
           channel: 'stable'
 
-      # 👈 EL FIX MAESTRO: Se crea el entorno nativo ya con tu paquete correcto en MainActivity
+      # Se crea el entorno nativo limpio
       - name: Recrear entorno nativo limpio
         run: flutter create --org com.jplabs --project-name hivefi . --platforms=android
 
-      # 📦 PASO NUEVO Y SEGURO: Copia tu logo y le cambia el nombre al que Android espera por defecto
+      # Elimina el icono .png por defecto de Flutter para evitar duplicados y mete tu logo .webp
       - name: Inyectar logo de Hivefi como icono de la app
         run: |
           mkdir -p android/app/src/main/res/mipmap-hdpi
+          rm -f android/app/src/main/res/mipmap-hdpi/ic_launcher.png
           cp assets/images/logo_hivefi.webp android/app/src/main/res/mipmap-hdpi/ic_launcher.webp
           cp assets/images/logo_hivefi.webp android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp
 
