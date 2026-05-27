@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
 import '../utils/currency_formatter.dart';
@@ -10,9 +11,8 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
     final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
+    final provider = context.read<AppProvider>();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: theme.brightness == Brightness.dark
@@ -42,20 +42,16 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _BalanceCard(provider: provider),
+                // Cards de balance deslizables
+                _BalanceCarousel(provider: provider),
                 const SizedBox(height: 32),
+
+                // Grid hexagonal
                 _HexGrid(),
                 const SizedBox(height: 32),
-                Text(
-                  context.tr('savings'),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: honey,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _SavingsPlaceholder(),
+
+                // Mis ahorros
+                _SeccionAhorros(provider: provider),
               ],
             ),
           ),
@@ -65,75 +61,204 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _BalanceCard extends StatelessWidget {
+// ─── Carousel de balance ─────────────────────────────────────────────────────
+
+class _BalanceCarousel extends StatefulWidget {
   final AppProvider provider;
-  const _BalanceCard({required this.provider});
+  const _BalanceCarousel({required this.provider});
+
+  @override
+  State<_BalanceCarousel> createState() => _BalanceCarouselState();
+}
+
+class _BalanceCarouselState extends State<_BalanceCarousel> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
-    const double balance = 1260000;
-    const double progress = 0.28;
+    return StreamBuilder<QuerySnapshot>(
+      stream: widget.provider.firestoreService.getTodasLasCategorias(),
+      builder: (context, snapshot) {
+        double totalIngresos = 0;
+        double totalGastos = 0;
+        double totalAhorros = 0;
+        double totalDestinadoGastos = 0;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+        if (snapshot.hasData) {
+          for (final doc in snapshot.data!.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            final tipo = data['tipo'] as String;
+            final disponible = (data['disponible'] as num).toDouble();
+
+            if (tipo == 'ingreso') totalIngresos += disponible;
+            if (tipo == 'gasto') totalDestinadoGastos += disponible;
+            if (tipo == 'ahorro') totalAhorros += disponible;
+          }
+        }
+
+        // Balance general = todo incluyendo ahorros
+        final balanceGeneral = totalIngresos + totalAhorros - totalGastos;
+        // Balance disponible = sin ahorros
+        final balanceDisponible = totalIngresos - totalDestinadoGastos;
+
+        // Porcentaje balance general: qué % está disponible vs total
+        final progresoGeneral = balanceGeneral > 0
+            ? (balanceDisponible / balanceGeneral).clamp(0.0, 1.0)
+            : 0.0;
+
+        // Porcentaje balance disponible: qué % está destinado a gastos
+        final progresoDisponible = (totalIngresos > 0)
+            ? (totalDestinadoGastos / totalIngresos).clamp(0.0, 1.0)
+            : 0.0;
+
+        final currency = widget.provider.currency;
+
+        return Column(
           children: [
-            const SizedBox(height: 8),
+            SizedBox(
+              height: 200,
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (i) => setState(() => _currentPage = i),
+                children: [
+                  _BalanceCard(
+                    titulo: 'Balance general',
+                    monto: balanceGeneral,
+                    subtitulo: 'Saldo disponible',
+                    progreso: progresoGeneral.toDouble(),
+                    currency: currency,
+                  ),
+                  _BalanceCard(
+                    titulo: 'Balance disponible',
+                    monto: balanceDisponible,
+                    subtitulo: 'Dinero asignado a gastos',
+                    progreso: progresoDisponible.toDouble(),
+                    currency: currency,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(2, (i) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _currentPage == i ? 20 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: _currentPage == i
+                        ? const Color(0xFFF59E0B)
+                        : Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              }),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─── Card de balance ─────────────────────────────────────────────────────────
+
+class _BalanceCard extends StatelessWidget {
+  final String titulo;
+  final double monto;
+  final String subtitulo;
+  final double progreso;
+  final String currency;
+
+  static const Color _cardBg = Color(0xFF0F3A30);
+  static const Color _labelColor = Color(0xFF8FB5A8);
+  static const Color _trackColor = Color(0xFF1D5244);
+  static const Color _progressColor = Color(0xFFD1923D);
+
+  const _BalanceCard({
+    required this.titulo,
+    required this.monto,
+    required this.subtitulo,
+    required this.progreso,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final porcentaje = (progreso * 100).toInt();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              titulo.toUpperCase(),
+              style: const TextStyle(
+                color: _labelColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              CurrencyFormatter.format(monto, currency),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitulo,
+              style: const TextStyle(
+                color: Color(0xFFB0C9C2),
+                fontSize: 13,
+              ),
+            ),
+            const Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  context.tr('balanceGeneral'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
+                  '$porcentaje%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                Text(
-                  '${(progress * 100).toInt()}%',
-                  style: TextStyle(
-                    color: honey,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progreso,
+                    minHeight: 6,
+                    backgroundColor: _trackColor,
+                    valueColor: const AlwaysStoppedAnimation<Color>(_progressColor),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                CurrencyFormatter.format(balance, provider.currency),
-                style: theme.textTheme.headlineLarge?.copyWith(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                context.tr('assignedToExpenses'),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 10,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _CurrencySelector(),
           ],
         ),
       ),
@@ -141,33 +266,7 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-class _CurrencySelector extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        Text(context.tr('currency'), style: theme.textTheme.bodySmall),
-        const SizedBox(width: 12),
-        DropdownButton<String>(
-          value: provider.currency,
-          underline: const SizedBox(),
-          isDense: true,
-          items: const [
-            DropdownMenuItem(value: 'PYG', child: Text('GS - Guaraní')),
-            DropdownMenuItem(value: 'USD', child: Text('USD - Dólar')),
-            DropdownMenuItem(value: 'EUR', child: Text('EUR - Euro')),
-          ],
-          onChanged: (val) {
-            if (val != null) provider.setCurrency(val);
-          },
-        ),
-      ],
-    );
-  }
-}
+// ─── Grid Hexagonal ──────────────────────────────────────────────────────────
 
 class _HexGrid extends StatelessWidget {
   @override
@@ -222,15 +321,15 @@ class _HexButton extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(item.icon, color: onPrimary, size: 28),
+              Icon(item.icon, color: onPrimary, size: 26),
               const SizedBox(height: 6),
               Text(
                 item.label,
                 style: TextStyle(
                   color: onPrimary,
                   fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                  letterSpacing: 0.5,
+                  fontSize: 10,
+                  letterSpacing: 0.3,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -261,25 +360,170 @@ class _HexClipper extends CustomClipper<Path> {
   bool shouldReclip(_HexClipper old) => false;
 }
 
-class _SavingsPlaceholder extends StatelessWidget {
+// ─── Sección ahorros ─────────────────────────────────────────────────────────
+
+class _SeccionAhorros extends StatelessWidget {
+  final AppProvider provider;
+  const _SeccionAhorros({required this.provider});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        border: Border.all(color: honey, width: 2),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        'VIAJE',
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+    return StreamBuilder<QuerySnapshot>(
+      stream: provider.firestoreService.getCategoriasPorTipo('ahorro'),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox();
+        }
+
+        final docs = snapshot.data!.docs;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.tr('savings'),
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: honey,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...docs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final id = doc.id;
+              final nombre = data['nombre'] as String;
+              final disponible = (data['disponible'] as num).toDouble();
+              final meta = (data['meta'] as num?)?.toDouble() ?? 0;
+              final progreso =
+                  meta > 0 ? (disponible / meta).clamp(0.0, 1.0) : 0.0;
+              final porcentaje = (progreso * 100).toInt();
+              final metaAlcanzada = meta > 0 && disponible >= meta;
+
+              return GestureDetector(
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  '/reparto',
+                  arguments: {
+                    'origenId': id,
+                    'origenNombre': nombre,
+                    'origenDisponible': disponible,
+                    'origenTipo': 'ahorro',
+                  },
+                ),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F3A30),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            nombre.toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFF8FB5A8),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          if (metaAlcanzada)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Meta alcanzada',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        CurrencyFormatter.format(disponible, provider.currency),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      if (meta > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Meta: ${CurrencyFormatter.format(meta, provider.currency)}',
+                          style: const TextStyle(
+                            color: Color(0xFFB0C9C2),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '$porcentaje%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: progreso.toDouble(),
+                              minHeight: 6,
+                              backgroundColor: const Color(0xFF1D5244),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                metaAlcanzada
+                                    ? Colors.green
+                                    : const Color(0xFFD1923D),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Tocar para usar →',
+                            style: TextStyle(
+                              color: const Color(0xFF8FB5A8),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        );
+      },
     );
   }
 }
