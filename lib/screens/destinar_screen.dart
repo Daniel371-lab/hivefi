@@ -83,8 +83,8 @@ class DestinarScreen extends StatelessWidget {
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
                 child: Column(
-                  cross CrossAxisAlignment.start,
-                  children: [
+  crossAxisAlignment: CrossAxisAlignment.start, // <─── Con el parámetro bien nombrado
+  children: [
                     Text(
                       'Distribuí tu dinero',
                       style: theme.textTheme.headlineMedium?.copyWith(

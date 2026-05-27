@@ -630,7 +630,8 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                         fontSize: 13),
                 ),
               ),
-
+            ],
+			
               const SizedBox(height: 20),
 
               // Destino
