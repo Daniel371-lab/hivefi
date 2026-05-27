@@ -409,7 +409,10 @@ class _TarjetaCategoria extends StatelessWidget {
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
                 Navigator.pop(context);
-                await provider.firestoreService.updateCategoriaNombre(id, controller.text.trim());
+                await provider.firestoreService.editarCategoria(
+  categoriaId: id,
+  nuevoNombre: controller.text.trim(),
+);
               }
             },
             child: const Text('Guardar'),

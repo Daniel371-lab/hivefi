@@ -273,7 +273,7 @@ class _HistorialGastos extends StatelessWidget {
                   monto,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.only(vertical: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
