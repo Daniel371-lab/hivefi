@@ -43,6 +43,16 @@ class FirestoreService {
   Stream<QuerySnapshot> getTodasLasCategorias() {
     return _categorias.orderBy('creadoEn').snapshots();
   }
+  Stream<QuerySnapshot> getMovimientosPorCategoria({
+  required String categoriaId,
+  required String tipo,
+}) {
+  return _movimientos
+      .where('categoriaOrigenId', isEqualTo: categoriaId)
+      .where('tipo', isEqualTo: tipo)
+      .orderBy('fecha', descending: true)
+      .snapshots();
+}
 
   // Eliminar categoría
   Future<void> eliminarCategoria(String categoriaId, double disponible) async {
@@ -118,6 +128,46 @@ class FirestoreService {
 
     await batch.commit();
   }
+  
+// Editar gasto
+Future<void> editarGasto({
+  required String movimientoId,
+  required String categoriaId,
+  required double montoAnterior,
+  required double montoNuevo,
+}) async {
+  final batch = _db.batch();
+
+  final diferencia = montoNuevo - montoAnterior;
+
+  batch.update(_categorias.doc(categoriaId), {
+    'disponible': FieldValue.increment(-diferencia),
+  });
+
+  batch.update(_movimientos.doc(movimientoId), {
+    'monto': -montoNuevo,
+    'descripcion': 'Gasto en ${categoriaId}',
+  });
+
+  await batch.commit();
+}
+
+// Eliminar gasto y revertir
+Future<void> eliminarGasto({
+  required String movimientoId,
+  required String categoriaId,
+  required double monto,
+}) async {
+  final batch = _db.batch();
+
+  batch.update(_categorias.doc(categoriaId), {
+    'disponible': FieldValue.increment(monto),
+  });
+
+  batch.delete(_movimientos.doc(movimientoId));
+
+  await batch.commit();
+}
 
   // Destinar dinero
   Future<void> destinarDinero({

@@ -1,41 +1,448 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
-import '../utils/app_translator.dart';
 import '../utils/currency_formatter.dart';
 
-class DestinarScreen extends StatefulWidget {
+class DestinarScreen extends StatelessWidget {
   const DestinarScreen({super.key});
 
   @override
-  State<DestinarScreen> createState() => _DestinarScreenState();
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final provider = context.read<AppProvider>();
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: theme.brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              systemNavigationBarColor: Colors.transparent,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              systemNavigationBarColor: Colors.transparent,
+            ),
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(title: const Text('Destinar dinero')),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
+          onPressed: () => _mostrarFormulario(context, provider, null),
+          child: const Icon(Icons.add),
+        ),
+        body: SafeArea(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: provider.firestoreService.getCategoriasPorTipo('ingreso'),
+            builder: (context, snapshotIngresos) {
+              if (snapshotIngresos.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final ingresosConDinero = snapshotIngresos.data?.docs
+                      .where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return (data['disponible'] as num).toDouble() > 0;
+                      })
+                      .toList() ??
+                  [];
+
+              if (ingresosConDinero.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.account_balance_wallet_outlined,
+                          size: 48,
+                          color: theme.colorScheme.onSurface.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Sin dinero disponible',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Primero registrá un ingreso para poder destinar dinero.',
+                          style: theme.textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Distribuí tu dinero',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Asigná tu dinero a sobres de gasto o ahorro.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Resumen de ingresos disponibles
+                    ...ingresosConDinero.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final nombre = data['nombre'] as String;
+                      final disponible =
+                          (data['disponible'] as num).toDouble();
+                      return _ChipIngreso(
+                        nombre: nombre,
+                        disponible: disponible,
+                        currency: provider.currency,
+                      );
+                    }),
+
+                    const SizedBox(height: 24),
+
+                    // Sección gastos
+                    _SeccionDestino(
+                      titulo: 'Sobres de gasto',
+                      subtitulo: 'Asigná dinero para tus gastos del día a día.',
+                      tipo: 'gasto',
+                      provider: provider,
+                      ingresosDisponibles: ingresosConDinero,
+                      onDestinar: (destinoId, destinoNombre) =>
+                          _mostrarFormulario(
+                        context,
+                        provider,
+                        _DestinoInfo(
+                          id: destinoId,
+                          nombre: destinoNombre,
+                          tipo: 'gasto',
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Sección ahorros
+                    _SeccionDestino(
+                      titulo: 'Sobres de ahorro',
+                      subtitulo: 'Asigná dinero a tus metas de ahorro.',
+                      tipo: 'ahorro',
+                      provider: provider,
+                      ingresosDisponibles: ingresosConDinero,
+                      onDestinar: (destinoId, destinoNombre) =>
+                          _mostrarFormulario(
+                        context,
+                        provider,
+                        _DestinoInfo(
+                          id: destinoId,
+                          nombre: destinoNombre,
+                          tipo: 'ahorro',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _mostrarFormulario(
+    BuildContext context,
+    AppProvider provider,
+    _DestinoInfo? destino,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _FormularioDestinar(
+        provider: provider,
+        destinoPreseleccionado: destino,
+      ),
+    );
+  }
 }
 
-class _DestinarScreenState extends State<DestinarScreen> {
+// ─── Chip resumen ingreso ────────────────────────────────────────────────────
+
+class _ChipIngreso extends StatelessWidget {
+  final String nombre;
+  final double disponible;
+  final String currency;
+
+  const _ChipIngreso({
+    required this.nombre,
+    required this.disponible,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: honey.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: honey.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            nombre,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            CurrencyFormatter.format(disponible, currency),
+            style: TextStyle(
+              color: honey,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Sección destino ─────────────────────────────────────────────────────────
+
+class _SeccionDestino extends StatelessWidget {
+  final String titulo;
+  final String subtitulo;
+  final String tipo;
+  final AppProvider provider;
+  final List<QueryDocumentSnapshot> ingresosDisponibles;
+  final Function(String, String) onDestinar;
+
+  const _SeccionDestino({
+    required this.titulo,
+    required this.subtitulo,
+    required this.tipo,
+    required this.provider,
+    required this.ingresosDisponibles,
+    required this.onDestinar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: provider.firestoreService.getCategoriasPorTipo(tipo),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox();
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+
+        if (docs.isEmpty) return const SizedBox();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              titulo,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(subtitulo, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 12),
+            ...docs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final nombre = data['nombre'] as String;
+              final disponible = (data['disponible'] as num).toDouble();
+              final meta = (data['meta'] as num?)?.toDouble() ?? 0;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                nombre,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                CurrencyFormatter.format(
+                                    disponible, provider.currency),
+                                style: TextStyle(
+                                  color: honey,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              if (tipo == 'ahorro' && meta > 0) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Meta: ${CurrencyFormatter.format(meta, provider.currency)}',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                                const SizedBox(height: 4),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: meta > 0
+                                        ? (disponible / meta).clamp(0.0, 1.0)
+                                        : 0,
+                                    minHeight: 4,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: () => onDestinar(doc.id, nombre),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                          ),
+                          child: const Text('Destinar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─── Formulario destinar ─────────────────────────────────────────────────────
+
+class _DestinoInfo {
+  final String id;
+  final String nombre;
+  final String tipo;
+
+  const _DestinoInfo({
+    required this.id,
+    required this.nombre,
+    required this.tipo,
+  });
+}
+
+class _FormularioDestinar extends StatefulWidget {
+  final AppProvider provider;
+  final _DestinoInfo? destinoPreseleccionado;
+
+  const _FormularioDestinar({
+    required this.provider,
+    this.destinoPreseleccionado,
+  });
+
+  @override
+  State<_FormularioDestinar> createState() => _FormularioDestinarState();
+}
+
+class _FormularioDestinarState extends State<_FormularioDestinar> {
   final _montoController = TextEditingController();
-  String? _cuentaOrigenId;
-  String? _cuentaDestinoId;
+  String? _origenId;
+  String? _origenNombre;
+  double? _origenDisponible;
+  String? _destinoId;
+  String? _destinoNombre;
+  List<Map<String, dynamic>> _ingresos = [];
+  List<Map<String, dynamic>> _destinos = [];
   bool _isLoading = false;
   String? _errorMessage;
-
-  final List<Map<String, dynamic>> _cuentasIngreso = [
-    {'id': '1', 'nombre': 'SUELDO', 'disponible': 900000.0},
-    {'id': '2', 'nombre': 'FREELANCE', 'disponible': 300000.0},
-  ];
-
-  final List<Map<String, dynamic>> _cuentasDestino = [
-    {'id': '1', 'nombre': 'COMIDA'},
-    {'id': '2', 'nombre': 'OCIO'},
-    {'id': '3', 'nombre': 'TRANSPORTE'},
-    {'id': '4', 'nombre': 'VIAJE', 'esAhorro': true},
-  ];
 
   @override
   void initState() {
     super.initState();
-    _cuentaOrigenId = _cuentasIngreso.first['id'];
-    _cuentaDestinoId = _cuentasDestino.first['id'];
+    if (widget.destinoPreseleccionado != null) {
+      _destinoId = widget.destinoPreseleccionado!.id;
+      _destinoNombre = widget.destinoPreseleccionado!.nombre;
+    }
+    _cargarDatos();
+  }
+
+  Future<void> _cargarDatos() async {
+    final snapshotIngresos = await widget.provider.firestoreService
+        .getCategoriasPorTipo('ingresos')
+        .first;
+
+    final snapshotGastos = await widget.provider.firestoreService
+        .getCategoriasPorTipo('gasto')
+        .first;
+
+    final snapshotAhorros = await widget.provider.firestoreService
+        .getCategoriasPorTipo('ahorro')
+        .first;
+
+    setState(() {
+      _ingresos = snapshotIngresos.docs
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return {
+              'id': doc.id,
+              'nombre': data['nombre'],
+              'disponible': (data['disponible'] as num).toDouble(),
+            };
+          })
+          .where((c) => (c['disponible'] as double) > 0)
+          .toList();
+
+      _destinos = [
+        ...snapshotGastos.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'id': doc.id,
+            'nombre': data['nombre'],
+            'tipo': 'gasto',
+          };
+        }),
+        ...snapshotAhorros.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'id': doc.id,
+            'nombre': data['nombre'],
+            'tipo': 'ahorro',
+          };
+        }),
+      ];
+    });
   }
 
   @override
@@ -44,170 +451,296 @@ class _DestinarScreenState extends State<DestinarScreen> {
     super.dispose();
   }
 
-  double get _disponible {
-    final cat = _cuentasIngreso.firstWhere((c) => c['id'] == _cuentaOrigenId, orElse: () => _cuentasIngreso.first);
-    return cat['disponible'] as double;
-  }
+  Future<void> _confirmar() async {
+    if (_origenId == null) {
+      setState(() => _errorMessage = 'Seleccioná de dónde sale el dinero.');
+      return;
+    }
 
-  Future<void> _confirmarDestino() async {
-    if (_cuentaOrigenId == _cuentaDestinoId) { setState(() => _errorMessage = context.tr('sameAccountError')); return; }
-    if (_montoController.text.trim().isEmpty) { setState(() => _errorMessage = context.tr('emptyAmount')); return; }
-    final monto = double.tryParse(_montoController.text.replaceAll('.', '').replaceAll(',', '.'));
-    if (monto == null || monto <= 0) { setState(() => _errorMessage = context.tr('invalidAmount')); return; }
-    if (monto > _disponible) { setState(() => _errorMessage = context.tr('notEnoughFundsGeneral')); return; }
-    setState(() { _isLoading = true; _errorMessage = null; });
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    _montoController.clear();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('allocateRegistered')), backgroundColor: Theme.of(context).colorScheme.primary, behavior: SnackBarBehavior.floating));
+    if (_destinoId == null) {
+      setState(() => _errorMessage = 'Seleccioná a dónde va el dinero.');
+      return;
+    }
+
+    if (_montoController.text.trim().isEmpty) {
+      setState(() => _errorMessage = 'Ingresá un monto.');
+      return;
+    }
+
+    final monto = double.tryParse(
+      _montoController.text.replaceAll('.', '').replaceAll(',', '.'),
+    );
+
+    if (monto == null || monto <= 0) {
+      setState(() => _errorMessage = 'El monto no es válido.');
+      return;
+    }
+
+    if (_origenDisponible != null && monto > _origenDisponible!) {
+      setState(() => _errorMessage =
+          'No tenés suficiente dinero. Disponible: ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.provider.firestoreService.destinarDinero(
+        origenId: _origenId!,
+        origenNombre: _origenNombre!,
+        destinoId: _destinoId!,
+        destinoNombre: _destinoNombre!,
+        monto: monto,
+      );
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      setState(() => _errorMessage = 'Error al destinar el dinero.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
-    final currency = provider.currency;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: theme.brightness == Brightness.dark
-          ? SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent, systemNavigationBarColor: Colors.transparent)
-          : SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent, systemNavigationBarColor: Colors.transparent),
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (didPop) return;
-          if (_montoController.text.trim().isNotEmpty) {
-            showDialog(context: context, builder: (_) => AlertDialog(
-              title: Text(context.tr('exitWithoutSaving')),
-              content: Text(context.tr('unsavedAmount')),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('cancel'))),
-                TextButton(onPressed: () { Navigator.pop(context); Navigator.pop(context); }, child: Text(context.tr('confirm'))),
-              ],
-            ));
-          } else { Navigator.pop(context); }
-        },
-        child: Scaffold(
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(context.tr('allocateMoney'), style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w700, height: 1.1)),
-                  const SizedBox(height: 6),
-                  Text(context.tr('allocateSubtitle'), style: theme.textTheme.bodySmall),
-                  const SizedBox(height: 32),
-                  _StepLabel(numero: '1', texto: context.tr('whereMoneyFrom')),
-                  const SizedBox(height: 8),
-                  _DropdownCuentas(cuentas: _cuentasIngreso, seleccionada: _cuentaOrigenId, onChanged: (val) => setState(() => _cuentaOrigenId = val)),
-                  const SizedBox(height: 6),
-                  Align(alignment: Alignment.centerRight, child: Text('${context.tr('available')}: ${CurrencyFormatter.format(_disponible, currency)}', style: TextStyle(color: honey, fontWeight: FontWeight.w600, fontSize: 13))),
-                  const SizedBox(height: 24),
-                  _StepLabel(numero: '2', texto: context.tr('whereMoneyTo')),
-                  const SizedBox(height: 8),
-                  _DropdownCuentas(cuentas: _cuentasDestino, seleccionada: _cuentaDestinoId, onChanged: (val) => setState(() => _cuentaDestinoId = val), mostrarBadgeAhorro: true),
-                  const SizedBox(height: 24),
-                  _StepLabel(numero: '3', texto: context.tr('amountToAllocate')),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _montoController,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _confirmarDestino(),
-                    decoration: InputDecoration(hintText: CurrencyFormatter.format(0, currency)),
-                    onChanged: (_) { if (_errorMessage != null) setState(() => _errorMessage = null); },
-                  ),
-                  if (_errorMessage != null) ...[const SizedBox(height: 8), Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13))],
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: double.infinity, height: 52,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _confirmarDestino,
-                      child: _isLoading
-                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                          : Text(context.tr('confirmAllocate'), style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1)),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                ],
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StepLabel extends StatelessWidget {
-  final String numero;
-  final String texto;
-  const _StepLabel({required this.numero, required this.texto});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
-    return Row(
-      children: [
-        Container(
-          width: 22, height: 22,
-          decoration: BoxDecoration(color: honey, shape: BoxShape.circle),
-          child: Center(child: Text(numero, style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.w700, fontSize: 12))),
-        ),
-        const SizedBox(width: 10),
-        Expanded(child: Text(texto, style: theme.textTheme.bodySmall?.copyWith(color: honey, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
-      ],
-    );
-  }
-}
-
-class _DropdownCuentas extends StatelessWidget {
-  final List<Map<String, dynamic>> cuentas;
-  final String? seleccionada;
-  final ValueChanged<String?> onChanged;
-  final bool mostrarBadgeAhorro;
-
-  const _DropdownCuentas({required this.cuentas, required this.seleccionada, required this.onChanged, this.mostrarBadgeAhorro = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: theme.inputDecorationTheme.fillColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.brightness == Brightness.dark ? const Color(0xFF424242) : const Color(0xFFD7CCC8)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: seleccionada,
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
-          items: cuentas.map((c) => DropdownMenuItem(
-            value: c['id'] as String,
-            child: Row(
-              children: [
-                Text(c['nombre'] as String, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-                if (mostrarBadgeAhorro && c['esAhorro'] == true) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
-                    child: Text(context.tr('savingsLabel'), style: TextStyle(color: theme.colorScheme.primary, fontSize: 10, fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ],
+            const SizedBox(height: 20),
+            Text(
+              'Destinar dinero',
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
-          )).toList(),
-          onChanged: onChanged,
+            const SizedBox(height: 20),
+
+            // Origen
+            Text('¿De dónde sale el dinero?',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _ingresos.isEmpty
+                ? Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'No tenés ingresos con dinero disponible.',
+                      style: TextStyle(color: Colors.orange, fontSize: 13),
+                    ),
+                  )
+                : DropdownButtonFormField<String>(
+                    value: _origenId,
+                    hint: const Text('Seleccioná el ingreso'),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color:
+                                theme.colorScheme.surfaceContainerHighest),
+                      ),
+                    ),
+                    items: _ingresos
+                        .map((c) => DropdownMenuItem(
+                              value: c['id'] as String,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(c['nombre'] as String),
+                                  Text(
+                                    CurrencyFormatter.format(
+                                        c['disponible'] as double,
+                                        widget.provider.currency),
+                                    style: TextStyle(
+                                        color: honey,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ))
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _origenId = val;
+                        final cat =
+                            _ingresos.firstWhere((c) => c['id'] == val);
+                        _origenNombre = cat['nombre'] as String;
+                        _origenDisponible = cat['disponible'] as double;
+                      });
+                    },
+                  ),
+
+            if (_origenDisponible != null) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'Disponible: ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}',
+                  style: TextStyle(
+                      color: honey,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 20),
+
+            // Destino
+            Text('¿A qué sobre lo asignás?',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _destinos.isEmpty
+                ? Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'No tenés sobres de gasto ni ahorro creados.',
+                      style: TextStyle(color: Colors.orange, fontSize: 13),
+                    ),
+                  )
+                : DropdownButtonFormField<String>(
+                    value: _destinoId,
+                    hint: const Text('Seleccioná el destino'),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color:
+                                theme.colorScheme.surfaceContainerHighest),
+                      ),
+                    ),
+                    items: _destinos
+                        .map((c) => DropdownMenuItem(
+                              value: c['id'] as String,
+                              child: Row(
+                                children: [
+                                  Text(c['nombre'] as String),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: honey.withOpacity(0.15),
+                                      borderRadius:
+                                          BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      c['tipo'] == 'ahorro'
+                                          ? 'Ahorro'
+                                          : 'Gasto',
+                                      style: TextStyle(
+                                          color: honey,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ))
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _destinoId = val;
+                        _destinoNombre = _destinos
+                            .firstWhere((c) => c['id'] == val)['nombre']
+                            as String;
+                      });
+                    },
+                  ),
+
+            const SizedBox(height: 20),
+
+            // Monto
+            Text('Monto a destinar',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _montoController,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _confirmar(),
+              decoration: InputDecoration(
+                hintText:
+                    CurrencyFormatter.format(0, widget.provider.currency),
+              ),
+              onChanged: (_) {
+                if (_errorMessage != null) {
+                  setState(() => _errorMessage = null);
+                }
+              },
+            ),
+
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(_errorMessage!,
+                    style:
+                        const TextStyle(color: Colors.red, fontSize: 13)),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _ingresos.isEmpty || _isLoading ? null : _confirmar,
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white))
+                    : const Text('Confirmar destino'),
+              ),
+            ),
+          ],
         ),
       ),
     );
