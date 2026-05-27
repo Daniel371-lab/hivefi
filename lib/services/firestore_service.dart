@@ -7,7 +7,6 @@ class FirestoreService {
 
   String get _uid => _auth.currentUser!.uid;
 
-  // Referencias
   CollectionReference get _categorias =>
       _db.collection('users').doc(_uid).collection('categorias');
 
@@ -16,7 +15,6 @@ class FirestoreService {
 
   // ─── CATEGORÍAS ────────────────────────────────────────────────────────────
 
-  // Crear categoría
   Future<void> crearCategoria({
     required String nombre,
     required String tipo,
@@ -31,7 +29,6 @@ class FirestoreService {
     });
   }
 
-  // Obtener categorías por tipo
   Stream<QuerySnapshot> getCategoriasPorTipo(String tipo) {
     return _categorias
         .where('tipo', isEqualTo: tipo)
@@ -39,31 +36,27 @@ class FirestoreService {
         .snapshots();
   }
 
-  // Obtener todas las categorías
   Stream<QuerySnapshot> getTodasLasCategorias() {
     return _categorias.orderBy('creadoEn').snapshots();
   }
-  Stream<QuerySnapshot> getMovimientosPorCategoria({
-  required String categoriaId,
-  required String tipo,
-}) {
-  return _movimientos
-      .where('categoriaOrigenId', isEqualTo: categoriaId)
-      .where('tipo', isEqualTo: tipo)
-      .orderBy('fecha', descending: true)
-      .snapshots();
-}
 
-  // Eliminar categoría
+  Stream<QuerySnapshot> getMovimientosPorCategoria({
+    required String categoriaId,
+    required String tipo,
+  }) {
+    return _movimientos
+        .where('categoriaOrigenId', isEqualTo: categoriaId)
+        .where('tipo', isEqualTo: tipo)
+        .orderBy('fecha', descending: true)
+        .snapshots();
+  }
+
   Future<void> eliminarCategoria(String categoriaId, double disponible) async {
     final batch = _db.batch();
-
-    // Si tiene dinero, lo devolvemos al ingreso original (lógica simplificada)
     batch.delete(_categorias.doc(categoriaId));
     await batch.commit();
   }
 
-  // Editar categoría
   Future<void> editarCategoria({
     required String categoriaId,
     required String nuevoNombre,
@@ -75,20 +68,15 @@ class FirestoreService {
 
   // ─── MOVIMIENTOS ───────────────────────────────────────────────────────────
 
-  // Registrar ingreso
   Future<void> registrarIngreso({
     required String categoriaId,
     required String categoriaNombre,
     required double monto,
   }) async {
     final batch = _db.batch();
-
-    // Sumar al disponible de la categoría
     batch.update(_categorias.doc(categoriaId), {
       'disponible': FieldValue.increment(monto),
     });
-
-    // Guardar movimiento
     batch.set(_movimientos.doc(), {
       'tipo': 'ingreso',
       'categoriaOrigenId': categoriaId,
@@ -99,22 +87,18 @@ class FirestoreService {
       'descripcion': 'Carga a $categoriaNombre',
       'fecha': FieldValue.serverTimestamp(),
     });
-
     await batch.commit();
   }
 
-  // Registrar gasto
   Future<void> registrarGasto({
     required String categoriaId,
     required String categoriaNombre,
     required double monto,
   }) async {
     final batch = _db.batch();
-
     batch.update(_categorias.doc(categoriaId), {
       'disponible': FieldValue.increment(-monto),
     });
-
     batch.set(_movimientos.doc(), {
       'tipo': 'gasto',
       'categoriaOrigenId': categoriaId,
@@ -125,51 +109,40 @@ class FirestoreService {
       'descripcion': 'Gasto en $categoriaNombre',
       'fecha': FieldValue.serverTimestamp(),
     });
-
     await batch.commit();
   }
-  
-// Editar gasto
-Future<void> editarGasto({
-  required String movimientoId,
-  required String categoriaId,
-  required double montoAnterior,
-  required double montoNuevo,
-}) async {
-  final batch = _db.batch();
 
-  final diferencia = montoNuevo - montoAnterior;
+  Future<void> editarGasto({
+    required String movimientoId,
+    required String categoriaId,
+    required double montoAnterior,
+    required double montoNuevo,
+  }) async {
+    final batch = _db.batch();
+    final diferencia = montoNuevo - montoAnterior;
+    batch.update(_categorias.doc(categoriaId), {
+      'disponible': FieldValue.increment(-diferencia),
+    });
+    batch.update(_movimientos.doc(movimientoId), {
+      'monto': -montoNuevo,
+      'descripcion': 'Gasto en $categoriaId',
+    });
+    await batch.commit();
+  }
 
-  batch.update(_categorias.doc(categoriaId), {
-    'disponible': FieldValue.increment(-diferencia),
-  });
+  Future<void> eliminarGasto({
+    required String movimientoId,
+    required String categoriaId,
+    required double monto,
+  }) async {
+    final batch = _db.batch();
+    batch.update(_categorias.doc(categoriaId), {
+      'disponible': FieldValue.increment(monto),
+    });
+    batch.delete(_movimientos.doc(movimientoId));
+    await batch.commit();
+  }
 
-  batch.update(_movimientos.doc(movimientoId), {
-    'monto': -montoNuevo,
-    'descripcion': 'Gasto en ${categoriaId}',
-  });
-
-  await batch.commit();
-}
-
-// Eliminar gasto y revertir
-Future<void> eliminarGasto({
-  required String movimientoId,
-  required String categoriaId,
-  required double monto,
-}) async {
-  final batch = _db.batch();
-
-  batch.update(_categorias.doc(categoriaId), {
-    'disponible': FieldValue.increment(monto),
-  });
-
-  batch.delete(_movimientos.doc(movimientoId));
-
-  await batch.commit();
-}
-
-  // Destinar dinero
   Future<void> destinarDinero({
     required String origenId,
     required String origenNombre,
@@ -178,15 +151,12 @@ Future<void> eliminarGasto({
     required double monto,
   }) async {
     final batch = _db.batch();
-
     batch.update(_categorias.doc(origenId), {
       'disponible': FieldValue.increment(-monto),
     });
-
     batch.update(_categorias.doc(destinoId), {
       'disponible': FieldValue.increment(monto),
     });
-
     batch.set(_movimientos.doc(), {
       'tipo': 'destinar',
       'categoriaOrigenId': origenId,
@@ -197,11 +167,9 @@ Future<void> eliminarGasto({
       'descripcion': 'Destino: $origenNombre → $destinoNombre',
       'fecha': FieldValue.serverTimestamp(),
     });
-
     await batch.commit();
   }
 
-  // Reparto entre sobres
   Future<void> repartirDinero({
     required String origenId,
     required String origenNombre,
@@ -210,15 +178,12 @@ Future<void> eliminarGasto({
     required double monto,
   }) async {
     final batch = _db.batch();
-
     batch.update(_categorias.doc(origenId), {
       'disponible': FieldValue.increment(-monto),
     });
-
     batch.update(_categorias.doc(destinoId), {
       'disponible': FieldValue.increment(monto),
     });
-
     batch.set(_movimientos.doc(), {
       'tipo': 'reparto',
       'categoriaOrigenId': origenId,
@@ -229,29 +194,25 @@ Future<void> eliminarGasto({
       'descripcion': 'Reparto: $origenNombre → $destinoNombre',
       'fecha': FieldValue.serverTimestamp(),
     });
-
     await batch.commit();
   }
 
-  // Obtener movimientos
   Stream<QuerySnapshot> getMovimientos() {
     return _movimientos
         .orderBy('fecha', descending: true)
         .snapshots();
   }
 
-  // Eliminar movimiento
   Future<void> eliminarMovimiento(String movimientoId) async {
     await _movimientos.doc(movimientoId).delete();
   }
 
   // ─── BALANCE ───────────────────────────────────────────────────────────────
 
-  // Stream del balance general
   Stream<Map<String, double>> getBalance() {
     return _categorias.snapshots().map((snapshot) {
-      double totalReal = 0;
-      double totalOperativo = 0;
+      double totalIngresado = 0;
+      double totalDestinadoGastos = 0;
       double totalAhorros = 0;
 
       for (final doc in snapshot.docs) {
@@ -259,19 +220,27 @@ Future<void> eliminarGasto({
         final disponible = (data['disponible'] as num).toDouble();
         final tipo = data['tipo'] as String;
 
-        totalReal += disponible;
-
-        if (tipo == 'ahorro') {
-          totalAhorros += disponible;
-        } else {
-          totalOperativo += disponible;
-        }
+        if (tipo == 'ingreso') totalIngresado += disponible;
+        if (tipo == 'gasto') totalDestinadoGastos += disponible;
+        if (tipo == 'ahorro') totalAhorros += disponible;
       }
 
+      final balanceGeneral = totalIngresado + totalDestinadoGastos + totalAhorros;
+      final balanceDisponible = totalIngresado + totalDestinadoGastos;
+
+      final progresoGeneral = balanceGeneral > 0
+          ? (balanceDisponible / balanceGeneral).clamp(0.0, 1.0)
+          : 0.0;
+
+      final progresoDisponible = balanceDisponible > 0
+          ? (totalDestinadoGastos / balanceDisponible).clamp(0.0, 1.0)
+          : 0.0;
+
       return {
-        'totalReal': totalReal,
-        'totalOperativo': totalOperativo,
-        'totalAhorros': totalAhorros,
+        'balanceGeneral': balanceGeneral,
+        'balanceDisponible': balanceDisponible,
+        'progresoGeneral': progresoGeneral,
+        'progresoDisponible': progresoDisponible,
       };
     });
   }

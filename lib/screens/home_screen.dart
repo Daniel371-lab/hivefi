@@ -42,15 +42,10 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Cards de balance deslizables
                 _BalanceCarousel(provider: provider),
                 const SizedBox(height: 32),
-
-                // Grid hexagonal
                 _HexGrid(),
                 const SizedBox(height: 32),
-
-                // Mis ahorros
                 _SeccionAhorros(provider: provider),
               ],
             ),
@@ -83,41 +78,14 @@ class _BalanceCarouselState extends State<_BalanceCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: widget.provider.firestoreService.getTodasLasCategorias(),
+    return StreamBuilder<Map<String, double>>(
+      stream: widget.provider.firestoreService.getBalance(),
       builder: (context, snapshot) {
-        double totalIngresos = 0;
-        double totalGastos = 0;
-        double totalAhorros = 0;
-        double totalDestinadoGastos = 0;
-
-        if (snapshot.hasData) {
-          for (final doc in snapshot.data!.docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            final tipo = data['tipo'] as String;
-            final disponible = (data['disponible'] as num).toDouble();
-
-            if (tipo == 'ingreso') totalIngresos += disponible;
-            if (tipo == 'gasto') totalDestinadoGastos += disponible;
-            if (tipo == 'ahorro') totalAhorros += disponible;
-          }
-        }
-
-        // Balance general = todo incluyendo ahorros
-        final balanceGeneral = totalIngresos + totalAhorros - totalGastos;
-        // Balance disponible = sin ahorros
-        final balanceDisponible = totalIngresos - totalDestinadoGastos;
-
-        // Porcentaje balance general: qué % está disponible vs total
-        final progresoGeneral = balanceGeneral > 0
-            ? (balanceDisponible / balanceGeneral).clamp(0.0, 1.0)
-            : 0.0;
-
-        // Porcentaje balance disponible: qué % está destinado a gastos
-        final progresoDisponible = (totalIngresos > 0)
-            ? (totalDestinadoGastos / totalIngresos).clamp(0.0, 1.0)
-            : 0.0;
-
+        final data = snapshot.data;
+        final balanceGeneral = data?['balanceGeneral'] ?? 0;
+        final balanceDisponible = data?['balanceDisponible'] ?? 0;
+        final progresoGeneral = data?['progresoGeneral'] ?? 0;
+        final progresoDisponible = data?['progresoDisponible'] ?? 0;
         final currency = widget.provider.currency;
 
         return Column(
@@ -132,14 +100,14 @@ class _BalanceCarouselState extends State<_BalanceCarousel> {
                     titulo: 'Balance general',
                     monto: balanceGeneral,
                     subtitulo: 'Saldo disponible',
-                    progreso: progresoGeneral.toDouble(),
+                    progreso: progresoGeneral,
                     currency: currency,
                   ),
                   _BalanceCard(
                     titulo: 'Balance disponible',
                     monto: balanceDisponible,
                     subtitulo: 'Dinero asignado a gastos',
-                    progreso: progresoDisponible.toDouble(),
+                    progreso: progresoDisponible,
                     currency: currency,
                   ),
                 ],
@@ -398,22 +366,26 @@ class _SeccionAhorros extends StatelessWidget {
               final nombre = data['nombre'] as String;
               final disponible = (data['disponible'] as num).toDouble();
               final meta = (data['meta'] as num?)?.toDouble() ?? 0;
-              final progreso =
-                  meta > 0 ? (disponible / meta).clamp(0.0, 1.0) : 0.0;
+              final tieneMeta = meta > 0;
+              final progreso = tieneMeta
+                  ? (disponible / meta).clamp(0.0, 1.0)
+                  : 0.0;
               final porcentaje = (progreso * 100).toInt();
-              final metaAlcanzada = meta > 0 && disponible >= meta;
+              final metaAlcanzada = tieneMeta && disponible >= meta;
 
               return GestureDetector(
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  '/reparto',
-                  arguments: {
-                    'origenId': id,
-                    'origenNombre': nombre,
-                    'origenDisponible': disponible,
-                    'origenTipo': 'ahorro',
-                  },
-                ),
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/reparto',
+                    arguments: {
+                      'origenId': id,
+                      'origenNombre': nombre,
+                      'origenDisponible': disponible,
+                      'origenTipo': 'ahorro',
+                    },
+                  );
+                },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -465,7 +437,7 @@ class _SeccionAhorros extends StatelessWidget {
                           letterSpacing: -0.5,
                         ),
                       ),
-                      if (meta > 0) ...[
+                      if (tieneMeta) ...[
                         const SizedBox(height: 2),
                         Text(
                           'Meta: ${CurrencyFormatter.format(meta, provider.currency)}',
@@ -474,47 +446,45 @@ class _SeccionAhorros extends StatelessWidget {
                             fontSize: 12,
                           ),
                         ),
-                      ],
-                      const SizedBox(height: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '$porcentaje%',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: progreso.toDouble(),
-                              minHeight: 6,
-                              backgroundColor: const Color(0xFF1D5244),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                metaAlcanzada
-                                    ? Colors.green
-                                    : const Color(0xFFD1923D),
+                        const SizedBox(height: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '$porcentaje%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Tocar para usar →',
-                            style: TextStyle(
-                              color: const Color(0xFF8FB5A8),
-                              fontSize: 11,
+                            const SizedBox(height: 4),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: progreso.toDouble(),
+                                minHeight: 6,
+                                backgroundColor: const Color(0xFF1D5244),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  metaAlcanzada
+                                      ? Colors.green
+                                      : const Color(0xFFD1923D),
+                                ),
+                              ),
                             ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          'Tocar para usar →',
+                          style: TextStyle(
+                            color: Color(0xFF8FB5A8),
+                            fontSize: 11,
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
