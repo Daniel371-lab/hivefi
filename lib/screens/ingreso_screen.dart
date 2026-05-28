@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/thousands_formatter.dart';
 
 class IngresoScreen extends StatelessWidget {
   const IngresoScreen({super.key});
@@ -356,11 +357,9 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
       return;
     }
 
-    final monto = double.tryParse(
-      _montoController.text.replaceAll('.', '').replaceAll(',', '.'),
-    );
+    final monto = CurrencyFormatter.parseAmount(_montoController.text, widget.provider.currency);
 
-    if (monto == null || monto <= 0) {
+    if (monto <= 0) {
       setState(() => _errorMessage = 'El monto no es válido.');
       return;
     }
@@ -595,7 +594,6 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
               textInputAction: TextInputAction.done,
               inputFormatters: [
                 ThousandsFormatter(currencyCode: widget.provider.currency),
-              ],
               onSubmitted: (_) => _guardar(),
               onChanged: (val) {
                 if (_errorMessage != null) setState(() => _errorMessage = null);

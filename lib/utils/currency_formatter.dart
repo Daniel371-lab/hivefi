@@ -3,6 +3,19 @@ import 'package:intl/intl.dart';
 class CurrencyFormatter {
   CurrencyFormatter._();
 
+  static const _noDecimalCurrencies = {'PYG', 'CLP', 'COP', 'CRC'};
+
+  static double parseAmount(String text, String currencyCode) {
+    if (text.isEmpty) return 0;
+    if (_noDecimalCurrencies.contains(currencyCode)) {
+      // Separador de miles es punto, sin decimales
+      return double.tryParse(text.replaceAll('.', '')) ?? 0;
+    } else {
+      // Separador de miles es coma, decimal es punto
+      return double.tryParse(text.replaceAll(',', '')) ?? 0;
+    }
+  }
+
   static String format(double amount, String currencyCode) {
     switch (currencyCode) {
       case 'PYG':

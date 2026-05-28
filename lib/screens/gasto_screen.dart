@@ -457,9 +457,9 @@ class _FormularioGastoState extends State<_FormularioGasto> {
       return;
     }
 
-    final monto = double.tryParse(_montoController.text.replaceAll('.', '').replaceAll(',', '.'));
+    final monto = CurrencyFormatter.parseAmount(_montoController.text, widget.provider.currency);
 
-    if (monto == null || monto <= 0) {
+    if (monto <= 0) {
       setState(() => _errorMessage = 'El monto no es válido.');
       return;
     }
@@ -586,7 +586,6 @@ class _FormularioGastoState extends State<_FormularioGasto> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _confirmar(),
               inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
                 ThousandsFormatter(currencyCode: widget.provider.currency),
               ],
               decoration: InputDecoration(
@@ -672,9 +671,9 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
       return;
     }
 
-    final nuevoMonto = double.tryParse(_montoController.text.replaceAll('.', '').replaceAll(',', '.'));
+    final nuevoMonto = CurrencyFormatter.parseAmount(_montoController.text, widget.provider.currency);
 
-    if (nuevoMonto == null || nuevoMonto <= 0) {
+    if (nuevoMonto <= 0) {
       setState(() => _errorMessage = 'El monto no es válido.');
       return;
     }
@@ -737,7 +736,6 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _guardar(),
               inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
                 ThousandsFormatter(currencyCode: widget.provider.currency),
               ],
               onChanged: (_) {

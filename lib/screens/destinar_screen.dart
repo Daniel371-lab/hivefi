@@ -439,11 +439,10 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
       return;
     }
 
-    final monto = double.tryParse(
-      _montoController.text.replaceAll('.', '').replaceAll(',', '.'),
+    final monto = CurrencyFormatter.parseAmount(_montoController.text, widget.provider.currency);
     );
 
-    if (monto == null || monto <= 0) {
+    if (monto <= 0) {
       setState(() => _errorMessage = 'El monto no es válido.');
       return;
     }
@@ -671,7 +670,6 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _confirmar(),
               inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
                 ThousandsFormatter(currencyCode: widget.provider.currency), // Formateador en tiempo real incorporado
               ],
               decoration: InputDecoration(
