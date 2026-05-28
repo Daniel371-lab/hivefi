@@ -732,7 +732,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 onSubmitted: (_) => _confirmar(),
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  ThousandsFormatter(currencyCode: provider.currency),
+                  ThousandsFormatter(currencyCode: widget.provider.currency),
                 ],
                 decoration: InputDecoration(
                   hintText:

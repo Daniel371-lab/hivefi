@@ -521,6 +521,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
   final _nombreController = TextEditingController();
   final _metaController = TextEditingController();
   late String _tipo;
+  late String _currency;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -528,6 +529,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
   void initState() {
     super.initState();
     _tipo = widget.tipoInicial;
+    _currency = context.read<AppProvider>().currency;
   }
 
   @override
@@ -688,7 +690,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
                 textInputAction: TextInputAction.done,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  ThousandsFormatter(currencyCode: provider.currency), // <-- Aquí agregamos tu formateador de miles
+                  ThousandsFormatter(currencyCode: _currency), // <-- Aquí agregamos tu formateador de miles
                 ],
                 decoration: const InputDecoration(hintText: 'Ej: 1.000.000'), // Actualicé el hintText para que se vea con el separador
                 onSubmitted: (_) => _crear(),

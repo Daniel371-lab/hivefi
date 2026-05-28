@@ -587,7 +587,7 @@ class _FormularioGastoState extends State<_FormularioGasto> {
               onSubmitted: (_) => _confirmar(),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
-                ThousandsFormatter(currencyCode: provider.currency),
+                ThousandsFormatter(currencyCode: widget.provider.currency),
               ],
               decoration: InputDecoration(
                 hintText: CurrencyFormatter.format(0, widget.provider.currency),
@@ -738,7 +738,7 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
               onSubmitted: (_) => _guardar(),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
-                ThousandsFormatter(currencyCode: provider.currency),
+                ThousandsFormatter(currencyCode: widget.provider.currency),
               ],
               onChanged: (_) {
                 if (_errorMessage != null) setState(() => _errorMessage = null);
