@@ -663,6 +663,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
               textInputAction: _tipo == 'ahorro'
                   ? TextInputAction.next
                   : TextInputAction.done,
+              maxLength: 15,
               decoration:
                   const InputDecoration(hintText: 'Ej: Sueldo, Comida, Viaje...'),
               onChanged: (_) {
@@ -687,7 +688,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
                 textInputAction: TextInputAction.done,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  ThousandsFormatter(), // <-- Aquí agregamos tu formateador de miles
+                  ThousandsFormatter(currencyCode: provider.currency), // <-- Aquí agregamos tu formateador de miles
                 ],
                 decoration: const InputDecoration(hintText: 'Ej: 1.000.000'), // Actualicé el hintText para que se vea con el separador
                 onSubmitted: (_) => _crear(),

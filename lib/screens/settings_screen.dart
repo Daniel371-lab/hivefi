@@ -120,6 +120,9 @@ class SettingsScreen extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(context);
               await provider.authService.logout();
+              if (context.mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+              }
             },
             child: Text(context.tr('confirm')),
           ),
@@ -148,6 +151,9 @@ class SettingsScreen extends StatelessWidget {
               Navigator.pop(context);
               try {
                 await provider.authService.deleteAccount();
+                if (context.mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+                }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -290,6 +296,7 @@ class _ProfileSheetState extends State<_ProfileSheet> {
           TextField(
             controller: _nameController,
             textCapitalization: TextCapitalization.words,
+            maxLength: 20,
             decoration: InputDecoration(
               hintText: context.tr('nameHint'),
               errorText: _nameError,
@@ -448,6 +455,12 @@ class _CurrencyTile extends StatelessWidget {
     ('UYU', 'Peso uruguayo — UYU'),
     ('BOB', 'Boliviano — BOB'),
     ('VES', 'Bolívar venezolano — VES'),
+    ('MXN', 'Peso mexicano — MXN'),
+    ('GTQ', 'Quetzal — GTQ'),
+    ('HNL', 'Lempira — HNL'),
+    ('NIO', 'Córdoba — NIO'),
+    ('CRC', 'Colón — CRC'),
+    ('DOP', 'Peso dominicano — DOP'),
     ('USD', 'Dólar — USD'),
     ('EUR', 'Euro — EUR'),
   ];

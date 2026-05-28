@@ -147,8 +147,7 @@ class IngresoScreen extends StatelessWidget {
 }
 
 // ─── Tarjeta de ingreso ──────────────────────────────────────────────────────
-
-class _TarjetaIngreso extends StatelessWidget {
+class _TarjetaIngreso extends StatefulWidget {
   final String id;
   final String nombre;
   final double disponible;
@@ -164,6 +163,30 @@ class _TarjetaIngreso extends StatelessWidget {
     required this.onAgregar,
     required this.onEditar,
   });
+
+  @override
+  State<_TarjetaIngreso> createState() => _TarjetaIngresoState();
+}
+
+class _TarjetaIngresoState extends State<_TarjetaIngreso> {
+  bool _tieneMovimientos = false;
+  bool _chequeado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarMovimientos();
+  }
+
+  Future<void> _verificarMovimientos() async {
+    final provider = context.read<AppProvider>();
+    final tiene = await provider.firestoreService
+        .categoriaIngresaTieneMovimientos(widget.id);
+    if (mounted) setState(() {
+      _tieneMovimientos = tiene;
+      _chequeado = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +212,7 @@ class _TarjetaIngreso extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        nombre,
+                        widget.nombre,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                           color: theme.colorScheme.onSurface.withOpacity(0.7),
@@ -197,7 +220,7 @@ class _TarjetaIngreso extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        CurrencyFormatter.format(disponible, currency),
+                        CurrencyFormatter.format(widget.disponible, widget.currency),
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: honey,
@@ -207,14 +230,36 @@ class _TarjetaIngreso extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  color: theme.colorScheme.onSurface.withOpacity(0.5),
-                  onPressed: onEditar,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 20,
-                ),
+                if (_chequeado)
+                  IconButton(
+                    icon: Icon(
+                      _tieneMovimientos
+                          ? Icons.edit_off_outlined
+                          : Icons.edit_outlined,
+                      size: 18,
+                    ),
+                    color: _tieneMovimientos
+                        ? theme.colorScheme.onSurface.withOpacity(0.25)
+                        : theme.colorScheme.onSurface.withOpacity(0.5),
+                    onPressed: _tieneMovimientos
+                        ? () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                  'No se puede editar: esta cuenta ya tiene movimientos registrados.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            );
+                          }
+                        : widget.onEditar,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    splashRadius: 20,
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -222,7 +267,7 @@ class _TarjetaIngreso extends StatelessWidget {
               width: double.infinity,
               height: 36,
               child: ElevatedButton.icon(
-                onPressed: onAgregar,
+                onPressed: widget.onAgregar,
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Agregar ingreso', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(

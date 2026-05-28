@@ -32,7 +32,7 @@ class AppTheme {
         scaffoldBackgroundColor: _bgLight,
 
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
+          backgroundColor: const Color(0xFFF0EFED),
           elevation: 0,
           scrolledUnderElevation: 0,
           iconTheme: IconThemeData(color: _textLight),

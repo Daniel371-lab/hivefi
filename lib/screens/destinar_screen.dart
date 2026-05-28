@@ -672,7 +672,7 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
               onSubmitted: (_) => _confirmar(),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
-                ThousandsFormatter(), // Formateador en tiempo real incorporado
+                ThousandsFormatter(currencyCode: provider.currency), // Formateador en tiempo real incorporado
               ],
               decoration: InputDecoration(
                 hintText:

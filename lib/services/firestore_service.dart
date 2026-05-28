@@ -207,6 +207,15 @@ class FirestoreService {
     await _movimientos.doc(movimientoId).delete();
   }
 
+  Future<bool> categoriaIngresaTieneMovimientos(String categoriaId) async {
+    final snapshot = await _movimientos
+        .where('categoriaOrigenId', isEqualTo: categoriaId)
+        .where('tipo', isEqualTo: 'ingreso')
+        .limit(1)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
   // ─── BALANCE ───────────────────────────────────────────────────────────────
 
   Stream<Map<String, double>> getBalance() {

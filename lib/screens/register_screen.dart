@@ -50,6 +50,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (_passwordController.text.length > 15) {
+      setState(() => _errorMessage = 'La contraseña no puede superar los 15 caracteres.');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -118,6 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _nameController,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
+                  maxLength: 20,
                   decoration: const InputDecoration(hintText: 'Tu nombre'),
                   onChanged: (_) { if (_errorMessage != null) setState(() => _errorMessage = null); },
                 ),
@@ -154,6 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
+                  maxLength: 15,
                   decoration: InputDecoration(
                     hintText: '••••••••',
                     suffixIcon: IconButton(
@@ -178,6 +185,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirm,
                   textInputAction: TextInputAction.done,
+                  maxLength: 15,
                   onSubmitted: (_) => _register(),
                   decoration: InputDecoration(
                     hintText: '••••••••',
