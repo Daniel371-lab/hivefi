@@ -16,6 +16,7 @@ const Map<String, Map<String, String>> _translations = {
     'exitWithoutSaving': '¿Salir sin guardar?',
     'unsavedAmount': 'Tenés un monto sin confirmar.',
     'unsavedChanges': 'Tenés cambios sin guardar.',
+    'genericError': 'Ocurrió un error. Intentá de nuevo.',
 
     // Home
     'balanceGeneral': 'BALANCE GENERAL',
@@ -30,10 +31,20 @@ const Map<String, Map<String, String>> _translations = {
     'reparto': 'REPARTO',
     'history': 'HISTORIAL',
 
-    // Settings
+    // Settings — secciones
+    'sectionAccount': 'CUENTA',
+    'sectionAppearance': 'APARIENCIA',
+    'sectionBenefits': 'BENEFICIOS',
+    'sectionAbout': 'ACERCA DE',
+    'sectionSession': 'SESIÓN',
+
+    // Settings — items
     'settings': 'Ajustes',
     'profile': 'Perfil',
     'darkMode': 'Modo oscuro',
+    'themeSystem': 'Sistema',
+    'themeLight': 'Claro',
+    'themeDark': 'Oscuro',
     'language': 'Idioma',
     'donate': 'Donar',
     'adFreeMode': 'Sin anuncios por 6 horas',
@@ -41,7 +52,21 @@ const Map<String, Map<String, String>> _translations = {
     'logout': 'Cerrar sesión',
     'deleteAccount': 'Eliminar cuenta',
     'logoutConfirm': '¿Seguro que querés cerrar sesión?',
-    'deleteAccountConfirm': 'Esta acción es irreversible. ¿Querés eliminar tu cuenta?',
+    'deleteAccountConfirm':
+        'Esta acción es irreversible. Se borrarán todos tus datos y perderás tu beneficio Premium si lo adquiriste. ¿Querés continuar?',
+    'aboutApp': 'Acerca de Hivefi',
+    'appVersion': 'Versión 1.0.0',
+    'madeBy': 'Desarrollado por',
+
+    // Perfil
+    'saveName': 'GUARDAR NOMBRE',
+    'nameEmpty': 'El nombre no puede estar vacío.',
+    'nameUpdated': 'Nombre actualizado correctamente.',
+    'changePassword': 'Cambiar contraseña',
+    'changePasswordDesc':
+        'Te enviaremos un correo a tu dirección registrada con un enlace para cambiar tu contraseña.',
+    'sendResetEmail': 'ENVIAR CORREO DE RESTABLECIMIENTO',
+    'resetSent': 'Correo enviado. Revisá tu bandeja de entrada.',
 
     // Login
     'email': 'CORREO ELECTRÓNICO',
@@ -128,7 +153,8 @@ const Map<String, Map<String, String>> _translations = {
     'noMovements': 'Sin movimientos.',
     'editMovement': 'Editar movimiento',
     'cancelMovement': 'Anular movimiento',
-    'longPressHint': 'Mantené presionado un movimiento para editarlo o anularlo.',
+    'longPressHint':
+        'Mantené presionado un movimiento para editarlo o anularlo.',
 
     // Errores generales
     'emptyAmount': 'Ingresá un monto.',
@@ -142,6 +168,7 @@ const Map<String, Map<String, String>> _translations = {
     'exitWithoutSaving': 'Exit without saving?',
     'unsavedAmount': 'You have an unconfirmed amount.',
     'unsavedChanges': 'You have unsaved changes.',
+    'genericError': 'An error occurred. Please try again.',
 
     // Home
     'balanceGeneral': 'GENERAL BALANCE',
@@ -156,10 +183,20 @@ const Map<String, Map<String, String>> _translations = {
     'reparto': 'SPLIT',
     'history': 'HISTORY',
 
-    // Settings
+    // Settings — secciones
+    'sectionAccount': 'ACCOUNT',
+    'sectionAppearance': 'APPEARANCE',
+    'sectionBenefits': 'BENEFITS',
+    'sectionAbout': 'ABOUT',
+    'sectionSession': 'SESSION',
+
+    // Settings — items
     'settings': 'Settings',
     'profile': 'Profile',
     'darkMode': 'Dark mode',
+    'themeSystem': 'System',
+    'themeLight': 'Light',
+    'themeDark': 'Dark',
     'language': 'Language',
     'donate': 'Donate',
     'adFreeMode': 'Ad-free for 6 hours',
@@ -167,7 +204,21 @@ const Map<String, Map<String, String>> _translations = {
     'logout': 'Log out',
     'deleteAccount': 'Delete account',
     'logoutConfirm': 'Are you sure you want to log out?',
-    'deleteAccountConfirm': 'This action is irreversible. Delete your account?',
+    'deleteAccountConfirm':
+        'This action is irreversible. All your data will be deleted and you will lose your Premium benefit if you purchased it. Continue?',
+    'aboutApp': 'About Hivefi',
+    'appVersion': 'Version 1.0.0',
+    'madeBy': 'Developed by',
+
+    // Perfil
+    'saveName': 'SAVE NAME',
+    'nameEmpty': 'Name cannot be empty.',
+    'nameUpdated': 'Name updated successfully.',
+    'changePassword': 'Change password',
+    'changePasswordDesc':
+        'We will send an email to your registered address with a link to change your password.',
+    'sendResetEmail': 'SEND RESET EMAIL',
+    'resetSent': 'Email sent. Check your inbox.',
 
     // Login
     'email': 'EMAIL',
@@ -223,7 +274,8 @@ const Map<String, Map<String, String>> _translations = {
 
     // Destinar
     'allocateMoney': 'ALLOCATE\nMONEY',
-    'allocateSubtitle': 'Distribute your income into spending or savings envelopes.',
+    'allocateSubtitle':
+        'Distribute your income into spending or savings envelopes.',
     'whereMoneyFrom': 'WHERE DOES THE MONEY COME FROM?',
     'whereMoneyTo': 'WHICH ENVELOPE DO YOU ASSIGN IT TO?',
     'amountToAllocate': 'AMOUNT TO ALLOCATE',
@@ -254,7 +306,8 @@ const Map<String, Map<String, String>> _translations = {
     'noMovements': 'No movements.',
     'editMovement': 'Edit movement',
     'cancelMovement': 'Cancel movement',
-    'longPressHint': 'Long press a movement to edit or cancel it.',
+    'longPressHint':
+        'Long press a movement to edit or cancel it.',
 
     // Errores generales
     'emptyAmount': 'Enter an amount.',

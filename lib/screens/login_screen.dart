@@ -103,18 +103,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 Center(
                   child: Column(
                     children: [
-                      Container(
+                      Image.asset(
+                        'assets/images/logo_hivefi.webp',
                         width: 72,
                         height: 72,
-                        decoration: BoxDecoration(
-                          color: honey,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Icon(
-                          Icons.hexagon_outlined,
-                          color: theme.colorScheme.onPrimary,
-                          size: 40,
-                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -148,7 +140,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(hintText: 'ejemplo@correo.com'),
-                  onChanged: (_) { if (_errorMessage != null) setState(() => _errorMessage = null); },
+                  onChanged: (_) {
+                    if (_errorMessage != null) setState(() => _errorMessage = null);
+                  },
                 ),
 
                 const SizedBox(height: 20),
@@ -174,10 +168,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  onChanged: (_) { if (_errorMessage != null) setState(() => _errorMessage = null); },
+                  onChanged: (_) {
+                    if (_errorMessage != null) setState(() => _errorMessage = null);
+                  },
                 ),
 
                 const SizedBox(height: 12),

@@ -30,16 +30,17 @@ class SettingsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             children: [
-              _SectionHeader(label: 'CUENTA'),
+              _SectionHeader(label: context.tr('sectionAccount')),
               _SettingsTile(
                 icon: Icons.person_outline_rounded,
                 label: context.tr('profile'),
-                onTap: () {},
+                onTap: () => _showProfileSheet(context),
               ),
-              _SectionHeader(label: 'APARIENCIA'),
+              _SectionHeader(label: context.tr('sectionAppearance')),
               _ThemeTile(),
               _LanguageTile(),
-              _SectionHeader(label: 'BENEFICIOS'),
+              _CurrencyTile(),
+              _SectionHeader(label: context.tr('sectionBenefits')),
               _SettingsTile(
                 icon: Icons.workspace_premium_outlined,
                 label: context.tr('premium'),
@@ -56,7 +57,13 @@ class SettingsScreen extends StatelessWidget {
                 label: context.tr('donate'),
                 onTap: () {},
               ),
-              _SectionHeader(label: 'SESIÓN'),
+              _SectionHeader(label: context.tr('sectionAbout')),
+              _SettingsTile(
+                icon: Icons.info_outline_rounded,
+                label: context.tr('aboutApp'),
+                onTap: () => _showAboutSheet(context),
+              ),
+              _SectionHeader(label: context.tr('sectionSession')),
               _SettingsTile(
                 icon: Icons.logout_rounded,
                 label: context.tr('logout'),
@@ -76,19 +83,44 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  void _showProfileSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _ProfileSheet(),
+    );
+  }
+
+  void _showAboutSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _AboutSheet(),
+    );
+  }
+
   void _confirmLogout(BuildContext context) {
+    final provider = context.read<AppProvider>();
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: Text(context.tr('logout')),
-        content: const Text('¿Seguro que querés cerrar sesión?'),
+        content: Text(context.tr('logoutConfirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(context.tr('cancel')),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              Navigator.pop(context);
+              await provider.authService.logout();
+            },
             child: Text(context.tr('confirm')),
           ),
         ],
@@ -97,19 +129,33 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _confirmDeleteAccount(BuildContext context) {
+    final provider = context.read<AppProvider>();
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: Text(context.tr('deleteAccount')),
-        content: const Text('Esta acción es irreversible. ¿Querés eliminar tu cuenta?'),
+        content: Text(context.tr('deleteAccountConfirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(context.tr('cancel')),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await provider.authService.deleteAccount();
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
+              }
+            },
             child: Text(context.tr('confirm')),
           ),
         ],
@@ -117,6 +163,320 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 }
+
+// --- PROFILE SHEET ---
+
+class _ProfileSheet extends StatefulWidget {
+  const _ProfileSheet();
+
+  @override
+  State<_ProfileSheet> createState() => _ProfileSheetState();
+}
+
+class _ProfileSheetState extends State<_ProfileSheet> {
+  late TextEditingController _nameController;
+  bool _loadingName = false;
+  bool _loadingReset = false;
+  String? _nameError;
+  String? _nameSuccess;
+  String? _resetMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<AppProvider>();
+    final currentName = provider.authService.currentUser?.displayName ?? '';
+    _nameController = TextEditingController(text: currentName);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveName() async {
+    final provider = context.read<AppProvider>();
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) {
+      setState(() => _nameError = context.tr('nameEmpty'));
+      return;
+    }
+    setState(() {
+      _loadingName = true;
+      _nameError = null;
+      _nameSuccess = null;
+    });
+    try {
+      await provider.authService.currentUser?.updateDisplayName(newName);
+      await provider.authService.currentUser?.reload();
+      setState(() => _nameSuccess = context.tr('nameUpdated'));
+    } catch (_) {
+      setState(() => _nameError = context.tr('genericError'));
+    } finally {
+      setState(() => _loadingName = false);
+    }
+  }
+
+  Future<void> _sendReset() async {
+    final provider = context.read<AppProvider>();
+    final email = provider.authService.currentUser?.email ?? '';
+    if (email.isEmpty) return;
+    setState(() {
+      _loadingReset = true;
+      _resetMessage = null;
+    });
+    try {
+      await provider.authService.resetPassword(email);
+      setState(() => _resetMessage = context.tr('resetSent'));
+    } catch (_) {
+      setState(() => _resetMessage = context.tr('genericError'));
+    } finally {
+      setState(() => _loadingReset = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final provider = context.read<AppProvider>();
+    final email = provider.authService.currentUser?.email ?? '';
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            context.tr('profile'),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            email,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            context.tr('name'),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _nameController,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              hintText: context.tr('nameHint'),
+              errorText: _nameError,
+            ),
+          ),
+          if (_nameSuccess != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              _nameSuccess!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.green,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _loadingName ? null : _saveName,
+              child: _loadingName
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(context.tr('saveName')),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Divider(color: theme.colorScheme.outlineVariant),
+          const SizedBox(height: 16),
+          Text(
+            context.tr('changePassword'),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            context.tr('changePasswordDesc'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (_resetMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _resetMessage!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _loadingReset ? null : _sendReset,
+              child: _loadingReset
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(context.tr('sendResetEmail')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- ABOUT SHEET ---
+
+class _AboutSheet extends StatelessWidget {
+  const _AboutSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.outlineVariant,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Image.asset(
+            'assets/images/logo_hivefi.webp',
+            width: 64,
+            height: 64,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Hivefi',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            context.tr('appVersion'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Divider(color: theme.colorScheme.outlineVariant),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                context.tr('madeBy'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'JPLABS',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+// --- CURRENCY TILE ---
+
+class _CurrencyTile extends StatelessWidget {
+  static const _currencies = [
+    ('PYG', 'Guaraní — PYG'),
+    ('ARS', 'Peso argentino — ARS'),
+    ('BRL', 'Real brasileño — BRL'),
+    ('CLP', 'Peso chileno — CLP'),
+    ('COP', 'Peso colombiano — COP'),
+    ('PEN', 'Sol peruano — PEN'),
+    ('UYU', 'Peso uruguayo — UYU'),
+    ('BOB', 'Boliviano — BOB'),
+    ('VES', 'Bolívar venezolano — VES'),
+    ('USD', 'Dólar — USD'),
+    ('EUR', 'Euro — EUR'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<AppProvider>();
+    final theme = Theme.of(context);
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: Icon(Icons.attach_money_rounded, color: theme.colorScheme.onSurface),
+      title: Text(context.tr('currency'), style: theme.textTheme.bodyMedium),
+      trailing: DropdownButton<String>(
+        value: provider.currency,
+        underline: const SizedBox(),
+        isDense: true,
+        items: _currencies
+            .map((c) => DropdownMenuItem(value: c.$1, child: Text(c.$1)))
+            .toList(),
+        onChanged: (val) {
+          if (val != null) provider.setCurrency(val);
+        },
+      ),
+    );
+  }
+}
+
+// --- SECTION HEADER ---
 
 class _SectionHeader extends StatelessWidget {
   final String label;
@@ -139,6 +499,8 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+// --- SETTINGS TILE ---
+
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -157,7 +519,9 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = isDestructive ? Colors.red : theme.colorScheme.onSurface;
+    final color = isDestructive
+        ? theme.colorScheme.error
+        : theme.colorScheme.onSurface;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -172,17 +536,13 @@ class _SettingsTile extends StatelessWidget {
   }
 }
 
+// --- THEME TILE ---
+
 class _ThemeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
     final theme = Theme.of(context);
-
-    final options = {
-      ThemeMode.system: 'Sistema',
-      ThemeMode.light: 'Claro',
-      ThemeMode.dark: 'Oscuro',
-    };
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -192,9 +552,20 @@ class _ThemeTile extends StatelessWidget {
         value: provider.themeMode,
         underline: const SizedBox(),
         isDense: true,
-        items: options.entries
-            .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-            .toList(),
+        items: [
+          DropdownMenuItem(
+            value: ThemeMode.system,
+            child: Text(context.tr('themeSystem')),
+          ),
+          DropdownMenuItem(
+            value: ThemeMode.light,
+            child: Text(context.tr('themeLight')),
+          ),
+          DropdownMenuItem(
+            value: ThemeMode.dark,
+            child: Text(context.tr('themeDark')),
+          ),
+        ],
         onChanged: (val) {
           if (val != null) provider.setThemeMode(val);
         },
@@ -202,6 +573,8 @@ class _ThemeTile extends StatelessWidget {
     );
   }
 }
+
+// --- LANGUAGE TILE ---
 
 class _LanguageTile extends StatelessWidget {
   @override
@@ -228,6 +601,8 @@ class _LanguageTile extends StatelessWidget {
     );
   }
 }
+
+// --- BADGE PREMIUM ---
 
 class _BadgePremium extends StatelessWidget {
   @override
