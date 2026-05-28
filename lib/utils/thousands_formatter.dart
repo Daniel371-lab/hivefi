@@ -12,42 +12,60 @@ class ThousandsFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
-    if (newValue.text.isEmpty) return newValue;
+    final text = newValue.text;
 
-    final String texto = newValue.text;
+    if (text.isEmpty) return newValue;
 
     if (_isNoDecimal) {
-      // Solo dígitos enteros, separador de miles con punto
-      String cleanDigits = texto.replaceAll(RegExp(r'\D'), '');
-      if (cleanDigits.isEmpty) return const TextEditingValue();
+      // Solo enteros con separador de miles (punto)
+      final digits = text.replaceAll(RegExp(r'\D'), '');
+      if (digits.isEmpty) return const TextEditingValue();
 
       final buffer = StringBuffer();
-      for (int i = 0; i < cleanDigits.length; i++) {
-        if (i > 0 && (cleanDigits.length - i) % 3 == 0) {
+      for (int i = 0; i < digits.length; i++) {
+        if (i > 0 && (digits.length - i) % 3 == 0) {
           buffer.write('.');
         }
-        buffer.write(cleanDigits[i]);
+        buffer.write(digits[i]);
       }
 
+      final result = buffer.toString();
       return TextEditingValue(
-        text: buffer.toString(),
-        selection: TextSelection.collapsed(offset: buffer.length),
+        text: result,
+        selection: TextSelection.collapsed(offset: result.length),
       );
     } else {
-      // Monedas con decimales: permitir dígitos, punto y coma libremente
-      // Solo bloqueamos caracteres que no sean numéricos ni separadores
-      String clean = texto.replaceAll(RegExp(r'[^0-9.,]'), '');
+      // Monedas con decimales: separador de miles con coma, decimal con punto
+      // Permitir solo dígitos, un punto decimal, y no más de 2 decimales
+      String clean = text.replaceAll(RegExp(r'[^0-9.]'), '');
 
-      // Evitar más de un separador decimal
-      final dotCount = clean.split('.').length - 1;
-      final commaCount = clean.split(',').length - 1;
-      if (dotCount > 1 || commaCount > 1 || (dotCount > 0 && commaCount > 0)) {
-        return oldValue;
+      // Evitar múltiples puntos
+      final parts = clean.split('.');
+      if (parts.length > 2) {
+        clean = '${parts[0]}.${parts[1]}';
       }
 
+      // Limitar a 2 decimales
+      if (parts.length == 2 && parts[1].length > 2) {
+        clean = '${parts[0]}.${parts[1].substring(0, 2)}';
+      }
+
+      // Formatear parte entera con comas
+      final intPart = clean.split('.')[0];
+      final decPart = clean.contains('.') ? '.${clean.split('.')[1]}' : '';
+
+      final buffer = StringBuffer();
+      for (int i = 0; i < intPart.length; i++) {
+        if (i > 0 && (intPart.length - i) % 3 == 0) {
+          buffer.write(',');
+        }
+        buffer.write(intPart[i]);
+      }
+
+      final result = '${buffer.toString()}$decPart';
       return TextEditingValue(
-        text: clean,
-        selection: TextSelection.collapsed(offset: clean.length),
+        text: result,
+        selection: TextSelection.collapsed(offset: result.length),
       );
     }
   }

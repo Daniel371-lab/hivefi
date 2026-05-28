@@ -344,22 +344,6 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
     super.dispose();
   }
 
-  void _formatMonto(String value) {
-    if (value.isEmpty) return;
-    final cleanValue = value.replaceAll('.', '');
-    final numValue = int.tryParse(cleanValue);
-    if (numValue == null) return;
-    
-    final formatted = CurrencyFormatter.format(numValue.toDouble(), widget.provider.currency)
-        .replaceAll(RegExp(r'[^0-9.]'), '');
-        
-    if (_montoController.text != formatted) {
-      _montoController.value = TextEditingValue(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: formatted.length),
-      );
-    }
-  }
 
   Future<void> _confirmar() async {
     if (_categoriaSeleccionada == null) {
@@ -469,6 +453,9 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
             TextField(
               controller: _montoController,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                ThousandsFormatter(currencyCode: widget.provider.currency),
+              ],
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _confirmar(),
               decoration: InputDecoration(
@@ -476,7 +463,6 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
               ),
               onChanged: (val) {
                 if (_errorMessage != null) setState(() => _errorMessage = null);
-                _formatMonto(val);
               },
             ),
 
@@ -547,22 +533,6 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
     super.dispose();
   }
 
-  void _formatMonto(String value) {
-    if (value.isEmpty) return;
-    final cleanValue = value.replaceAll('.', '');
-    final numValue = int.tryParse(cleanValue);
-    if (numValue == null) return;
-    
-    final formatted = CurrencyFormatter.format(numValue.toDouble(), widget.provider.currency)
-        .replaceAll(RegExp(r'[^0-9.]'), '');
-        
-    if (_nombreController.text != formatted) {
-      _nombreController.value = TextEditingValue(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: formatted.length),
-      );
-    }
-  }
 
   Future<void> _guardar() async {
     if (_nombreController.text.trim().isEmpty) {
@@ -623,10 +593,12 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
               controller: _nombreController,
               keyboardType: TextInputType.number,
               textInputAction: TextInputAction.done,
+              inputFormatters: [
+                ThousandsFormatter(currencyCode: widget.provider.currency),
+              ],
               onSubmitted: (_) => _guardar(),
               onChanged: (val) {
                 if (_errorMessage != null) setState(() => _errorMessage = null);
-                _formatMonto(val);
               },
             ),
             if (_errorMessage != null) ...[
