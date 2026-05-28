@@ -60,6 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await provider.authService.register(
         email: _emailController.text,
         password: _passwordController.text,
+        name: _nameController.text,
       );
 
       if (!mounted) return;

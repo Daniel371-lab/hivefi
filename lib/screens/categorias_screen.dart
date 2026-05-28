@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/thousands_formatter.dart';
 
 class CategoriasScreen extends StatefulWidget {
   const CategoriasScreen({super.key});
@@ -680,14 +681,15 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
                   style: theme.textTheme.bodySmall
                       ?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              TextField(
+                TextField(
                 controller: _metaController,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
+                  ThousandsFormatter(), // <-- Aquí agregamos tu formateador de miles
                 ],
-                decoration: const InputDecoration(hintText: 'Ej: 1000000'),
+                decoration: const InputDecoration(hintText: 'Ej: 1.000.000'), // Actualicé el hintText para que se vea con el separador
                 onSubmitted: (_) => _crear(),
               ),
             ],

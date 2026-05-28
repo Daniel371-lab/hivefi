@@ -28,12 +28,58 @@ class HomeScreen extends StatelessWidget {
         extendBodyBehindAppBar: true,
         extendBody: true,
         appBar: AppBar(
+          automaticallyImplyLeading: false,
+          titleSpacing: 20,
+          title: StreamBuilder(
+            stream: Stream.value(null),
+            builder: (context, _) {
+              final user = context.read<AppProvider>().authService.currentUser;
+              final nombre = user?.displayName?.split(' ').first ?? 'Usuario';
+              return Text(
+                'Hola, $nombre',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              );
+            },
+          ),
+          centerTitle: false,
           actions: [
             IconButton(
-              icon: const Icon(Icons.settings_outlined),
+              icon: const Icon(Icons.tune_rounded),
               onPressed: () => Navigator.pushNamed(context, '/settings'),
             ),
           ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'HIVE',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '-FI',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
         body: SafeArea(
           bottom: false,
