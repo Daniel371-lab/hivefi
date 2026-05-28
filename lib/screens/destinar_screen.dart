@@ -440,7 +440,6 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
     }
 
     final monto = CurrencyFormatter.parseAmount(_montoController.text, widget.provider.currency);
-    );
 
     if (monto <= 0) {
       setState(() => _errorMessage = 'El monto no es válido.');

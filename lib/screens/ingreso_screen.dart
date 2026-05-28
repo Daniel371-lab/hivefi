@@ -594,6 +594,7 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
               textInputAction: TextInputAction.done,
               inputFormatters: [
                 ThousandsFormatter(currencyCode: widget.provider.currency),
+              ],
               onSubmitted: (_) => _guardar(),
               onChanged: (val) {
                 if (_errorMessage != null) setState(() => _errorMessage = null);
