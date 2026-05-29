@@ -292,24 +292,6 @@ class FirestoreService {
     return snapshot.docs.isNotEmpty;
   }
 
-  Future<void> editarMontoIngreso({
-    required String movimientoId,
-    required String categoriaId,
-    required double montoAnterior,
-    required double montoNuevo,
-  }) async {
-    final diferencia = montoNuevo - montoAnterior;
-    final batch = _db.batch();
-    batch.update(_categorias.doc(categoriaId), {
-      'disponible': FieldValue.increment(diferencia),
-    });
-    batch.update(_movimientos.doc(movimientoId), {
-      'monto': montoNuevo,
-      'descripcion': 'Carga editada',
-    });
-    await batch.commit();
-  }
-
   // ─── BALANCE ───────────────────────────────────────────────────────────────
 
   Stream<Map<String, double>> getBalance() {
