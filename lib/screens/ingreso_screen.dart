@@ -26,9 +26,7 @@ class IngresoScreen extends StatelessWidget {
             ),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          title: const Text('Ingresos'),
-        ),
+        appBar: AppBar(title: const Text('Ingresos')),
         floatingActionButton: FloatingActionButton(
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
@@ -48,47 +46,37 @@ class IngresoScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.inbox_outlined,
-                        size: 48,
-                        color: theme.colorScheme.onSurface.withOpacity(0.3),
-                      ),
+                      Icon(Icons.inbox_outlined,
+                          size: 48,
+                          color: theme.colorScheme.onSurface.withOpacity(0.3)),
                       const SizedBox(height: 12),
-                      Text('Sin categorías de ingreso.', style: theme.textTheme.bodySmall),
+                      Text('Sin categorías de ingreso.',
+                          style: theme.textTheme.bodySmall),
                       const SizedBox(height: 4),
-                      Text('Creá una en Categorías primero.', style: theme.textTheme.bodySmall),
+                      Text('Creá una en Categorías primero.',
+                          style: theme.textTheme.bodySmall),
                     ],
                   ),
                 );
               }
 
-              final docs = snapshot.data!.docs;
-
               return ListView.separated(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
-                itemCount: docs.length,
+                itemCount: snapshot.data!.docs.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
-                  final data = docs[i].data() as Map<String, dynamic>;
-                  final id = docs[i].id;
+                  final data = snapshot.data!.docs[i].data()
+                      as Map<String, dynamic>;
+                  final id = snapshot.data!.docs[i].id;
                   final nombre = data['nombre'] as String;
                   final disponible = (data['disponible'] as num).toDouble();
-
-                  // Convertimos el disponible numérico a texto formateado para que rellene el input de edición
-                  final disponibleString = CurrencyFormatter.format(disponible, provider.currency)
-                      .replaceAll(RegExp(r'[^0-9.]'), '');
 
                   return _TarjetaIngreso(
                     id: id,
                     nombre: nombre,
                     disponible: disponible,
                     currency: provider.currency,
-                    onAgregar: () => _mostrarFormularioConCategoria(
-                      context, provider, id, nombre, disponible,
-                    ),
-                    onEditar: () => _mostrarEditar(
-                      context, provider, id, disponibleString,
-                    ),
+                    provider: provider,
                   );
                 },
               );
@@ -107,62 +95,23 @@ class IngresoScreen extends StatelessWidget {
       builder: (_) => _FormularioIngreso(provider: provider),
     );
   }
-
-  void _mostrarFormularioConCategoria(
-    BuildContext context,
-    AppProvider provider,
-    String id,
-    String nombre,
-    double disponible,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _FormularioIngreso(
-        provider: provider,
-        categoriaId: id,
-        categoriaNombre: nombre,
-        disponible: disponible,
-      ),
-    );
-  }
-
-  void _mostrarEditar(
-    BuildContext context,
-    AppProvider provider,
-    String id,
-    String nombreActual,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _FormularioEditarCategoria(
-        provider: provider,
-        categoriaId: id,
-        nombreActual: nombreActual,
-      ),
-    );
-  }
 }
 
-// ─── Tarjeta de ingreso ──────────────────────────────────────────────────────
+// ─── Tarjeta de ingreso ───────────────────────────────────────────────────────
+
 class _TarjetaIngreso extends StatefulWidget {
   final String id;
   final String nombre;
   final double disponible;
   final String currency;
-  final VoidCallback onAgregar;
-  final VoidCallback onEditar;
+  final AppProvider provider;
 
   const _TarjetaIngreso({
     required this.id,
     required this.nombre,
     required this.disponible,
     required this.currency,
-    required this.onAgregar,
-    required this.onEditar,
+    required this.provider,
   });
 
   @override
@@ -170,117 +119,79 @@ class _TarjetaIngreso extends StatefulWidget {
 }
 
 class _TarjetaIngresoState extends State<_TarjetaIngreso> {
-  bool _tieneMovimientos = false;
-  bool _chequeado = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _verificarMovimientos();
-  }
-
-  Future<void> _verificarMovimientos() async {
-    final provider = context.read<AppProvider>();
-    final tiene = await provider.firestoreService
-        .categoriaIngresaTieneMovimientos(widget.id);
-    if (mounted) setState(() {
-      _tieneMovimientos = tiene;
-      _chequeado = true;
-    });
-  }
+  bool _expandido = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return GestureDetector(
+      onTap: () => setState(() => _expandido = !_expandido),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        widget.nombre,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      Expanded(
+                        child: Text(
+                          widget.nombre,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.6),
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(width: 8),
                       Text(
-                        CurrencyFormatter.format(widget.disponible, widget.currency),
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        CurrencyFormatter.format(
+                            widget.disponible, widget.currency),
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: honey,
-                          fontSize: 18,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
                 ),
-                if (_chequeado)
-                  IconButton(
-                    icon: Icon(
-                      _tieneMovimientos
-                          ? Icons.edit_off_outlined
-                          : Icons.edit_outlined,
-                      size: 18,
-                    ),
-                    color: _tieneMovimientos
-                        ? theme.colorScheme.onSurface.withOpacity(0.25)
-                        : theme.colorScheme.onSurface.withOpacity(0.5),
-                    onPressed: _tieneMovimientos
-                        ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text(
-                                  'No se puede editar: esta cuenta ya tiene movimientos registrados.',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            );
-                          }
-                        : widget.onEditar,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    splashRadius: 20,
-                  ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expandido
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 36,
-              child: ElevatedButton.icon(
-                onPressed: widget.onAgregar,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Agregar ingreso', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  elevation: 0,
-                  backgroundColor: honey.withOpacity(0.08),
-                  foregroundColor: honey,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
+            if (_expandido) ...[
+              const SizedBox(height: 8),
+              Divider(
+                  height: 1,
+                  color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+              const SizedBox(height: 8),
+              _HistorialIngreso(
+                categoriaId: widget.id,
+                provider: widget.provider,
+                currency: widget.currency,
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -288,19 +199,193 @@ class _TarjetaIngresoState extends State<_TarjetaIngreso> {
   }
 }
 
-// ─── Formulario agregar ingreso ──────────────────────────────────────────────
+// ─── Historial de ingresos por categoría ─────────────────────────────────────
+
+class _HistorialIngreso extends StatelessWidget {
+  final String categoriaId;
+  final AppProvider provider;
+  final String currency;
+
+  const _HistorialIngreso({
+    required this.categoriaId,
+    required this.provider,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: provider.firestoreService
+          .getMovimientosIngresoPorCategoria(categoriaId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+              child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2)));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Text(
+            'Sin movimientos aún.',
+            style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+
+        return Column(
+          children: docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final monto = (data['monto'] as num).toDouble();
+            final fecha = data['fecha'] != null
+                ? (data['fecha'] as Timestamp).toDate()
+                : DateTime.now();
+            final dia =
+                '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
+
+            return _FilaMovimientoIngreso(
+              movimientoId: doc.id,
+              categoriaId: categoriaId,
+              monto: monto,
+              fecha: dia,
+              provider: provider,
+              currency: currency,
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
+
+// ─── Fila de movimiento de ingreso ───────────────────────────────────────────
+
+class _FilaMovimientoIngreso extends StatefulWidget {
+  final String movimientoId;
+  final String categoriaId;
+  final double monto;
+  final String fecha;
+  final AppProvider provider;
+  final String currency;
+
+  const _FilaMovimientoIngreso({
+    required this.movimientoId,
+    required this.categoriaId,
+    required this.monto,
+    required this.fecha,
+    required this.provider,
+    required this.currency,
+  });
+
+  @override
+  State<_FilaMovimientoIngreso> createState() => _FilaMovimientoIngresoState();
+}
+
+class _FilaMovimientoIngresoState extends State<_FilaMovimientoIngreso> {
+  bool _fueDestinado = false;
+  bool _chequeado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificar();
+  }
+
+  Future<void> _verificar() async {
+    final fue = await widget.provider.firestoreService
+        .movimientoIngresoFueDestinado(widget.movimientoId, widget.categoriaId);
+    if (mounted) {
+      setState(() {
+        _fueDestinado = fue;
+        _chequeado = true;
+      });
+    }
+  }
+
+  void _editar(BuildContext context) {
+    if (_fueDestinado) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+              'No se puede editar: este ingreso ya fue destinado.'),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _FormularioEditarIngreso(
+        provider: widget.provider,
+        movimientoId: widget.movimientoId,
+        categoriaId: widget.categoriaId,
+        montoActual: widget.monto,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            widget.fecha,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(fontSize: 11, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+          ),
+          Text(
+            CurrencyFormatter.format(widget.monto, widget.currency),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: honey,
+            ),
+          ),
+          if (_chequeado)
+            GestureDetector(
+              onTap: () => _editar(context),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  Icons.edit_outlined,
+                  size: 14,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                ),
+              ),
+            )
+          else
+            const SizedBox(width: 22),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Formulario agregar ingreso ───────────────────────────────────────────────
 
 class _FormularioIngreso extends StatefulWidget {
   final AppProvider provider;
   final String? categoriaId;
   final String? categoriaNombre;
-  final double? disponible;
 
   const _FormularioIngreso({
     required this.provider,
     this.categoriaId,
     this.categoriaNombre,
-    this.disponible,
   });
 
   @override
@@ -333,7 +418,6 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
         return {
           'id': doc.id,
           'nombre': data['nombre'],
-          'disponible': (data['disponible'] as num).toDouble(),
         };
       }).toList();
     });
@@ -344,7 +428,6 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
     _montoController.dispose();
     super.dispose();
   }
-
 
   Future<void> _confirmar() async {
     if (_categoriaSeleccionada == null) {
@@ -357,7 +440,8 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
       return;
     }
 
-    final monto = CurrencyFormatter.parseAmount(_montoController.text, widget.provider.currency);
+    final monto = CurrencyFormatter.parseAmount(
+        _montoController.text, widget.provider.currency);
 
     if (monto <= 0) {
       setState(() => _errorMessage = 'El monto no es válido.');
@@ -386,10 +470,10 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: BoxDecoration(
           color: theme.scaffoldBackgroundColor,
@@ -402,7 +486,8 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.onSurface.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(2),
@@ -410,14 +495,13 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
-              'Registrar ingreso',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-            ),
+            Text('Registrar ingreso',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
-
             Text('¿A qué cuenta entra el dinero?',
-                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             _categorias.isEmpty
                 ? const Text('Cargando categorías...')
@@ -425,29 +509,34 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
                     value: _categoriaSeleccionada,
                     hint: const Text('Seleccioná una categoría'),
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: theme.colorScheme.surfaceContainerHighest),
+                        borderSide: BorderSide(
+                            color:
+                                theme.colorScheme.surfaceContainerHighest),
                       ),
                     ),
-                    items: _categorias.map((c) => DropdownMenuItem(
-                      value: c['id'] as String,
-                      child: Text(c['nombre'] as String),
-                    )).toList(),
+                    items: _categorias
+                        .map((c) => DropdownMenuItem(
+                              value: c['id'] as String,
+                              child: Text(c['nombre'] as String),
+                            ))
+                        .toList(),
                     onChanged: (val) {
                       setState(() {
                         _categoriaSeleccionada = val;
                         _categoriaNombreSeleccionada = _categorias
-                            .firstWhere((c) => c['id'] == val)['nombre'] as String;
+                            .firstWhere((c) => c['id'] == val)['nombre']
+                            as String;
                       });
                     },
                   ),
-
             const SizedBox(height: 20),
-
             Text('Monto del ingreso',
-                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextField(
               controller: _montoController,
@@ -458,13 +547,14 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _confirmar(),
               decoration: InputDecoration(
-                hintText: CurrencyFormatter.format(0, widget.provider.currency),
+                hintText: CurrencyFormatter.format(
+                    0, widget.provider.currency),
               ),
               onChanged: (val) {
-                if (_errorMessage != null) setState(() => _errorMessage = null);
+                if (_errorMessage != null)
+                  setState(() => _errorMessage = null);
               },
             ),
-
             if (_errorMessage != null) ...[
               const SizedBox(height: 8),
               Container(
@@ -474,20 +564,23 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
                   color: Colors.red.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                child: Text(_errorMessage!,
+                    style:
+                        const TextStyle(color: Colors.red, fontSize: 13)),
               ),
             ],
-
             const SizedBox(height: 24),
-
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _confirmar,
                 child: _isLoading
-                    ? const SizedBox(width: 22, height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white))
                     : const Text('Confirmar ingreso'),
               ),
             ),
@@ -498,44 +591,57 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
   }
 }
 
-// ─── Formulario editar categoría ─────────────────────────────────────────────
+// ─── Formulario editar monto de ingreso ──────────────────────────────────────
 
-class _FormularioEditarCategoria extends StatefulWidget {
+class _FormularioEditarIngreso extends StatefulWidget {
   final AppProvider provider;
+  final String movimientoId;
   final String categoriaId;
-  final String nombreActual;
+  final double montoActual;
 
-  const _FormularioEditarCategoria({
+  const _FormularioEditarIngreso({
     required this.provider,
+    required this.movimientoId,
     required this.categoriaId,
-    required this.nombreActual,
+    required this.montoActual,
   });
 
   @override
-  State<_FormularioEditarCategoria> createState() => _FormularioEditarCategoriaState();
+  State<_FormularioEditarIngreso> createState() =>
+      _FormularioEditarIngresoState();
 }
 
-class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> {
-  late TextEditingController _nombreController;
+class _FormularioEditarIngresoState extends State<_FormularioEditarIngreso> {
+  late TextEditingController _montoController;
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _nombreController = TextEditingController(text: widget.nombreActual);
+    _montoController = TextEditingController(
+      text: CurrencyFormatter.format(widget.montoActual, widget.provider.currency)
+          .replaceAll(RegExp(r'[^\d.,]'), ''),
+    );
   }
 
   @override
   void dispose() {
-    _nombreController.dispose();
+    _montoController.dispose();
     super.dispose();
   }
 
-
   Future<void> _guardar() async {
-    if (_nombreController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'El monto no puede estar vacío.');
+    if (_montoController.text.trim().isEmpty) {
+      setState(() => _errorMessage = 'Ingresá un monto.');
+      return;
+    }
+
+    final nuevoMonto = CurrencyFormatter.parseAmount(
+        _montoController.text, widget.provider.currency);
+
+    if (nuevoMonto <= 0) {
+      setState(() => _errorMessage = 'El monto no es válido.');
       return;
     }
 
@@ -545,13 +651,15 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
     });
 
     try {
-      await widget.provider.firestoreService.editarCategoria(
+      await widget.provider.firestoreService.editarMontoIngreso(
+        movimientoId: widget.movimientoId,
         categoriaId: widget.categoriaId,
-        nuevoNombre: _nombreController.text.trim(),
+        montoAnterior: widget.montoActual,
+        montoNuevo: nuevoMonto,
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _errorMessage = 'Error al editar la categoría.');
+      setState(() => _errorMessage = 'Error al editar el ingreso.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -562,7 +670,8 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
     final theme = Theme.of(context);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: BoxDecoration(
           color: theme.scaffoldBackgroundColor,
@@ -575,7 +684,8 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.onSurface.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(2),
@@ -583,26 +693,31 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
               ),
             ),
             const SizedBox(height: 20),
-            Text('Monto de ingreso',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            Text('Editar ingreso',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
-            Text('Monto disponible', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+            Text('Nuevo monto',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextField(
-              controller: _nombreController,
+              controller: _montoController,
               keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
               inputFormatters: [
                 ThousandsFormatter(currencyCode: widget.provider.currency),
               ],
+              textInputAction: TextInputAction.done,
               onSubmitted: (_) => _guardar(),
               onChanged: (val) {
-                if (_errorMessage != null) setState(() => _errorMessage = null);
+                if (_errorMessage != null)
+                  setState(() => _errorMessage = null);
               },
             ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 8),
-              Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              Text(_errorMessage!,
+                  style: const TextStyle(color: Colors.red, fontSize: 13)),
             ],
             const SizedBox(height: 24),
             SizedBox(
@@ -611,8 +726,11 @@ class _FormularioEditarCategoriaState extends State<_FormularioEditarCategoria> 
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _guardar,
                 child: _isLoading
-                    ? const SizedBox(width: 22, height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white))
                     : const Text('Guardar cambios'),
               ),
             ),

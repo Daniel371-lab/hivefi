@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
-import '../utils/thousands_formatter.dart'; // Asegúrate de que esta ruta sea la correcta para tu formateador
+import '../utils/thousands_formatter.dart';
 
 class GastoScreen extends StatelessWidget {
   const GastoScreen({super.key});
@@ -54,7 +54,8 @@ class GastoScreen extends StatelessWidget {
               ),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: provider.firestoreService.getCategoriasPorTipo('gasto'),
+                  stream: provider.firestoreService
+                      .getCategoriasPorTipo('gasto'),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -67,34 +68,37 @@ class GastoScreen extends StatelessWidget {
                           children: [
                             Icon(Icons.inbox_outlined,
                                 size: 48,
-                                color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.3)),
                             const SizedBox(height: 12),
-                            Text('Sin sobres de gasto.', style: theme.textTheme.bodySmall),
+                            Text('Sin sobres de gasto.',
+                                style: theme.textTheme.bodySmall),
                             const SizedBox(height: 4),
-                            Text('Creá uno en Categorías primero.', style: theme.textTheme.bodySmall),
+                            Text('Creá uno en Categorías primero.',
+                                style: theme.textTheme.bodySmall),
                           ],
                         ),
                       );
                     }
 
-                    final docs = snapshot.data!.docs;
-
                     return ListView.separated(
                       padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
-                      itemCount: docs.length,
+                      itemCount: snapshot.data!.docs.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, i) {
-                        final data = docs[i].data() as Map<String, dynamic>;
-                        final id = docs[i].id;
+                        final data = snapshot.data!.docs[i].data()
+                            as Map<String, dynamic>;
+                        final id = snapshot.data!.docs[i].id;
                         final nombre = data['nombre'] as String;
-                        final disponible = (data['disponible'] as num).toDouble();
+                        final disponible =
+                            (data['disponible'] as num).toDouble();
 
                         return _TarjetaGasto(
                           id: id,
                           nombre: nombre,
                           disponible: disponible,
                           currency: provider.currency,
-                          onEditar: () => _mostrarEditarCategoria(context, provider, id, nombre),
+                          provider: provider,
                         );
                       },
                     );
@@ -116,102 +120,124 @@ class GastoScreen extends StatelessWidget {
       builder: (_) => _FormularioGasto(provider: provider),
     );
   }
-
-  void _mostrarEditarCategoria(
-    BuildContext context,
-    AppProvider provider,
-    String id,
-    String nombre,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _FormularioEditarCategoriaGasto(
-        provider: provider,
-        categoriaId: id,
-        nombreActual: nombre,
-      ),
-    );
-  }
 }
 
-// ─── Tarjeta de gasto ────────────────────────────────────────────────────────
+// ─── Tarjeta de gasto ─────────────────────────────────────────────────────────
 
-class _TarjetaGasto extends StatelessWidget {
+class _TarjetaGasto extends StatefulWidget {
   final String id;
   final String nombre;
   final double disponible;
   final String currency;
-  final VoidCallback onEditar;
+  final AppProvider provider;
 
   const _TarjetaGasto({
     required this.id,
     required this.nombre,
     required this.disponible,
     required this.currency,
-    required this.onEditar,
+    required this.provider,
   });
+
+  @override
+  State<_TarjetaGasto> createState() => _TarjetaGastoState();
+}
+
+class _TarjetaGastoState extends State<_TarjetaGasto> {
+  bool _expandido = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
-    final sinFondos = disponible <= 0;
+    final sinFondos = widget.disponible <= 0;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return GestureDetector(
+      onTap: () => setState(() => _expandido = !_expandido),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  nombre,
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                Row(
-                  children: [
-                    if (sinFondos) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Sin fondos',
-                          style: TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.w600),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.nombre,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
+                      if (sinFondos)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Sin fondos',
+                            style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      Text(
+                        CurrencyFormatter.format(
+                            widget.disponible, widget.currency),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: sinFondos
+                              ? theme.colorScheme.onSurface.withOpacity(0.3)
+                              : honey,
+                          fontSize: 14,
+                        ),
+                      ),
                     ],
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
-                      onPressed: onEditar,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expandido
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              CurrencyFormatter.format(disponible, currency),
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: sinFondos ? theme.colorScheme.onSurface.withOpacity(0.4) : honey,
+            if (_expandido) ...[
+              const SizedBox(height: 8),
+              Divider(
+                  height: 1,
+                  color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+              const SizedBox(height: 8),
+              _HistorialGastos(
+                categoriaId: widget.id,
+                categoriaNombre: widget.nombre,
+                disponibleSobre: widget.disponible,
+                currency: widget.currency,
+                provider: widget.provider,
               ),
-            ),
-            _HistorialGastos(
-              categoriaId: id,
-              categoriaNombre: nombre,
-              currency: currency,
-            ),
+            ],
           ],
         ),
       ),
@@ -219,23 +245,26 @@ class _TarjetaGasto extends StatelessWidget {
   }
 }
 
-// ─── Historial de gastos por categoría ──────────────────────────────────────
+// ─── Historial de gastos ──────────────────────────────────────────────────────
 
 class _HistorialGastos extends StatelessWidget {
   final String categoriaId;
   final String categoriaNombre;
+  final double disponibleSobre;
   final String currency;
+  final AppProvider provider;
 
   const _HistorialGastos({
     required this.categoriaId,
     required this.categoriaNombre,
+    required this.disponibleSobre,
     required this.currency,
+    required this.provider,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final provider = context.read<AppProvider>();
 
     return StreamBuilder<QuerySnapshot>(
       stream: provider.firestoreService.getMovimientosPorCategoria(
@@ -243,130 +272,90 @@ class _HistorialGastos extends StatelessWidget {
         tipo: 'gasto',
       ),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const SizedBox();
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+              child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2)));
         }
 
-        final docs = snapshot.data!.docs;
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Text(
+            'Sin movimientos aún.',
+            style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+          );
+        }
+
+        final docs = snapshot.data!.docs.take(3).toList();
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Divider(height: 24),
-            Text(
-              'Movimientos recientes',
-              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            ...docs.take(3).map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              final monto = (data['monto'] as num).toDouble().abs();
-              final fecha = data['fecha'] != null ? (data['fecha'] as Timestamp).toDate() : DateTime.now();
+          children: docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final monto = (data['monto'] as num).toDouble().abs();
+            final fecha = data['fecha'] != null
+                ? (data['fecha'] as Timestamp).toDate()
+                : DateTime.now();
+            final dia =
+                '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
 
-              return GestureDetector(
-                onLongPress: () => _mostrarOpciones(
-                  context,
-                  provider,
-                  doc.id,
-                  categoriaId,
-                  categoriaNombre,
-                  monto,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '-${CurrencyFormatter.format(monto, currency)}',
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                      Text(
-                        '${fecha.day}/${fecha.month}/${fecha.year}',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
+            return _FilaGasto(
+              movimientoId: doc.id,
+              categoriaId: categoriaId,
+              categoriaNombre: categoriaNombre,
+              monto: monto,
+              fecha: dia,
+              disponibleSobre: disponibleSobre,
+              currency: currency,
+              provider: provider,
+            );
+          }).toList(),
         );
       },
     );
   }
+}
 
-  void _mostrarOpciones(
-    BuildContext context,
-    AppProvider provider,
-    String movimientoId,
-    String categoriaId,
-    String categoriaNombre,
-    double monto,
-  ) {
+// ─── Fila de gasto ────────────────────────────────────────────────────────────
+
+class _FilaGasto extends StatelessWidget {
+  final String movimientoId;
+  final String categoriaId;
+  final String categoriaNombre;
+  final double monto;
+  final String fecha;
+  final double disponibleSobre;
+  final String currency;
+  final AppProvider provider;
+
+  const _FilaGasto({
+    required this.movimientoId,
+    required this.categoriaId,
+    required this.categoriaNombre,
+    required this.monto,
+    required this.fecha,
+    required this.disponibleSobre,
+    required this.currency,
+    required this.provider,
+  });
+
+  void _editar(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Editar monto del gasto'),
-              onTap: () {
-                Navigator.pop(context);
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => _FormularioEditarGasto(
-                    provider: provider,
-                    movimientoId: movimientoId,
-                    categoriaId: categoriaId,
-                    categoriaNombre: categoriaNombre,
-                    montoActual: monto,
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Eliminar gasto', style: TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmarEliminar(context, provider, movimientoId, categoriaId, monto);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _FormularioEditarGasto(
+        provider: provider,
+        movimientoId: movimientoId,
+        categoriaId: categoriaId,
+        categoriaNombre: categoriaNombre,
+        montoActual: monto,
+        disponibleSobre: disponibleSobre,
       ),
     );
   }
 
-  void _confirmarEliminar(
-    BuildContext context,
-    AppProvider provider,
-    String movimientoId,
-    String categoriaId,
-    double monto,
-  ) {
+  void _confirmarEliminar(BuildContext context) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -395,9 +384,59 @@ class _HistorialGastos extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            fecha,
+            style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 11,
+                color: theme.colorScheme.onSurface.withOpacity(0.5)),
+          ),
+          Text(
+            '-${CurrencyFormatter.format(monto, currency)}',
+            style: const TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => _editar(context),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.edit_outlined,
+                      size: 14,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                ),
+              ),
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () => _confirmarEliminar(context),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.delete_outline,
+                      size: 14, color: Colors.red.withOpacity(0.5)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// ─── Formulario registrar gasto ──────────────────────────────────────────────
+// ─── Formulario registrar gasto ───────────────────────────────────────────────
 
 class _FormularioGasto extends StatefulWidget {
   final AppProvider provider;
@@ -424,7 +463,9 @@ class _FormularioGastoState extends State<_FormularioGasto> {
   }
 
   Future<void> _cargarCategorias() async {
-    final snapshot = await widget.provider.firestoreService.getCategoriasPorTipo('gasto').first;
+    final snapshot = await widget.provider.firestoreService
+        .getCategoriasPorTipo('gasto')
+        .first;
     setState(() {
       _categorias = snapshot.docs
           .map((doc) {
@@ -457,7 +498,8 @@ class _FormularioGastoState extends State<_FormularioGasto> {
       return;
     }
 
-    final monto = CurrencyFormatter.parseAmount(_montoController.text, widget.provider.currency);
+    final monto = CurrencyFormatter.parseAmount(
+        _montoController.text, widget.provider.currency);
 
     if (monto <= 0) {
       setState(() => _errorMessage = 'El monto no es válido.');
@@ -466,7 +508,7 @@ class _FormularioGastoState extends State<_FormularioGasto> {
 
     if (_disponibleSeleccionado != null && monto > _disponibleSeleccionado!) {
       setState(() => _errorMessage =
-          'No tenés suficiente dinero en este sobre. Disponible: ${CurrencyFormatter.format(_disponibleSeleccionado!, widget.provider.currency)}');
+          'No tenés suficiente dinero. Disponible: ${CurrencyFormatter.format(_disponibleSeleccionado!, widget.provider.currency)}');
       return;
     }
 
@@ -495,7 +537,8 @@ class _FormularioGastoState extends State<_FormularioGasto> {
     final honey = theme.colorScheme.primary;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: BoxDecoration(
           color: theme.scaffoldBackgroundColor,
@@ -508,7 +551,8 @@ class _FormularioGastoState extends State<_FormularioGasto> {
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.onSurface.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(2),
@@ -516,10 +560,13 @@ class _FormularioGastoState extends State<_FormularioGasto> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Registrar gasto', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            Text('Registrar gasto',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
             Text('¿De qué sobre sale el dinero?',
-                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             _categorias.isEmpty
                 ? Container(
@@ -537,22 +584,30 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                     value: _categoriaSeleccionada,
                     hint: const Text('Seleccioná un sobre'),
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: theme.colorScheme.surfaceContainerHighest),
+                        borderSide: BorderSide(
+                            color: theme.colorScheme.surfaceContainerHighest),
                       ),
                     ),
                     items: _categorias
                         .map((c) => DropdownMenuItem(
                               value: c['id'] as String,
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(c['nombre'] as String),
                                   Text(
-                                    CurrencyFormatter.format(c['disponible'] as double, widget.provider.currency),
-                                    style: TextStyle(color: honey, fontSize: 12, fontWeight: FontWeight.w600),
+                                    CurrencyFormatter.format(
+                                        c['disponible'] as double,
+                                        widget.provider.currency),
+                                    style: TextStyle(
+                                        color: honey,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600),
                                   ),
                                 ],
                               ),
@@ -561,7 +616,8 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                     onChanged: (val) {
                       setState(() {
                         _categoriaSeleccionada = val;
-                        final cat = _categorias.firstWhere((c) => c['id'] == val);
+                        final cat =
+                            _categorias.firstWhere((c) => c['id'] == val);
                         _categoriaNombreSeleccionada = cat['nombre'] as String;
                         _disponibleSeleccionado = cat['disponible'] as double;
                       });
@@ -573,12 +629,17 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                 alignment: Alignment.centerRight,
                 child: Text(
                   'Disponible: ${CurrencyFormatter.format(_disponibleSeleccionado!, widget.provider.currency)}',
-                  style: TextStyle(color: honey, fontWeight: FontWeight.w600, fontSize: 13),
+                  style: TextStyle(
+                      color: honey,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13),
                 ),
               ),
             ],
             const SizedBox(height: 20),
-            Text('Monto a gastar', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+            Text('Monto a gastar',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextField(
               controller: _montoController,
@@ -589,10 +650,12 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                 ThousandsFormatter(currencyCode: widget.provider.currency),
               ],
               decoration: InputDecoration(
-                hintText: CurrencyFormatter.format(0, widget.provider.currency),
+                hintText:
+                    CurrencyFormatter.format(0, widget.provider.currency),
               ),
               onChanged: (_) {
-                if (_errorMessage != null) setState(() => _errorMessage = null);
+                if (_errorMessage != null)
+                  setState(() => _errorMessage = null);
               },
             ),
             if (_errorMessage != null) ...[
@@ -604,7 +667,8 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                   color: Colors.red.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                child: Text(_errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 13)),
               ),
             ],
             const SizedBox(height: 24),
@@ -615,8 +679,10 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                 onPressed: _categorias.isEmpty || _isLoading ? null : _confirmar,
                 child: _isLoading
                     ? const SizedBox(
-                        width: 22, height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white))
                     : const Text('Confirmar gasto'),
               ),
             ),
@@ -627,7 +693,7 @@ class _FormularioGastoState extends State<_FormularioGasto> {
   }
 }
 
-// ─── Formulario editar gasto (Monto) ─────────────────────────────────────────
+// ─── Formulario editar gasto ──────────────────────────────────────────────────
 
 class _FormularioEditarGasto extends StatefulWidget {
   final AppProvider provider;
@@ -635,6 +701,7 @@ class _FormularioEditarGasto extends StatefulWidget {
   final String categoriaId;
   final String categoriaNombre;
   final double montoActual;
+  final double disponibleSobre;
 
   const _FormularioEditarGasto({
     required this.provider,
@@ -642,6 +709,7 @@ class _FormularioEditarGasto extends StatefulWidget {
     required this.categoriaId,
     required this.categoriaNombre,
     required this.montoActual,
+    required this.disponibleSobre,
   });
 
   @override
@@ -656,7 +724,10 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
   @override
   void initState() {
     super.initState();
-    _montoController = TextEditingController(text: widget.montoActual.toStringAsFixed(0));
+    _montoController = TextEditingController(
+      text: CurrencyFormatter.format(widget.montoActual, widget.provider.currency)
+          .replaceAll(RegExp(r'[^\d.,]'), ''),
+    );
   }
 
   @override
@@ -671,10 +742,19 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
       return;
     }
 
-    final nuevoMonto = CurrencyFormatter.parseAmount(_montoController.text, widget.provider.currency);
+    final nuevoMonto = CurrencyFormatter.parseAmount(
+        _montoController.text, widget.provider.currency);
 
     if (nuevoMonto <= 0) {
       setState(() => _errorMessage = 'El monto no es válido.');
+      return;
+    }
+
+    // El máximo permitido es disponible actual + monto anterior
+    final maxPermitido = widget.disponibleSobre + widget.montoActual;
+    if (nuevoMonto > maxPermitido) {
+      setState(() => _errorMessage =
+          'El monto supera el límite del sobre. Máximo: ${CurrencyFormatter.format(maxPermitido, widget.provider.currency)}');
       return;
     }
 
@@ -703,7 +783,8 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: BoxDecoration(
           color: theme.scaffoldBackgroundColor,
@@ -716,7 +797,8 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.onSurface.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(2),
@@ -724,11 +806,16 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Editar gasto', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            Text('Editar gasto',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text('Sobre: ${widget.categoriaNombre}', style: theme.textTheme.bodySmall),
+            Text('Sobre: ${widget.categoriaNombre}',
+                style: theme.textTheme.bodySmall),
             const SizedBox(height: 20),
-            Text('Nuevo monto', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+            Text('Nuevo monto',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextField(
               controller: _montoController,
@@ -739,12 +826,14 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
                 ThousandsFormatter(currencyCode: widget.provider.currency),
               ],
               onChanged: (_) {
-                if (_errorMessage != null) setState(() => _errorMessage = null);
+                if (_errorMessage != null)
+                  setState(() => _errorMessage = null);
               },
             ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 8),
-              Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              Text(_errorMessage!,
+                  style: const TextStyle(color: Colors.red, fontSize: 13)),
             ],
             const SizedBox(height: 24),
             SizedBox(
@@ -754,129 +843,10 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
                 onPressed: _isLoading ? null : _guardar,
                 child: _isLoading
                     ? const SizedBox(
-                        width: 22, height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                    : const Text('Guardar cambios'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Formulario editar categoría (Nombre) ────────────────────────────────────
-
-class _FormularioEditarCategoriaGasto extends StatefulWidget {
-  final AppProvider provider;
-  final String categoriaId;
-  final String nombreActual;
-
-  const _FormularioEditarCategoriaGasto({
-    required this.provider,
-    required this.categoriaId,
-    required this.nombreActual,
-  });
-
-  @override
-  State<_FormularioEditarCategoriaGasto> createState() => _FormularioEditarCategoriaGastoState();
-}
-
-class _FormularioEditarCategoriaGastoState extends State<_FormularioEditarCategoriaGasto> {
-  late TextEditingController _nombreController;
-  bool _isLoading = false;
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _nombreController = TextEditingController(text: widget.nombreActual);
-  }
-
-  @override
-  void dispose() {
-    _nombreController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _guardar() async {
-    if (_nombreController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'El nombre no puede estar vacío.');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      await widget.provider.firestoreService.editarCategoria(
-        categoriaId: widget.categoriaId,
-        nuevoNombre: _nombreController.text.trim(),
-      );
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      setState(() => _errorMessage = 'Error al editar la categoría.');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('Editar sobre', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 20),
-            Text('Nombre', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nombreController,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _guardar(),
-              onChanged: (_) {
-                if (_errorMessage != null) setState(() => _errorMessage = null);
-              },
-            ),
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 8),
-              Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
-            ],
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _guardar,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 22, height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white))
                     : const Text('Guardar cambios'),
               ),
             ),

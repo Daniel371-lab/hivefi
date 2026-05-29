@@ -48,7 +48,7 @@ class _RepartoScreenState extends State<RepartoScreen> {
         floatingActionButton: FloatingActionButton(
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
-          onPressed: () => _mostrarFormulario(context, provider, origenInicial, null),
+          onPressed: () => _mostrarFormulario(context, provider, origenInicial),
           child: const Icon(Icons.compare_arrows_rounded),
         ),
         body: SafeArea(
@@ -74,34 +74,27 @@ class _RepartoScreenState extends State<RepartoScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.compare_arrows_rounded,
-                              size: 48,
-                              color: theme.colorScheme.onSurface.withOpacity(0.3),
-                            ),
+                            Icon(Icons.compare_arrows_rounded,
+                                size: 48,
+                                color: theme.colorScheme.onSurface.withOpacity(0.3)),
                             const SizedBox(height: 12),
-                            Text(
-                              'Sin sobres creados',
-                              style: theme.textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            ),
+                            Text('Sin sobres creados',
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 4),
-                            Text(
-                              'Creá categorías de gasto o ahorro primero.',
-                              style: theme.textTheme.bodySmall,
-                              textAlign: TextAlign.center,
-                            ),
+                            Text('Creá categorías de gasto o ahorro primero.',
+                                style: theme.textTheme.bodySmall,
+                                textAlign: TextAlign.center),
                           ],
                         ),
                       ),
                     );
                   }
 
-                  // 💡 AQUÍ ESTÁ LA MAGIA QUE EVITA QUE SE QUEDE TRABADO
                   if (origenInicial != null && !_yaSeAbrio) {
-                    _yaSeAbrio = true; // Registra que ya se abrió una vez
+                    _yaSeAbrio = true;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _mostrarFormulario(context, provider, origenInicial, null);
+                      _mostrarFormulario(context, provider, origenInicial);
                     });
                   }
 
@@ -110,59 +103,52 @@ class _RepartoScreenState extends State<RepartoScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Mover dinero entre sobres',
-                          style: theme.textTheme.headlineMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
+                        Text('Mover dinero entre sobres',
+                            style: theme.textTheme.headlineMedium
+                                ?.copyWith(fontWeight: FontWeight.w700)),
                         const SizedBox(height: 4),
-                        Text(
-                          'Reasigná dinero entre tus sobres de gasto y ahorro.',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                        const SizedBox(height: 24),
+                        Text('Reasigná dinero entre tus sobres de gasto y ahorro.',
+                            style: theme.textTheme.bodySmall),
+                        const SizedBox(height: 16),
 
                         if (gastos.isNotEmpty) ...[
-                          _SeccionSobres(
-                            titulo: 'Sobres de gasto',
-                            docs: gastos,
-                            tipo: 'gasto',
-                            currency: provider.currency,
-                            onRepartir: (id, nombre, disponible) =>
-                                _mostrarFormulario(
-                              context,
-                              provider,
-                              _SobreInfo(
-                                id: id,
-                                nombre: nombre,
-                                disponible: disponible,
-                                tipo: 'gasto',
-                              ),
-                              null,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
+                          Text('Sobres de gasto',
+                              style: theme.textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 8),
+                          ...gastos.map((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            return _TarjetaSobre(
+                              id: doc.id,
+                              nombre: data['nombre'] as String,
+                              disponible: (data['disponible'] as num).toDouble(),
+                              meta: (data['meta'] as num?)?.toDouble() ?? 0,
+                              tipo: 'gasto',
+                              currency: provider.currency,
+                              provider: provider,
+                            );
+                          }),
+                          const SizedBox(height: 16),
                         ],
 
-                        if (ahorros.isNotEmpty)
-                          _SeccionSobres(
-                            titulo: 'Sobres de ahorro',
-                            docs: ahorros,
-                            tipo: 'ahorro',
-                            currency: provider.currency,
-                            onRepartir: (id, nombre, disponible) =>
-                                _mostrarFormulario(
-                              context,
-                              provider,
-                              _SobreInfo(
-                                id: id,
-                                nombre: nombre,
-                                disponible: disponible,
-                                tipo: 'ahorro',
-                              ),
-                              null,
-                            ),
-                          ),
+                        if (ahorros.isNotEmpty) ...[
+                          Text('Sobres de ahorro',
+                              style: theme.textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 8),
+                          ...ahorros.map((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            return _TarjetaSobre(
+                              id: doc.id,
+                              nombre: data['nombre'] as String,
+                              disponible: (data['disponible'] as num).toDouble(),
+                              meta: (data['meta'] as num?)?.toDouble() ?? 0,
+                              tipo: 'ahorro',
+                              currency: provider.currency,
+                              provider: provider,
+                            );
+                          }),
+                        ],
                       ],
                     ),
                   );
@@ -179,7 +165,6 @@ class _RepartoScreenState extends State<RepartoScreen> {
     BuildContext context,
     AppProvider provider,
     _SobreInfo? origen,
-    _SobreInfo? destino,
   ) {
     showModalBottomSheet(
       context: context,
@@ -188,161 +173,266 @@ class _RepartoScreenState extends State<RepartoScreen> {
       builder: (_) => _FormularioReparto(
         provider: provider,
         origenPreseleccionado: origen,
-        destinoPreseleccionado: destino,
       ),
     );
   }
 }
 
-// ─── Sección sobres ──────────────────────────────────────────────────────────
+// ─── Tarjeta sobre desplegable ────────────────────────────────────────────────
 
-class _SeccionSobres extends StatelessWidget {
-  final String titulo;
-  final List<QueryDocumentSnapshot> docs;
+class _TarjetaSobre extends StatefulWidget {
+  final String id;
+  final String nombre;
+  final double disponible;
+  final double meta;
   final String tipo;
   final String currency;
-  final Function(String, String, double) onRepartir;
+  final AppProvider provider;
 
-  const _SeccionSobres({
-    required this.titulo,
-    required this.docs,
+  const _TarjetaSobre({
+    required this.id,
+    required this.nombre,
+    required this.disponible,
+    required this.meta,
     required this.tipo,
     required this.currency,
-    required this.onRepartir,
+    required this.provider,
   });
+
+  @override
+  State<_TarjetaSobre> createState() => _TarjetaSobreState();
+}
+
+class _TarjetaSobreState extends State<_TarjetaSobre> {
+  bool _expandido = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
+    final tieneMeta = widget.tipo == 'ahorro' && widget.meta > 0;
+    final progreso = tieneMeta
+        ? (widget.disponible / widget.meta).clamp(0.0, 1.0)
+        : 0.0;
+    final metaAlcanzada = tieneMeta && widget.disponible >= widget.meta;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          titulo,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+    return GestureDetector(
+      onTap: () => setState(() => _expandido = !_expandido),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
         ),
-        const SizedBox(height: 12),
-        ...docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final nombre = data['nombre'] as String;
-          final disponible = (data['disponible'] as num).toDouble();
-          final meta = (data['meta'] as num?)?.toDouble() ?? 0;
-          final metaAlcanzada = meta > 0 && disponible >= meta;
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withOpacity(0.4),
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.nombre,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (widget.tipo == 'ahorro' && tieneMeta) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: metaAlcanzada
+                                ? Colors.green.withOpacity(0.15)
+                                : honey.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            metaAlcanzada ? 'Meta alcanzada' : 'En progreso',
+                            style: TextStyle(
+                              color: metaAlcanzada ? Colors.green : honey,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
+                      Text(
+                        CurrencyFormatter.format(widget.disponible, widget.currency),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: widget.disponible > 0
+                              ? honey
+                              : theme.colorScheme.onSurface.withOpacity(0.3),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expandido
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                ),
+              ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
+            if (tieneMeta) ...[
+              const SizedBox(height: 4),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              nombre,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (tipo == 'ahorro') ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: metaAlcanzada
-                                      ? Colors.green.withOpacity(0.15)
-                                      : honey.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  metaAlcanzada ? 'Meta alcanzada' : 'En progreso',
-                                  style: TextStyle(
-                                    color: metaAlcanzada ? Colors.green : honey,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          CurrencyFormatter.format(disponible, currency),
-                          style: TextStyle(
-                            color: disponible > 0
-                                ? honey
-                                : theme.colorScheme.onSurface.withOpacity(0.4),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                        if (tipo == 'ahorro' && meta > 0) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            'Meta: ${CurrencyFormatter.format(meta, currency)}',
-                            style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-                          ),
-                          const SizedBox(height: 4),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: (disponible / meta).clamp(0.0, 1.0),
-                              minHeight: 4,
-                              backgroundColor:
-                                  theme.colorScheme.surfaceContainerHighest,
-                              color: metaAlcanzada ? Colors.green : honey,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                  Text(
+                    'Meta: ${CurrencyFormatter.format(widget.meta, widget.currency)}',
+                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
                   ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: disponible > 0
-                        ? () => onRepartir(doc.id, nombre, disponible)
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      backgroundColor: disponible > 0
-                          ? honey
-                          : theme.colorScheme.surfaceContainerHighest,
-                      foregroundColor: disponible > 0
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurface.withOpacity(0.4),
-                      elevation: 0,
-                    ),
-                    child: const Text('Mover'),
+                  Text(
+                    '${(progreso * 100).toInt()}%',
+                    style: TextStyle(
+                        color: metaAlcanzada ? Colors.green : honey,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10),
                   ),
                 ],
               ),
-            ),
-          );
-        }),
-      ],
+              const SizedBox(height: 3),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progreso,
+                  minHeight: 3,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  color: metaAlcanzada ? Colors.green : honey,
+                ),
+              ),
+            ],
+            if (_expandido) ...[
+              const SizedBox(height: 8),
+              Divider(
+                  height: 1,
+                  color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+              const SizedBox(height: 8),
+              _HistorialReparto(
+                categoriaId: widget.id,
+                currency: widget.currency,
+                provider: widget.provider,
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
 
-// ─── Formulario reparto ──────────────────────────────────────────────────────
+// ─── Historial de reparto ─────────────────────────────────────────────────────
+
+class _HistorialReparto extends StatelessWidget {
+  final String categoriaId;
+  final String currency;
+  final AppProvider provider;
+
+  const _HistorialReparto({
+    required this.categoriaId,
+    required this.currency,
+    required this.provider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: provider.firestoreService.getMovimientosPorCategoria(
+        categoriaId: categoriaId,
+        tipo: 'reparto',
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(strokeWidth: 2));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Text('Sin movimientos aún.',
+              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11));
+        }
+
+        final docs = snapshot.data!.docs.take(3).toList();
+
+        return Column(
+          children: docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final monto = (data['monto'] as num).toDouble().abs();
+            final fecha = data['fecha'] != null
+                ? (data['fecha'] as Timestamp).toDate()
+                : DateTime.now();
+            final dia =
+                '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
+            final origenNombre =
+                data['categoriaOrigenNombre'] as String? ?? '';
+            final destinoNombre =
+                data['categoriaDestinoNombre'] as String? ?? '';
+            final esOrigen = data['categoriaOrigenId'] == categoriaId;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    dia,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                  ),
+                  Expanded(
+                    child: Text(
+                      esOrigen ? '→ $destinoNombre' : '← $origenNombre',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 11,
+                          color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    CurrencyFormatter.format(monto, currency),
+                    style: TextStyle(
+                      color: esOrigen
+                          ? Colors.red.withOpacity(0.8)
+                          : Colors.green.withOpacity(0.8),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
+
+// ─── Modelo sobre ─────────────────────────────────────────────────────────────
 
 class _SobreInfo {
   final String id;
@@ -357,6 +447,8 @@ class _SobreInfo {
     required this.tipo,
   });
 }
+
+// ─── Formulario reparto ───────────────────────────────────────────────────────
 
 class _FormularioReparto extends StatefulWidget {
   final AppProvider provider;
@@ -455,24 +547,21 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
       setState(() => _errorMessage = 'Seleccioná el sobre de origen.');
       return;
     }
-
     if (_destinoId == null) {
       setState(() => _errorMessage = 'Seleccioná el sobre de destino.');
       return;
     }
-
     if (_origenId == _destinoId) {
-      setState(
-          () => _errorMessage = 'El origen y destino no pueden ser iguales.');
+      setState(() => _errorMessage = 'El origen y destino no pueden ser iguales.');
       return;
     }
-
     if (_montoController.text.trim().isEmpty) {
       setState(() => _errorMessage = 'Ingresá un monto.');
       return;
     }
 
-    final monto = CurrencyFormatter.parseAmount(_montoController.text, widget.provider.currency);
+    final monto = CurrencyFormatter.parseAmount(
+        _montoController.text, widget.provider.currency);
 
     if (monto <= 0) {
       setState(() => _errorMessage = 'El monto no es válido.');
@@ -512,7 +601,6 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
           ],
         ),
       );
-
       if (confirmado != true) return;
     }
 
@@ -551,8 +639,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
       child: Container(
         decoration: BoxDecoration(
           color: theme.scaffoldBackgroundColor,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: SingleChildScrollView(
@@ -571,18 +658,13 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text(
-                'Mover dinero',
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
+              Text('Mover dinero',
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
-              Text(
-                'Reasigná dinero entre tus sobres.',
-                style: theme.textTheme.bodySmall,
-              ),
+              Text('Reasigná dinero entre tus sobres.',
+                  style: theme.textTheme.bodySmall),
               const SizedBox(height: 20),
-
               Text('¿De qué sobre sacás el dinero?',
                   style: theme.textTheme.bodySmall
                       ?.copyWith(fontWeight: FontWeight.w600)),
@@ -638,8 +720,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 onChanged: (val) {
                   setState(() {
                     _origenId = val;
-                    final sobre =
-                        _sobres.firstWhere((s) => s['id'] == val);
+                    final sobre = _sobres.firstWhere((s) => s['id'] == val);
                     _origenNombre = sobre['nombre'] as String;
                     _origenDisponible = sobre['disponible'] as double;
                     _origenTipo = sobre['tipo'] as String;
@@ -648,7 +729,6 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                   });
                 },
               ),
-
               if (_origenDisponible != null) ...[
                 const SizedBox(height: 6),
                 Align(
@@ -662,9 +742,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                   ),
                 ),
               ],
-
               const SizedBox(height: 20),
-
               Text('¿A qué sobre lo enviás?',
                   style: theme.textTheme.bodySmall
                       ?.copyWith(fontWeight: FontWeight.w600)),
@@ -710,15 +788,13 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 onChanged: (val) {
                   setState(() {
                     _destinoId = val;
-                    _destinoNombre = _sobres
-                        .firstWhere((s) => s['id'] == val)['nombre']
-                        as String;
+                    _destinoNombre =
+                        _sobres.firstWhere((s) => s['id'] == val)['nombre']
+                            as String;
                   });
                 },
               ),
-
               const SizedBox(height: 20),
-
               Text('Monto a mover',
                   style: theme.textTheme.bodySmall
                       ?.copyWith(fontWeight: FontWeight.w600)),
@@ -732,16 +808,13 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                   ThousandsFormatter(currencyCode: widget.provider.currency),
                 ],
                 decoration: InputDecoration(
-                  hintText:
-                      CurrencyFormatter.format(0, widget.provider.currency),
+                  hintText: CurrencyFormatter.format(0, widget.provider.currency),
                 ),
                 onChanged: (_) {
-                  if (_errorMessage != null) {
+                  if (_errorMessage != null)
                     setState(() => _errorMessage = null);
-                  }
                 },
               ),
-
               if (_errorMessage != null) ...[
                 const SizedBox(height: 8),
                 Container(
@@ -752,13 +825,10 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(_errorMessage!,
-                      style:
-                          const TextStyle(color: Colors.red, fontSize: 13)),
+                      style: const TextStyle(color: Colors.red, fontSize: 13)),
                 ),
               ],
-
               const SizedBox(height: 24),
-
               SizedBox(
                 width: double.infinity,
                 height: 52,

@@ -207,6 +207,64 @@ class FirestoreService {
     await _movimientos.doc(movimientoId).delete();
   }
 
+  Stream<QuerySnapshot> getMovimientosDestinarPorOrigen(String categoriaOrigenId) {
+    return _movimientos
+        .where('categoriaOrigenId', isEqualTo: categoriaOrigenId)
+        .where('tipo', isEqualTo: 'destinar')
+        .orderBy('fecha', descending: true)
+        .limit(3)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getMovimientosDestinarPorDestino(String categoriaDestinoId) {
+    return _movimientos
+        .where('categoriaDestinoId', isEqualTo: categoriaDestinoId)
+        .where('tipo', isEqualTo: 'destinar')
+        .orderBy('fecha', descending: true)
+        .limit(3)
+        .snapshots();
+  }
+
+  Future<void> editarMontoDestinar({
+    required String movimientoId,
+    required String origenId,
+    required String destinoId,
+    required double montoAnterior,
+    required double montoNuevo,
+  }) async {
+    final diferencia = montoNuevo - montoAnterior;
+    final batch = _db.batch();
+    batch.update(_categorias.doc(origenId), {
+      'disponible': FieldValue.increment(-diferencia),
+    });
+    batch.update(_categorias.doc(destinoId), {
+      'disponible': FieldValue.increment(diferencia),
+    });
+    batch.update(_movimientos.doc(movimientoId), {
+      'monto': -montoNuevo,
+      'descripcion': 'Destino editado',
+    });
+    await batch.commit();
+  }
+
+  Future<void> editarMontoIngreso({
+    required String movimientoId,
+    required String categoriaId,
+    required double montoAnterior,
+    required double montoNuevo,
+  }) async {
+    final diferencia = montoNuevo - montoAnterior;
+    final batch = _db.batch();
+    batch.update(_categorias.doc(categoriaId), {
+      'disponible': FieldValue.increment(diferencia),
+    });
+    batch.update(_movimientos.doc(movimientoId), {
+      'monto': montoNuevo,
+      'descripcion': 'Carga editada',
+    });
+    await batch.commit();
+  }
+
   Future<bool> categoriaIngresaTieneMovimientos(String categoriaId) async {
     final snapshot = await _movimientos
         .where('categoriaOrigenId', isEqualTo: categoriaId)
@@ -214,6 +272,42 @@ class FirestoreService {
         .limit(1)
         .get();
     return snapshot.docs.isNotEmpty;
+  }
+
+  Stream<QuerySnapshot> getMovimientosIngresoPorCategoria(String categoriaId) {
+    return _movimientos
+        .where('categoriaOrigenId', isEqualTo: categoriaId)
+        .where('tipo', isEqualTo: 'ingreso')
+        .orderBy('fecha', descending: true)
+        .limit(3)
+        .snapshots();
+  }
+
+  Future<bool> movimientoIngresoFueDestinado(String movimientoId, String categoriaId) async {
+    final snapshot = await _movimientos
+        .where('categoriaOrigenId', isEqualTo: categoriaId)
+        .where('tipo', isEqualTo: 'destinar')
+        .limit(1)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
+  Future<void> editarMontoIngreso({
+    required String movimientoId,
+    required String categoriaId,
+    required double montoAnterior,
+    required double montoNuevo,
+  }) async {
+    final diferencia = montoNuevo - montoAnterior;
+    final batch = _db.batch();
+    batch.update(_categorias.doc(categoriaId), {
+      'disponible': FieldValue.increment(diferencia),
+    });
+    batch.update(_movimientos.doc(movimientoId), {
+      'monto': montoNuevo,
+      'descripcion': 'Carga editada',
+    });
+    await batch.commit();
   }
 
   // ─── BALANCE ───────────────────────────────────────────────────────────────

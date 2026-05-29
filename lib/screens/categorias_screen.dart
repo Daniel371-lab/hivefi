@@ -211,118 +211,131 @@ class _TarjetaCategoria extends StatelessWidget {
     final provider = context.read<AppProvider>();
     final tieneMeta = esAhorro && meta > 0;
     final progreso = tieneMeta ? (disponible / meta).clamp(0.0, 1.0) : 0.0;
-    final tieneMovimientos = disponible != 0;
+    final tieneDinero = disponible != 0;
 
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
             color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        nombre,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      Expanded(
+                        child: Text(
+                          nombre,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(width: 8),
                       Text(
                         CurrencyFormatter.format(disponible, currency),
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: honey,
-                          fontSize: 18,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  color: tieneMovimientos
-                      ? theme.colorScheme.onSurface.withOpacity(0.2)
-                      : theme.colorScheme.onSurface.withOpacity(0.4),
-                  onPressed: tieneMovimientos
-                      ? null
-                      : () => _editarNombre(context, provider, id, nombre),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 20,
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => _editarNombre(context, provider, id, nombre),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  color: tieneMovimientos
-                      ? theme.colorScheme.onSurface.withOpacity(0.2)
-                      : Colors.red.withOpacity(0.6),
-                  onPressed: tieneMovimientos
-                      ? null
-                      : () => _confirmarEliminar(
-                          context, provider, id, disponible),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 20,
+                GestureDetector(
+                  onTap: () => tieneDinero
+                      ? ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text(
+                              'No se puede eliminar: la categoría tiene dinero asignado.',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        )
+                      : _confirmarEliminar(context, provider, id),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                      color: Colors.red.withOpacity(0.6),
+                    ),
+                  ),
                 ),
               ],
             ),
             if (tieneMeta) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Meta: ${CurrencyFormatter.format(meta, currency)}',
-                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
                   ),
                   Text(
                     '${(progreso * 100).toInt()}%',
                     style: TextStyle(
                         color: honey,
                         fontWeight: FontWeight.w600,
-                        fontSize: 11),
+                        fontSize: 10),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: progreso,
-                  minHeight: 4,
+                  minHeight: 3,
                   backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 ),
               ),
               if (progreso >= 1.0) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
-                  height: 36,
+                  height: 30,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: honey, width: 1),
                       foregroundColor: honey,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(6)),
                       padding: EdgeInsets.zero,
                     ),
                     onPressed: () =>
                         _usarAhorro(context, provider, id, nombre, disponible),
                     child: const Text('Usar ahorro',
                         style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600)),
+                            fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
@@ -333,14 +346,12 @@ class _TarjetaCategoria extends StatelessWidget {
     );
   }
 
-  void _confirmarEliminar(BuildContext context, AppProvider provider,
-      String id, double disponible) {
+  void _confirmarEliminar(BuildContext context, AppProvider provider, String id) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Eliminar categoría'),
-        content:
-            const Text('¿Seguro que querés eliminar esta categoría?'),
+        content: const Text('¿Seguro que querés eliminar esta categoría?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -350,8 +361,7 @@ class _TarjetaCategoria extends StatelessWidget {
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () async {
               Navigator.pop(context);
-              await provider.firestoreService
-                  .eliminarCategoria(id, disponible);
+              await provider.firestoreService.eliminarCategoria(id, 0);
             },
             child: const Text('Eliminar'),
           ),
@@ -370,6 +380,7 @@ class _TarjetaCategoria extends StatelessWidget {
         content: TextField(
           controller: controller,
           textCapitalization: TextCapitalization.words,
+          maxLength: 15,
           decoration: const InputDecoration(hintText: 'Nuevo nombre'),
         ),
         actions: [
