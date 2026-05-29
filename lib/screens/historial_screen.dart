@@ -123,9 +123,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Movimientos recientes
+                                       // Movimientos recientes (Solo los últimos 10)
                     _SeccionMovimientos(
-                      movimientos: movimientosMes,
+                      movimientos: movimientosMes.take(10).toList(), // <-- El cambio está aquí
                       currency: provider.currency,
                     ),
                   ],

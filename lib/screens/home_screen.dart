@@ -295,17 +295,30 @@ class _HexGrid extends StatelessWidget {
       _HexItem(icon: Icons.history_rounded, label: context.tr('history'), route: '/historial'),
     ];
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.95,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, i) => _HexButton(item: items[i]),
+    return Stack(
+      children: [
+        // Capa de fondo: La animación limitada exactamente al área de los hexágonos
+        Positioned.fill(
+          child: Lottie.asset(
+            'assets/images/movimiento.json',
+            fit: BoxFit.cover,
+          ),
+        ),
+
+        // Capa de arriba: La cuadrícula de botones interactivos
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.95,
+          ),
+          itemCount: items.length,
+          itemBuilder: (context, i) => _HexButton(item: items[i]),
+        ),
+      ],
     );
   }
 }
@@ -332,7 +345,8 @@ class _HexButton extends StatelessWidget {
       child: ClipPath(
         clipper: _HexClipper(),
         child: Container(
-          color: honey,
+          // withOpacity(0.90) hace que el fondo se intuya por detrás de forma elegante
+          color: honey.withOpacity(0.90),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
