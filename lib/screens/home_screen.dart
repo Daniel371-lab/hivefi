@@ -300,9 +300,12 @@ class _HexGrid extends StatelessWidget {
       children: [
         // Capa de fondo: La animación limitada exactamente al área de los hexágonos
         Positioned.fill(
-          child: Lottie.asset(
-            'assets/images/movimiento.json',
-            fit: BoxFit.cover,
+          child: Transform.scale(
+            scale: 0.5,
+            child: Lottie.asset(
+              'assets/images/movimiento.json',
+              fit: BoxFit.cover,
+            ),
           ),
         ),
 

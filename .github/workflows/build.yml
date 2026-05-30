@@ -26,11 +26,13 @@ jobs:
       - name: Recrear entorno nativo limpio
         run: flutter create --org com.jplabs --project-name hivefi . --platforms=android
 
-      - name: Configurar Gradle para Firebase y minSdk 23
+      - name: Configurar Gradle para Firebase, AdMob y minSdk 23
         run: |
           cat << 'EOF' > patch.py
           import os
+          import re
 
+          # 1. settings.gradle — Google Services plugin
           settings_path = 'android/settings.gradle'
           if os.path.exists(settings_path):
               with open(settings_path, 'r') as f:
@@ -40,18 +42,27 @@ jobs:
                   with open(settings_path, 'w') as f:
                       f.write(content)
 
+          # 2. app/build.gradle — Google Services + minSdk 23
           app_path = 'android/app/build.gradle'
           if os.path.exists(app_path):
               with open(app_path, 'r') as f:
                   content = f.read()
-              
               if 'plugins {' in content:
                   content = content.replace('plugins {', 'plugins {\n    id "com.google.gms.google-services"')
-              
               content = content.replace('minSdk = flutter.minSdkVersion', 'minSdk = 23')
               content = content.replace('minSdkVersion = flutter.minSdkVersion', 'minSdk = 23')
-              
               with open(app_path, 'w') as f:
+                  f.write(content)
+
+          # 3. AndroidManifest.xml — App ID de AdMob
+          manifest_path = 'android/app/src/main/AndroidManifest.xml'
+          if os.path.exists(manifest_path):
+              with open(manifest_path, 'r') as f:
+                  content = f.read()
+              admob_meta = '        <meta-data\n            android:name="com.google.android.gms.ads.APPLICATION_ID"\n            android:value="ca-app-pub-2628699742979891~7557734775"/>'
+              if 'APPLICATION_ID' not in content:
+                  content = content.replace('<application', admob_meta + '\n\n    <application', 1)
+              with open(manifest_path, 'w') as f:
                   f.write(content)
           EOF
           python3 patch.py
