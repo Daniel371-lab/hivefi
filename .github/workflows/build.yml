@@ -30,6 +30,7 @@ jobs:
         run: |
           cat << 'EOF' > patch.py
           import os
+          import re
 
           # 1. settings.gradle — Google Services plugin
           settings_path = 'android/settings.gradle'
@@ -53,16 +54,17 @@ jobs:
               with open(app_path, 'w') as f:
                   f.write(content)
 
-          # 3. AndroidManifest.xml — App ID de AdMob
+          # 3. AndroidManifest.xml — App ID de AdMob (Inyección interna segura)
           manifest_path = 'android/app/src/main/AndroidManifest.xml'
           if os.path.exists(manifest_path):
               with open(manifest_path, 'r') as f:
                   content = f.read()
-              admob_meta = '        <meta-data\n            android:name="com.google.android.gms.ads.APPLICATION_ID"\n            android:value="ca-app-pub-2628699742979891~7557734775"/>'
               if 'APPLICATION_ID' not in content:
-                  content = content.replace('<application', admob_meta + '\n\n    <application', 1)
-              with open(manifest_path, 'w') as f:
-                  f.write(content)
+                  admob_meta = '\n        <meta-data\n            android:name="com.google.android.gms.ads.APPLICATION_ID"\n            android:value="ca-app-pub-2628699742979891~7557734775"/>'
+                  # Inserta la metadata inmediatamente después de abrir la etiqueta <application>
+                  content = re.sub(r'(<application[^>]*>)', r'\1' + admob_meta, content)
+                  with open(manifest_path, 'w') as f:
+                      f.write(content)
           EOF
           python3 patch.py
           rm patch.py
