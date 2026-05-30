@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
+import '../services/ad_service.dart';
 
 class GastoScreen extends StatelessWidget {
   const GastoScreen({super.key});
@@ -524,6 +525,7 @@ class _FormularioGastoState extends State<_FormularioGasto> {
         monto: monto,
       );
       if (mounted) Navigator.pop(context);
+      await AdService.instance.mostrarInterstitialSiCorresponde();
     } catch (e) {
       setState(() => _errorMessage = 'Error al registrar el gasto.');
     } finally {

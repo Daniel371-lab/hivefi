@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'theme/app_theme.dart';
@@ -19,6 +20,7 @@ import 'screens/reparto_screen.dart';
 import 'screens/historial_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'services/ad_service.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -34,6 +36,9 @@ void main() {
           storageBucket: 'hivefi-39b81.firebasestorage.app',
         ),
       );
+
+      await MobileAds.instance.initialize();
+      await AdService.instance.precargar();
 
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

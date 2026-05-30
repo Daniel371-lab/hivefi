@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
+import '../services/ad_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -50,7 +51,7 @@ class SettingsScreen extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.block_outlined,
                 label: context.tr('adFreeMode'),
-                onTap: () {},
+                onTap: () => _mostrarRewardedAd(context),
               ),
               _SettingsTile(
                 icon: Icons.favorite_border_rounded,
@@ -131,6 +132,23 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+void _mostrarRewardedAd(BuildContext context) async {
+    final exito = await AdService.instance.mostrarRewarded();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            exito
+                ? context.tr('adFreeActivated')
+                : context.tr('adFreeError'),
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+  
   void _confirmDeleteAccount(BuildContext context) {
     final provider = context.read<AppProvider>();
     showDialog(

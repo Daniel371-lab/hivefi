@@ -155,6 +155,8 @@ const Map<String, Map<String, String>> _translations = {
     'cancelMovement': 'Anular movimiento',
     'longPressHint':
         'Mantené presionado un movimiento para editarlo o anularlo.',
+		'adFreeActivated': 'Sin anuncios por 6 horas. ¡Disfrutalo!',
+    'adFreeError': 'No se pudo activar. Intentá de nuevo.',
 
     // Errores generales
     'emptyAmount': 'Ingresá un monto.',
@@ -309,6 +311,9 @@ const Map<String, Map<String, String>> _translations = {
     'longPressHint':
         'Long press a movement to edit or cancel it.',
 
+'adFreeActivated': 'Ad-free for 6 hours. Enjoy!',
+    'adFreeError': 'Could not activate. Please try again.',
+	
     // Errores generales
     'emptyAmount': 'Enter an amount.',
     'invalidAmount': 'The amount is not valid.',
