@@ -17,6 +17,8 @@ import 'screens/gasto_screen.dart';
 import 'screens/destinar_screen.dart';
 import 'screens/reparto_screen.dart';
 import 'screens/historial_screen.dart';
+import 'screens/splash_screen.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -82,8 +84,11 @@ class HivefiApp extends StatelessWidget {
         Locale('es'),
         Locale('en'),
       ],
-      home: const AuthWrapper(),
+      home: const SplashScreen(),
+      // onboarding se maneja desde el splash
       routes: {
+        '/auth': (_) => const AuthWrapper(),
+        '/onboarding': (_) => const OnboardingScreen(),
         '/': (_) => const HomeScreen(),
         '/settings': (_) => const SettingsScreen(),
         '/login': (_) => const LoginScreen(),
