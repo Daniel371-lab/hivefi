@@ -26,31 +26,20 @@ jobs:
       - name: Recrear entorno nativo limpio
         run: flutter create --org com.jplabs --project-name hivefi . --platforms=android
 
-      - name: Configurar Gradle para Firebase, AdMob y minSdk 23
+      - name: Configurar Gradle para Firebase y minSdk 23
         run: |
           cat << 'EOF' > patch.py
           import os
-          import re
 
-          # 1. settings.gradle — Google Services plugin + AGP 8.1.1
+          # 1. settings.gradle — Google Services plugin
           settings_path = 'android/settings.gradle'
           if os.path.exists(settings_path):
               with open(settings_path, 'r') as f:
                   content = f.read()
               if 'plugins {' in content:
                   content = content.replace('plugins {', 'plugins {\n    id "com.google.gms.google-services" version "4.4.2" apply false')
-              content = re.sub(
-                  r'id\s+"com\.android\.application"\s+version\s+"[^"]*"',
-                  'id "com.android.application" version "8.1.1"',
-                  content
-              )
-              content = re.sub(
-                  r'id\s+"com\.android\.library"\s+version\s+"[^"]*"',
-                  'id "com.android.library" version "8.1.1"',
-                  content
-              )
-              with open(settings_path, 'w') as f:
-                  f.write(content)
+                  with open(settings_path, 'w') as f:
+                      f.write(content)
 
           # 2. app/build.gradle — Google Services + minSdk 23
           app_path = 'android/app/build.gradle'
@@ -64,20 +53,7 @@ jobs:
               with open(app_path, 'w') as f:
                   f.write(content)
 
-          # 3. gradle-wrapper.properties — Gradle 8.3 compatible con AGP 8.1.1
-          wrapper_path = 'android/gradle/wrapper/gradle-wrapper.properties'
-          if os.path.exists(wrapper_path):
-              with open(wrapper_path, 'r') as f:
-                  content = f.read()
-              content = re.sub(
-                  r'distributionUrl=.*',
-                  'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.3-bin.zip',
-                  content
-              )
-              with open(wrapper_path, 'w') as f:
-                  f.write(content)
-
-          # 4. AndroidManifest.xml — App ID de AdMob
+          # 3. AndroidManifest.xml — App ID de AdMob
           manifest_path = 'android/app/src/main/AndroidManifest.xml'
           if os.path.exists(manifest_path):
               with open(manifest_path, 'r') as f:
