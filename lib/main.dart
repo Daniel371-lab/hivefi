@@ -38,7 +38,6 @@ void main() {
       );
 
       await MobileAds.instance.initialize();
-      await AdService.instance.precargar();
 
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
