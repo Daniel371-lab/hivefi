@@ -20,6 +20,9 @@ const Map<String, Map<String, String>> _translations = {
     'unsavedAmount': 'Tenés un monto sin confirmar.',
     'unsavedChanges': 'Tenés cambios sin guardar.',
     'genericError': 'Ocurrió un error. Intentá de nuevo.',
+	'language_setup_title': 'Elige tu idioma',
+    'language_setup_subtitle': 'Puedes cambiarlo después en Configuración.',
+    'language_setup_next': 'SIGUIENTE',
 
     // Home
     'balanceGeneral': 'BALANCE GENERAL',
@@ -185,6 +188,9 @@ const Map<String, Map<String, String>> _translations = {
     'unsavedAmount': 'You have an unconfirmed amount.',
     'unsavedChanges': 'You have unsaved changes.',
     'genericError': 'An error occurred. Please try again.',
+	'language_setup_title': 'Choose your language',
+    'language_setup_subtitle': 'You can change it later in Settings.',
+    'language_setup_next': 'NEXT',
 
     // Home
     'balanceGeneral': 'GENERAL BALANCE',
