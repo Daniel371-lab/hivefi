@@ -118,47 +118,38 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool _verificando = false;
+  late final Future<bool> _monedaFuture;
+  User? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _user = FirebaseAuth.instance.currentUser;
+    if (_user != null) {
+      final provider = context.read<AppProvider>();
+      _monedaFuture = provider.firestoreService.monedaConfigurada();
+    } else {
+      _monedaFuture = Future.value(true); // sin sesión, no importa el valor
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
+    if (_user == null) {
+      return const LoginScreen();
+    }
 
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return FutureBuilder<bool>(
+      future: _monedaFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
         if (!snapshot.hasData) {
-          // Sin sesión: reset estado y mostrar login
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            provider.resetMonedaConfigurada();
-          });
-          return const LoginScreen();
-        }
-
-        // Con sesión: verificar si ya eligió moneda
-        final monedaConfigurada = provider.monedaConfigurada;
-
-        if (monedaConfigurada == null && !_verificando) {
-          _verificando = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            await provider.verificarMonedaConfigurada();
-            if (mounted) setState(() => _verificando = false);
-          });
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
-        if (monedaConfigurada == false) {
+        if (snapshot.data == false) {
           return const CurrencySetupScreen();
         }
-
         return const HomeScreen();
       },
     );
