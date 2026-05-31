@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK y AAB
 
 on:
   push:
@@ -26,12 +26,13 @@ jobs:
       - name: Recrear entorno nativo limpio
         run: flutter create --org com.jplabs --project-name hivefi . --platforms=android
 
-      - name: Configurar Gradle para Firebase y minSdk 23
+      - name: Configurar Gradle para Firebase, minSdk 23 y Billing
         run: |
           cat << 'EOF' > patch.py
           import os
           import re
 
+          # 1. Configurar Gradle
           settings_path = 'android/settings.gradle'
           if os.path.exists(settings_path):
               with open(settings_path, 'r') as f:
@@ -52,22 +53,25 @@ jobs:
               with open(app_path, 'w') as f:
                   f.write(content)
 
+          # 2. Inyectar Manifest (AdMob y Billing)
           manifest_path = 'android/app/src/main/AndroidManifest.xml'
           if os.path.exists(manifest_path):
               with open(manifest_path, 'r') as f:
                   content = f.read()
+              
+              admob_meta = '\n        <meta-data\n            android:name="com.google.android.gms.ads.APPLICATION_ID"\n            android:value="ca-app-pub-2628699742979891~7557734775"/>'
+              billing_perm = '\n    <uses-permission android:name="com.android.vending.BILLING" />'
+              
               if 'APPLICATION_ID' not in content:
-                  admob_meta = '\n        <meta-data\n            android:name="com.google.android.gms.ads.APPLICATION_ID"\n            android:value="ca-app-pub-2628699742979891~7557734775"/>'
                   content = re.sub(r'(<application[^>]*>)', r'\1' + admob_meta, content)
-                  with open(manifest_path, 'w') as f:
-                      f.write(content)
+              if 'BILLING' not in content:
+                  content = content.replace('<manifest', '<manifest' + billing_perm)
+                  
+              with open(manifest_path, 'w') as f:
+                  f.write(content)
           EOF
           python3 patch.py
           rm patch.py
-
-      - name: Agregar permiso de Billing
-        run: |
-          sed -i '/<application/i \    <uses-permission android:name="com.android.vending.BILLING" />' android/app/src/main/AndroidManifest.xml
 
       - name: Decodificar Keystore y crear key.properties
         run: |
@@ -87,9 +91,19 @@ jobs:
       - name: Generar icono de launcher
         run: dart run flutter_launcher_icons
 
-      - run: flutter build appbundle --release
+      - name: Compilar APK y AppBundle
+        run: |
+          flutter build apk --release
+          flutter build appbundle --release
 
-      - uses: actions/upload-artifact@v4
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
         with:
-          name: hivefi-release
+          name: hivefi-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Subir AppBundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: hivefi-aab
           path: build/app/outputs/bundle/release/app-release.aab
