@@ -95,7 +95,7 @@ class HomeScreen extends StatelessWidget {
                 _BalanceCarousel(provider: provider),
                 const SizedBox(height: 32),
                 _HexGrid(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
                 _SeccionAhorros(provider: provider),
               ],
             ),
@@ -380,7 +380,7 @@ class _HexItem {
 
 class _HexButton extends StatefulWidget {
   final _HexItem item;
-  const _HexButton({required this.item});
+  const _HexButton({required this.item, super.key});
 
   @override
   State<_HexButton> createState() => _HexButtonState();
@@ -390,8 +390,10 @@ class _HexButtonState extends State<_HexButton>
     with SingleTickerProviderStateMixin {
   bool _showingTooltip = false;
   bool _tooltipVisto = true;
+  OverlayEntry? _overlayEntry;
   late AnimationController _controller;
   late Animation<double> _fadeAnim;
+  final _key = GlobalKey();
 
   @override
   void initState() {
@@ -410,9 +412,86 @@ class _HexButtonState extends State<_HexButton>
     if (mounted) setState(() => _tooltipVisto = visto);
   }
 
+  void _showOverlay() {
+    final renderBox = _key.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+    final theme = Theme.of(context);
+
+    _overlayEntry = OverlayEntry(
+      builder: (_) => Positioned(
+        left: offset.dx - 8,
+        top: offset.dy - 90,
+        width: size.width + 16,
+        child: FadeTransition(
+          opacity: _fadeAnim,
+          child: Material(
+            color: Colors.transparent,
+            child: GestureDetector(
+              onTap: _dismissAndNavigate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.3),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.item.tooltipMsg,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 10,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Toca para continuar',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+    _controller.forward();
+  }
+
+  Future<void> _dismissAndNavigate() async {
+    await _controller.reverse();
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    if (mounted) {
+      setState(() => _showingTooltip = false);
+      Navigator.pushNamed(context, widget.item.route);
+    }
+  }
+
   Future<void> _handleTap() async {
     if (!_tooltipVisto && !_showingTooltip) {
-      // Primera vez: mostrar tooltip
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(widget.item.tooltipKey, true);
       if (mounted) {
@@ -420,27 +499,23 @@ class _HexButtonState extends State<_HexButton>
           _showingTooltip = true;
           _tooltipVisto = true;
         });
-        _controller.forward();
+        _showOverlay();
       }
       return;
     }
 
     if (_showingTooltip) {
-      // Tooltip visible: cerrar y navegar
-      await _controller.reverse();
-      if (mounted) {
-        setState(() => _showingTooltip = false);
-        Navigator.pushNamed(context, widget.item.route);
-      }
+      await _dismissAndNavigate();
       return;
     }
 
-    // Ya visto: navegar directo
     Navigator.pushNamed(context, widget.item.route);
   }
 
   @override
   void dispose() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
     _controller.dispose();
     super.dispose();
   }
@@ -452,34 +527,34 @@ class _HexButtonState extends State<_HexButton>
     final onPrimary = theme.colorScheme.onPrimary;
 
     return GestureDetector(
+      key: _key,
       onTap: _handleTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Hexágono
-          ClipPath(
-            clipper: _HexClipper(),
-            child: Container(
-              color: honey.withOpacity(0.90),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(widget.item.icon, color: onPrimary, size: 26),
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.item.label,
-                    style: TextStyle(
-                      color: onPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 10,
-                      letterSpacing: 0.3,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+      child: ClipPath(
+        clipper: _HexClipper(),
+        child: Container(
+          color: honey.withOpacity(0.90),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(widget.item.icon, color: onPrimary, size: 26),
+              const SizedBox(height: 6),
+              Text(
+                widget.item.label,
+                style: TextStyle(
+                  color: onPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10,
+                  letterSpacing: 0.3,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
 
           // Tooltip overlay
           if (_showingTooltip)
