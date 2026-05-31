@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'firestore_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -47,7 +48,8 @@ class AuthService {
   }
 
   // Eliminar cuenta
-  Future<void> deleteAccount() async {
+  Future<void> deleteAccount(FirestoreService firestoreService) async {
+    await firestoreService.eliminarTodosLosDatos();
     await _auth.currentUser?.delete();
   }
 

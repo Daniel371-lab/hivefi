@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/banner_ad_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -44,6 +45,7 @@ class _RepartoScreenState extends State<RepartoScreen> {
             ),
       child: Scaffold(
         extendBodyBehindAppBar: true,
+        bottomNavigationBar: const BannerAdWidget(),
         appBar: AppBar(title: const Text('Reparto')),
         floatingActionButton: FloatingActionButton(
           backgroundColor: theme.colorScheme.primary,

@@ -32,7 +32,6 @@ jobs:
           import os
           import re
 
-          # 1. settings.gradle — Google Services plugin
           settings_path = 'android/settings.gradle'
           if os.path.exists(settings_path):
               with open(settings_path, 'r') as f:
@@ -42,7 +41,6 @@ jobs:
                   with open(settings_path, 'w') as f:
                       f.write(content)
 
-          # 2. app/build.gradle — Google Services + minSdk 23
           app_path = 'android/app/build.gradle'
           if os.path.exists(app_path):
               with open(app_path, 'r') as f:
@@ -54,20 +52,32 @@ jobs:
               with open(app_path, 'w') as f:
                   f.write(content)
 
-          # 3. AndroidManifest.xml — App ID de AdMob (Inyección interna segura)
           manifest_path = 'android/app/src/main/AndroidManifest.xml'
           if os.path.exists(manifest_path):
               with open(manifest_path, 'r') as f:
                   content = f.read()
               if 'APPLICATION_ID' not in content:
                   admob_meta = '\n        <meta-data\n            android:name="com.google.android.gms.ads.APPLICATION_ID"\n            android:value="ca-app-pub-2628699742979891~7557734775"/>'
-                  # Inserta la metadata inmediatamente después de abrir la etiqueta <application>
                   content = re.sub(r'(<application[^>]*>)', r'\1' + admob_meta, content)
                   with open(manifest_path, 'w') as f:
                       f.write(content)
           EOF
           python3 patch.py
           rm patch.py
+
+      - name: Agregar permiso de Billing
+        run: |
+          sed -i '/<application/i \    <uses-permission android:name="com.android.vending.BILLING" />' android/app/src/main/AndroidManifest.xml
+
+      - name: Decodificar Keystore y crear key.properties
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          cat << EOF > android/key.properties
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=upload-keystore.jks
+          EOF
 
       - name: Crear google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
@@ -77,9 +87,9 @@ jobs:
       - name: Generar icono de launcher
         run: dart run flutter_launcher_icons
 
-      - run: flutter build apk --release
+      - run: flutter build appbundle --release
 
       - uses: actions/upload-artifact@v4
         with:
           name: hivefi-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/bundle/release/app-release.aab

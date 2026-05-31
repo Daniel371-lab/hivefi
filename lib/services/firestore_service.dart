@@ -207,6 +207,27 @@ class FirestoreService {
     await _movimientos.doc(movimientoId).delete();
   }
 
+  Future<void> eliminarTodosLosDatos() async {
+    final categoriasSnap = await _categorias.get();
+    final movimientosSnap = await _movimientos.get();
+
+    final todosLosDocs = [
+      ...categoriasSnap.docs,
+      ...movimientosSnap.docs,
+    ];
+
+    // Batch de hasta 500 operaciones
+    const batchSize = 500;
+    for (int i = 0; i < todosLosDocs.length; i += batchSize) {
+      final batch = _db.batch();
+      final chunk = todosLosDocs.skip(i).take(batchSize);
+      for (final doc in chunk) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
+
   Stream<QuerySnapshot> getMovimientosDestinarPorOrigen(String categoriaOrigenId) {
     return _movimientos
         .where('categoriaOrigenId', isEqualTo: categoriaOrigenId)

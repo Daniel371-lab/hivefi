@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/banner_ad_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
@@ -24,6 +25,7 @@ class SettingsScreen extends StatelessWidget {
             ),
       child: Scaffold(
         extendBodyBehindAppBar: true,
+        bottomNavigationBar: const BannerAdWidget(),
         appBar: AppBar(
           title: Text(context.tr('settings')),
         ),
@@ -168,7 +170,7 @@ void _mostrarRewardedAd(BuildContext context) async {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                await provider.authService.deleteAccount();
+                await provider.authService.deleteAccount(provider.firestoreService);
                 if (context.mounted) {
                   Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
                 }

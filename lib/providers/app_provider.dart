@@ -6,7 +6,7 @@ import '../services/firestore_service.dart';
 class AppProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   Locale _locale = const Locale('es');
-  String _currency = 'PYG';
+  String _currency = 'USD';
 
   ThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
@@ -23,7 +23,7 @@ class AppProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final theme = prefs.getString('themeMode') ?? 'system';
     final lang = prefs.getString('locale') ?? 'es';
-    final cur = prefs.getString('currency') ?? 'PYG';
+    final cur = prefs.getString('currency') ?? 'USD';
 
     _themeMode = theme == 'light'
         ? ThemeMode.light
