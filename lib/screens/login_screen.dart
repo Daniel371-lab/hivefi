@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/auth');
+      Navigator.pushNamedAndRemoveUntil(context, '/auth', (_) => false);
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {

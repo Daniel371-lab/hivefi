@@ -45,17 +45,16 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (_adFree || !_cargado || _bannerAd == null) return const SizedBox();
+    if (_adFree || !_cargado || _bannerAd == null) return const SizedBox.shrink();
 
-    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      child: SizedBox(
-        width: _bannerAd!.size.width.toDouble(),
-        height: _bannerAd!.size.height.toDouble(),
-        child: AdWidget(ad: _bannerAd!),
-      ),
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      width: double.infinity,
+      height: _bannerAd!.size.height.toDouble() + bottomInset,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: AdWidget(ad: _bannerAd!),
     );
   }
 }

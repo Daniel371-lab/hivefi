@@ -70,7 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
       context.read<AppProvider>().marcarNuevoUsuario();
-      Navigator.pushReplacementNamed(context, '/auth');
+      Navigator.pushNamedAndRemoveUntil(context, '/auth', (_) => false);
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {

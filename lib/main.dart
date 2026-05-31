@@ -132,13 +132,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     final provider = context.read<AppProvider>();
 
-    // Registro reciente: el provider ya sabe que es nuevo
     if (provider.esNuevoUsuario) return _AuthDecision.currencySetup;
 
-    // Login normal: consultar Firestore
-    final configurada = await provider.firestoreService.monedaConfigurada();
-    return configurada ? _AuthDecision.home : _AuthDecision.home;
-    // Login siempre va a home aunque no tenga moneda configurada (cambio de parecer)
+    // Login normal: sincronizar moneda desde Firestore si SharedPreferences está vacío
+    final monedaRemota = await provider.firestoreService.leerMonedaUsuario();
+    if (monedaRemota != null) {
+      await provider.setCurrency(monedaRemota);
+    }
+
+    return _AuthDecision.home;
   }
 
   @override

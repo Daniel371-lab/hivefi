@@ -459,7 +459,7 @@ class _SeccionAhorrosState extends State<_SeccionAhorros> {
             const SizedBox(height: 12),
             if (multiple)
               SizedBox(
-                height: 110,
+                height: 140,
                 child: PageView.builder(
                   controller: _pageController,
                   itemCount: docs.length,
@@ -512,16 +512,15 @@ class _AhorroCard extends StatelessWidget {
         },
       ),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
         decoration: BoxDecoration(
           color: const Color(0xFF0F3A30),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            // Fila 1: nombre + badge
+            // Fila 1: nombre + badge meta alcanzada
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -553,7 +552,7 @@ class _AhorroCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            // Fila 2: monto + meta/porcentaje en la misma línea
+            // Fila 2: monto a la izquierda, meta y % a la derecha
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -567,15 +566,17 @@ class _AhorroCard extends StatelessWidget {
                   ),
                 ),
                 if (tieneMeta) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '/ ${CurrencyFormatter.format(meta, provider.currency)}',
-                    style: const TextStyle(
-                      color: Color(0xFF8FB5A8),
-                      fontSize: 11,
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '/ ${CurrencyFormatter.format(meta, provider.currency)}',
+                      style: const TextStyle(
+                        color: Color(0xFF8FB5A8),
+                        fontSize: 10,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
                   Text(
                     '$porcentaje%',
                     style: const TextStyle(
@@ -587,6 +588,7 @@ class _AhorroCard extends StatelessWidget {
                 ],
               ],
             ),
+            // Barra de progreso (siempre visible si tiene meta)
             if (tieneMeta) ...[
               const SizedBox(height: 8),
               ClipRRect(

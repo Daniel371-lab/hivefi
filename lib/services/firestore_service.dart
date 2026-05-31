@@ -322,6 +322,13 @@ class FirestoreService {
     return data?['monedaConfigurada'] == true;
   }
 
+  Future<String?> leerMonedaUsuario() async {
+    final doc = await _db.collection('users').doc(_uid).get();
+    if (!doc.exists) return null;
+    final data = doc.data() as Map<String, dynamic>?;
+    return data?['moneda'] as String?;
+  }
+
   Future<void> guardarMonedaUsuario(String currencyCode) async {
     await _db.collection('users').doc(_uid).set(
       {
