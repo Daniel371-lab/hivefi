@@ -7,6 +7,7 @@ import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
 import '../utils/currency_formatter.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -290,17 +291,52 @@ class _HexGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      _HexItem(icon: Icons.arrow_downward_rounded, label: context.tr('income'), route: '/ingreso'),
-      _HexItem(icon: Icons.arrow_upward_rounded, label: context.tr('expense'), route: '/gasto'),
-      _HexItem(icon: Icons.pie_chart_rounded, label: context.tr('destinar'), route: '/destinar'),
-      _HexItem(icon: Icons.grid_view_rounded, label: context.tr('categories'), route: '/categorias'),
-      _HexItem(icon: Icons.compare_arrows_rounded, label: context.tr('reparto'), route: '/reparto'),
-      _HexItem(icon: Icons.history_rounded, label: context.tr('history'), route: '/historial'),
+      _HexItem(
+        icon: Icons.arrow_downward_rounded,
+        label: context.tr('income'),
+        route: '/ingreso',
+        tooltipKey: 'tooltip_seen_ingreso',
+        tooltipMsg: context.tr('tooltip_ingreso'),
+      ),
+      _HexItem(
+        icon: Icons.arrow_upward_rounded,
+        label: context.tr('expense'),
+        route: '/gasto',
+        tooltipKey: 'tooltip_seen_gasto',
+        tooltipMsg: context.tr('tooltip_gasto'),
+      ),
+      _HexItem(
+        icon: Icons.pie_chart_rounded,
+        label: context.tr('destinar'),
+        route: '/destinar',
+        tooltipKey: 'tooltip_seen_destinar',
+        tooltipMsg: context.tr('tooltip_destinar'),
+      ),
+      _HexItem(
+        icon: Icons.grid_view_rounded,
+        label: context.tr('categories'),
+        route: '/categorias',
+        tooltipKey: 'tooltip_seen_categorias',
+        tooltipMsg: context.tr('tooltip_categorias'),
+      ),
+      _HexItem(
+        icon: Icons.compare_arrows_rounded,
+        label: context.tr('reparto'),
+        route: '/reparto',
+        tooltipKey: 'tooltip_seen_reparto',
+        tooltipMsg: context.tr('tooltip_reparto'),
+      ),
+      _HexItem(
+        icon: Icons.history_rounded,
+        label: context.tr('history'),
+        route: '/historial',
+        tooltipKey: 'tooltip_seen_historial',
+        tooltipMsg: context.tr('tooltip_historial'),
+      ),
     ];
 
     return Stack(
       children: [
-        // Capa de fondo: La animación limitada exactamente al área de los hexágonos
         Positioned.fill(
           child: Transform.scale(
             scale: 0.5,
@@ -310,8 +346,6 @@ class _HexGrid extends StatelessWidget {
             ),
           ),
         ),
-
-        // Capa de arriba: La cuadrícula de botones interactivos
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -333,12 +367,83 @@ class _HexItem {
   final IconData icon;
   final String label;
   final String route;
-  const _HexItem({required this.icon, required this.label, required this.route});
+  final String tooltipKey;
+  final String tooltipMsg;
+  const _HexItem({
+    required this.icon,
+    required this.label,
+    required this.route,
+    required this.tooltipKey,
+    required this.tooltipMsg,
+  });
 }
 
-class _HexButton extends StatelessWidget {
+class _HexButton extends StatefulWidget {
   final _HexItem item;
   const _HexButton({required this.item});
+
+  @override
+  State<_HexButton> createState() => _HexButtonState();
+}
+
+class _HexButtonState extends State<_HexButton>
+    with SingleTickerProviderStateMixin {
+  bool _showingTooltip = false;
+  bool _tooltipVisto = true;
+  late AnimationController _controller;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _checkTooltip();
+  }
+
+  Future<void> _checkTooltip() async {
+    final prefs = await SharedPreferences.getInstance();
+    final visto = prefs.getBool(widget.item.tooltipKey) ?? false;
+    if (mounted) setState(() => _tooltipVisto = visto);
+  }
+
+  Future<void> _handleTap() async {
+    if (!_tooltipVisto && !_showingTooltip) {
+      // Primera vez: mostrar tooltip
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(widget.item.tooltipKey, true);
+      if (mounted) {
+        setState(() {
+          _showingTooltip = true;
+          _tooltipVisto = true;
+        });
+        _controller.forward();
+      }
+      return;
+    }
+
+    if (_showingTooltip) {
+      // Tooltip visible: cerrar y navegar
+      await _controller.reverse();
+      if (mounted) {
+        setState(() => _showingTooltip = false);
+        Navigator.pushNamed(context, widget.item.route);
+      }
+      return;
+    }
+
+    // Ya visto: navegar directo
+    Navigator.pushNamed(context, widget.item.route);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -347,30 +452,87 @@ class _HexButton extends StatelessWidget {
     final onPrimary = theme.colorScheme.onPrimary;
 
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, item.route),
-      child: ClipPath(
-        clipper: _HexClipper(),
-        child: Container(
-          // withOpacity(0.90) hace que el fondo se intuya por detrás de forma elegante
-          color: honey.withOpacity(0.90),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(item.icon, color: onPrimary, size: 26),
-              const SizedBox(height: 6),
-              Text(
-                item.label,
-                style: TextStyle(
-                  color: onPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 10,
-                  letterSpacing: 0.3,
-                ),
-                textAlign: TextAlign.center,
+      onTap: _handleTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Hexágono
+          ClipPath(
+            clipper: _HexClipper(),
+            child: Container(
+              color: honey.withOpacity(0.90),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(widget.item.icon, color: onPrimary, size: 26),
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.item.label,
+                    style: TextStyle(
+                      color: onPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
+                      letterSpacing: 0.3,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+
+          // Tooltip overlay
+          if (_showingTooltip)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: FadeTransition(
+                opacity: _fadeAnim,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.18),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.item.tooltipMsg,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 10,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Toca para continuar',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

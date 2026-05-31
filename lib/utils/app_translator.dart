@@ -161,6 +161,14 @@ const Map<String, Map<String, String>> _translations = {
 		'adFreeActivated': 'Sin anuncios por 6 horas. ¡Disfrutalo!',
     'adFreeError': 'No se pudo activar. Intentá de nuevo.',
 
+    // Tooltips primera vez
+    'tooltip_ingreso': 'Aquí registras el dinero que recibes. Selecciona una cuenta y confirma el monto.',
+    'tooltip_gasto': 'Aquí registras tus gastos. El dinero se descuenta del sobre seleccionado.',
+    'tooltip_destinar': 'Mueve dinero de tus ingresos hacia un sobre de gasto o ahorro.',
+    'tooltip_reparto': 'Redistribuye dinero entre tus sobres sin necesidad de un ingreso nuevo.',
+    'tooltip_categorias': 'Tus sobres de presupuesto. Puedes crear sobres de ingreso, gasto y ahorro.',
+    'tooltip_historial': 'Consulta y analiza todos tus movimientos filtrados por mes.',
+
     // Errores generales
     'emptyAmount': 'Ingresá un monto.',
     'invalidAmount': 'El monto no es válido.',
@@ -320,6 +328,14 @@ const Map<String, Map<String, String>> _translations = {
 'adFreeActivated': 'Ad-free for 6 hours. Enjoy!',
     'adFreeError': 'Could not activate. Please try again.',
 	
+    // Tooltips primera vez
+    'tooltip_ingreso': 'Here you register the money you receive. Select an account and confirm the amount.',
+    'tooltip_gasto': 'Here you register your expenses. Money is deducted from the selected envelope.',
+    'tooltip_destinar': 'Move money from your income into a spending or savings envelope.',
+    'tooltip_reparto': 'Redistribute money between your envelopes without needing a new income.',
+    'tooltip_categorias': 'Your budget envelopes. You can create income, expense and savings envelopes.',
+    'tooltip_historial': 'View and analyze all your transactions filtered by month.',
+
     // Errores generales
     'emptyAmount': 'Enter an amount.',
     'invalidAmount': 'The amount is not valid.',

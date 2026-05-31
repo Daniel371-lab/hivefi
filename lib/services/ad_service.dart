@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -110,33 +111,37 @@ class AdService {
   }
 
   Future<bool> mostrarRewarded() async {
+    if (await isAdFree()) return true;
+
     if (_rewardedAd == null) {
       await cargarRewarded();
       if (_rewardedAd == null) return false;
     }
 
-    bool recompensado = false;
+    final completer = Completer<bool>();
 
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _rewardedAd = null;
         cargarRewarded();
+        if (!completer.isCompleted) completer.complete(false);
       },
       onAdFailedToShowFullScreenContent: (ad, _) {
         ad.dispose();
         _rewardedAd = null;
+        if (!completer.isCompleted) completer.complete(false);
       },
     );
 
     await _rewardedAd!.show(
       onUserEarnedReward: (_, __) async {
-        recompensado = true;
         await _setAdFree6Hours();
+        if (!completer.isCompleted) completer.complete(true);
       },
     );
 
-    return recompensado;
+    return completer.future;
   }
 
   // ─── Precarga inicial ──────────────────────────────────────────────────────

@@ -4,13 +4,11 @@ import 'firestore_service.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Stream para escuchar cambios de sesión
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Usuario actual
   User? get currentUser => _auth.currentUser;
 
-    Future<UserCredential?> register({
+  Future<UserCredential?> register({
     required String email,
     required String password,
     required String name,
@@ -41,19 +39,32 @@ class AuthService {
     }
   }
 
-
-  // Cerrar sesión
   Future<void> logout() async {
     await _auth.signOut();
   }
 
-  // Eliminar cuenta
-  Future<void> deleteAccount(FirestoreService firestoreService) async {
+  Future<void> deleteAccount({
+    required FirestoreService firestoreService,
+    required String password,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    // Re-autenticar antes de eliminar
+    final credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: password,
+    );
+    try {
+      await user.reauthenticateWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw _handleError(e);
+    }
+
     await firestoreService.eliminarTodosLosDatos();
-    await _auth.currentUser?.delete();
+    await user.delete();
   }
 
-  // Olvidé contraseña
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
@@ -62,7 +73,6 @@ class AuthService {
     }
   }
 
-  // Manejo de errores en español
   String _handleError(FirebaseAuthException e) {
     switch (e.code) {
       case 'email-already-in-use':
@@ -74,6 +84,8 @@ class AuthService {
       case 'user-not-found':
         return 'No existe una cuenta con este correo.';
       case 'wrong-password':
+        return 'La contraseña es incorrecta.';
+      case 'invalid-credential':
         return 'La contraseña es incorrecta.';
       case 'too-many-requests':
         return 'Demasiados intentos. Intentá más tarde.';

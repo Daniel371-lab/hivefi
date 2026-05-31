@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/banner_ad_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
 import '../services/ad_service.dart';
@@ -50,11 +52,7 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {},
                 trailing: _BadgePremium(),
               ),
-              _SettingsTile(
-                icon: Icons.block_outlined,
-                label: context.tr('adFreeMode'),
-                onTap: () => _mostrarRewardedAd(context),
-              ),
+              const _AdFreeTile(),
               _SettingsTile(
                 icon: Icons.favorite_border_rounded,
                 label: context.tr('donate'),
@@ -134,58 +132,160 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-void _mostrarRewardedAd(BuildContext context) async {
-    final exito = await AdService.instance.mostrarRewarded();
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            exito
-                ? context.tr('adFreeActivated')
-                : context.tr('adFreeError'),
-          ),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-    }
-  }
-  
   void _confirmDeleteAccount(BuildContext context) {
     final provider = context.read<AppProvider>();
+    final passwordController = TextEditingController();
+    String? errorMsg;
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(context.tr('deleteAccount')),
-        content: Text(context.tr('deleteAccountConfirm')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('cancel')),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setStateDialog) => AlertDialog(
+          title: Text(context.tr('deleteAccount')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(context.tr('deleteAccountConfirm')),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Contraseña',
+                  errorText: errorMsg,
+                ),
+                onChanged: (_) {
+                  if (errorMsg != null) setStateDialog(() => errorMsg = null);
+                },
+              ),
+            ],
           ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(context.tr('cancel')),
             ),
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await provider.authService.deleteAccount(provider.firestoreService);
-                if (context.mounted) {
-                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () async {
+                final password = passwordController.text;
+                if (password.isEmpty) {
+                  setStateDialog(() => errorMsg = 'Ingresá tu contraseña.');
+                  return;
                 }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString())),
+                Navigator.pop(dialogContext);
+                try {
+                  await provider.authService.deleteAccount(
+                    firestoreService: provider.firestoreService,
+                    password: password,
                   );
+                  if (context.mounted) {
+                    Navigator.of(context)
+                        .pushNamedAndRemoveUntil('/login', (_) => false);
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString())),
+                    );
+                  }
                 }
-              }
-            },
-            child: Text(context.tr('confirm')),
-          ),
-        ],
+              },
+              child: Text(context.tr('confirm')),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+// --- AD FREE TILE ---
+
+class _AdFreeTile extends StatefulWidget {
+  const _AdFreeTile();
+
+  @override
+  State<_AdFreeTile> createState() => _AdFreeTileState();
+}
+
+class _AdFreeTileState extends State<_AdFreeTile> {
+  bool _adFreeActivo = false;
+  DateTime? _hastaDateTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificar();
+  }
+
+  Future<void> _verificar() async {
+    final prefs = await SharedPreferences.getInstance();
+    final until = prefs.getInt('ad_free_until') ?? 0;
+    final ahora = DateTime.now().millisecondsSinceEpoch;
+    final activo = ahora < until;
+    if (mounted) {
+      setState(() {
+        _adFreeActivo = activo;
+        _hastaDateTime =
+            activo ? DateTime.fromMillisecondsSinceEpoch(until) : null;
+      });
+    }
+  }
+
+  Future<void> _activar() async {
+    final exito = await AdService.instance.mostrarRewarded();
+    if (mounted) {
+      if (exito) {
+        await _verificar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('adFreeActivated')),
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('adFreeError')),
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = _adFreeActivo
+        ? theme.colorScheme.onSurface.withOpacity(0.38)
+        : theme.colorScheme.onSurface;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: Icon(Icons.block_outlined, color: color),
+      title: Text(
+        context.tr('adFreeMode'),
+        style: theme.textTheme.bodyMedium?.copyWith(color: color),
+      ),
+      trailing: _adFreeActivo && _hastaDateTime != null
+          ? Text(
+              'Hasta ${_hastaDateTime!.hour.toString().padLeft(2, '0')}:${_hastaDateTime!.minute.toString().padLeft(2, '0')}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          : const Icon(Icons.chevron_right_rounded),
+      onTap: _adFreeActivo ? null : _activar,
     );
   }
 }
@@ -326,9 +426,7 @@ class _ProfileSheetState extends State<_ProfileSheet> {
             const SizedBox(height: 6),
             Text(
               _nameSuccess!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.green,
-              ),
+              style: theme.textTheme.bodySmall?.copyWith(color: Colors.green),
             ),
           ],
           const SizedBox(height: 12),
