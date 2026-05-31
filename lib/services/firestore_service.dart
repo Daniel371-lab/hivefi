@@ -313,6 +313,25 @@ class FirestoreService {
     return snapshot.docs.isNotEmpty;
   }
 
+ // ─── USUARIO ───────────────────────────────────────────────────────────────
+
+  Future<bool> monedaConfigurada() async {
+    final doc = await _db.collection('users').doc(_uid).get();
+    if (!doc.exists) return false;
+    final data = doc.data() as Map<String, dynamic>?;
+    return data?['monedaConfigurada'] == true;
+  }
+
+  Future<void> guardarMonedaUsuario(String currencyCode) async {
+    await _db.collection('users').doc(_uid).set(
+      {
+        'monedaConfigurada': true,
+        'moneda': currencyCode,
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   // ─── BALANCE ───────────────────────────────────────────────────────────────
 
   Stream<Map<String, double>> getBalance() {

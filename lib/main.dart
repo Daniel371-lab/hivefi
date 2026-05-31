@@ -20,6 +20,7 @@ import 'screens/reparto_screen.dart';
 import 'screens/historial_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/currency_setup_screen.dart';
 import 'services/ad_service.dart';
 
 void main() {
@@ -39,7 +40,7 @@ void main() {
 
       await MobileAds.instance.initialize();
       await AdService.instance.precargar();
-	  
+
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -90,7 +91,6 @@ class HivefiApp extends StatelessWidget {
         Locale('en'),
       ],
       home: const SplashScreen(),
-      // onboarding se maneja desde el splash
       routes: {
         '/auth': (_) => const AuthWrapper(),
         '/onboarding': (_) => const OnboardingScreen(),
@@ -104,17 +104,26 @@ class HivefiApp extends StatelessWidget {
         '/destinar': (_) => const DestinarScreen(),
         '/reparto': (_) => const RepartoScreen(),
         '/historial': (_) => const HistorialScreen(),
+        '/currency-setup': (_) => const CurrencySetupScreen(),
       },
     );
   }
 }
 
-// Decide si mostrar Home o Login según sesión
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _verificando = false;
+
+  @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AppProvider>();
+
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
@@ -123,10 +132,34 @@ class AuthWrapper extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (snapshot.hasData) {
-          return const HomeScreen();
+
+        if (!snapshot.hasData) {
+          // Sin sesión: reset estado y mostrar login
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            provider.resetMonedaConfigurada();
+          });
+          return const LoginScreen();
         }
-        return const LoginScreen();
+
+        // Con sesión: verificar si ya eligió moneda
+        final monedaConfigurada = provider.monedaConfigurada;
+
+        if (monedaConfigurada == null && !_verificando) {
+          _verificando = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await provider.verificarMonedaConfigurada();
+            if (mounted) setState(() => _verificando = false);
+          });
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (monedaConfigurada == false) {
+          return const CurrencySetupScreen();
+        }
+
+        return const HomeScreen();
       },
     );
   }

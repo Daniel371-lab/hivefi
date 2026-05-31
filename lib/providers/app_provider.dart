@@ -8,9 +8,13 @@ class AppProvider extends ChangeNotifier {
   Locale _locale = const Locale('es');
   String _currency = 'USD';
 
+  // null = todavía verificando, false = hay que mostrar setup, true = ya configurado
+  bool? _monedaConfigurada;
+
   ThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
   String get currency => _currency;
+  bool? get monedaConfigurada => _monedaConfigurada;
 
   final AuthService authService = AuthService();
   final FirestoreService firestoreService = FirestoreService();
@@ -53,6 +57,26 @@ class AppProvider extends ChangeNotifier {
     _currency = code;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('currency', code);
+    notifyListeners();
+  }
+
+  Future<void> verificarMonedaConfigurada() async {
+    _monedaConfigurada = null;
+    notifyListeners();
+    final resultado = await firestoreService.monedaConfigurada();
+    _monedaConfigurada = resultado;
+    notifyListeners();
+  }
+
+  Future<void> confirmarMonedaConfigurada(String currencyCode) async {
+    await setCurrency(currencyCode);
+    await firestoreService.guardarMonedaUsuario(currencyCode);
+    _monedaConfigurada = true;
+    notifyListeners();
+  }
+
+  void resetMonedaConfigurada() {
+    _monedaConfigurada = null;
     notifyListeners();
   }
 }
