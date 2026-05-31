@@ -397,9 +397,23 @@ class _HexClipper extends CustomClipper<Path> {
 
 // ─── Sección ahorros ─────────────────────────────────────────────────────────
 
-class _SeccionAhorros extends StatelessWidget {
+class _SeccionAhorros extends StatefulWidget {
   final AppProvider provider;
   const _SeccionAhorros({required this.provider});
+
+  @override
+  State<_SeccionAhorros> createState() => _SeccionAhorrosState();
+}
+
+class _SeccionAhorrosState extends State<_SeccionAhorros> {
+  final _pageController = PageController(viewportFraction: 0.92);
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -407,160 +421,197 @@ class _SeccionAhorros extends StatelessWidget {
     final honey = theme.colorScheme.primary;
 
     return StreamBuilder<QuerySnapshot>(
-      stream: provider.firestoreService.getCategoriasPorTipo('ahorro'),
+      stream: widget.provider.firestoreService.getCategoriasPorTipo('ahorro'),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const SizedBox();
         }
 
         final docs = snapshot.data!.docs;
+        final multiple = docs.length > 1;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              context.tr('savings'),
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: honey,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    context.tr('savings'),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: honey,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  if (multiple)
+                    Text(
+                      '${_currentPage + 1} / ${docs.length}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
-            ...docs.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              final id = doc.id;
-              final nombre = data['nombre'] as String;
-              final disponible = (data['disponible'] as num).toDouble();
-              final meta = (data['meta'] as num?)?.toDouble() ?? 0;
-              final tieneMeta = meta > 0;
-              final progreso = tieneMeta
-                  ? (disponible / meta).clamp(0.0, 1.0)
-                  : 0.0;
-              final porcentaje = (progreso * 100).toInt();
-              final metaAlcanzada = tieneMeta && disponible >= meta;
-
-              return GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    '/reparto',
-                    arguments: {
-                      'origenId': id,
-                      'origenNombre': nombre,
-                      'origenDisponible': disponible,
-                      'origenTipo': 'ahorro',
-                    },
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F3A30),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            nombre.toUpperCase(),
-                            style: const TextStyle(
-                              color: Color(0xFF8FB5A8),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          if (metaAlcanzada)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                'Meta alcanzada',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        CurrencyFormatter.format(disponible, provider.currency),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      if (tieneMeta) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Meta: ${CurrencyFormatter.format(meta, provider.currency)}',
-                          style: const TextStyle(
-                            color: Color(0xFFB0C9C2),
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '$porcentaje%',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: progreso.toDouble(),
-                                minHeight: 6,
-                                backgroundColor: const Color(0xFF1D5244),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  metaAlcanzada
-                                      ? Colors.green
-                                      : const Color(0xFFD1923D),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                      const Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'Tocar para usar →',
-                          style: TextStyle(
-                            color: Color(0xFF8FB5A8),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ],
+            if (multiple)
+              SizedBox(
+                height: 110,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: docs.length,
+                  onPageChanged: (i) => setState(() => _currentPage = i),
+                  itemBuilder: (context, i) => Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: _AhorroCard(
+                      doc: docs[i],
+                      provider: widget.provider,
+                    ),
                   ),
                 ),
-              );
-            }),
+              )
+            else
+              _AhorroCard(doc: docs[0], provider: widget.provider),
           ],
         );
       },
+    );
+  }
+}
+
+class _AhorroCard extends StatelessWidget {
+  final QueryDocumentSnapshot doc;
+  final AppProvider provider;
+
+  const _AhorroCard({required this.doc, required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = doc.data() as Map<String, dynamic>;
+    final id = doc.id;
+    final nombre = data['nombre'] as String;
+    final disponible = (data['disponible'] as num).toDouble();
+    final meta = (data['meta'] as num?)?.toDouble() ?? 0;
+    final tieneMeta = meta > 0;
+    final progreso = tieneMeta ? (disponible / meta).clamp(0.0, 1.0) : 0.0;
+    final porcentaje = (progreso * 100).toInt();
+    final metaAlcanzada = tieneMeta && disponible >= meta;
+
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(
+        context,
+        '/reparto',
+        arguments: {
+          'origenId': id,
+          'origenNombre': nombre,
+          'origenDisponible': disponible,
+          'origenTipo': 'ahorro',
+        },
+      ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F3A30),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Fila 1: nombre + badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  nombre.toUpperCase(),
+                  style: const TextStyle(
+                    color: Color(0xFF8FB5A8),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                if (metaAlcanzada)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'Meta alcanzada',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            // Fila 2: monto + meta/porcentaje en la misma línea
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  CurrencyFormatter.format(disponible, provider.currency),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                if (tieneMeta) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '/ ${CurrencyFormatter.format(meta, provider.currency)}',
+                    style: const TextStyle(
+                      color: Color(0xFF8FB5A8),
+                      fontSize: 11,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '$porcentaje%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (tieneMeta) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progreso,
+                  minHeight: 5,
+                  backgroundColor: const Color(0xFF1D5244),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    metaAlcanzada ? Colors.green : const Color(0xFFD1923D),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 6),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'Tocar para usar →',
+                style: TextStyle(color: Color(0xFF8FB5A8), fontSize: 10),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

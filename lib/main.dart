@@ -118,43 +118,53 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  late final Future<bool> _monedaFuture;
-  User? _user;
+  late final Future<_AuthDecision> _decisionFuture;
 
   @override
   void initState() {
     super.initState();
-    _user = FirebaseAuth.instance.currentUser;
-    if (_user != null) {
-      final provider = context.read<AppProvider>();
-      _monedaFuture = provider.firestoreService.monedaConfigurada();
-    } else {
-      _monedaFuture = Future.value(true); // sin sesión, no importa el valor
-    }
+    _decisionFuture = _resolver();
+  }
+
+  Future<_AuthDecision> _resolver() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return _AuthDecision.login;
+
+    final provider = context.read<AppProvider>();
+
+    // Registro reciente: el provider ya sabe que es nuevo
+    if (provider.esNuevoUsuario) return _AuthDecision.currencySetup;
+
+    // Login normal: consultar Firestore
+    final configurada = await provider.firestoreService.monedaConfigurada();
+    return configurada ? _AuthDecision.home : _AuthDecision.home;
+    // Login siempre va a home aunque no tenga moneda configurada (cambio de parecer)
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_user == null) {
-      return const LoginScreen();
-    }
-
-    return FutureBuilder<bool>(
-      future: _monedaFuture,
+    return FutureBuilder<_AuthDecision>(
+      future: _decisionFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (snapshot.data == false) {
-          return const CurrencySetupScreen();
+        switch (snapshot.data!) {
+          case _AuthDecision.login:
+            return const LoginScreen();
+          case _AuthDecision.currencySetup:
+            return const CurrencySetupScreen();
+          case _AuthDecision.home:
+            return const HomeScreen();
         }
-        return const HomeScreen();
       },
     );
   }
 }
+
+enum _AuthDecision { login, currencySetup, home }
 
 class PantallaDeError extends StatelessWidget {
   final String error;

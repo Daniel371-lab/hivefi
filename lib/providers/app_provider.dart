@@ -10,11 +10,13 @@ class AppProvider extends ChangeNotifier {
 
   // null = todavía verificando, false = hay que mostrar setup, true = ya configurado
   bool? _monedaConfigurada;
+  bool _esNuevoUsuario = false;
 
   ThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
   String get currency => _currency;
   bool? get monedaConfigurada => _monedaConfigurada;
+  bool get esNuevoUsuario => _esNuevoUsuario;
 
   final AuthService authService = AuthService();
   final FirestoreService firestoreService = FirestoreService();
@@ -77,6 +79,13 @@ class AppProvider extends ChangeNotifier {
 
   void resetMonedaConfigurada() {
     _monedaConfigurada = null;
+    _esNuevoUsuario = false;
+    notifyListeners();
+  }
+
+  void marcarNuevoUsuario() {
+    _esNuevoUsuario = true;
+    _monedaConfigurada = false;
     notifyListeners();
   }
 }
