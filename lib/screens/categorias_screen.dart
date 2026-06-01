@@ -120,14 +120,27 @@ class _CategoriasScreenState extends State<CategoriasScreen>
     );
   }
 }
-
 // ─── Lista de categorías ─────────────────────────────────────────────────────
 
-class _ListaCategorias extends StatelessWidget {
+class _ListaCategorias extends StatefulWidget {
   final String tipo;
   final String currency;
 
   const _ListaCategorias({required this.tipo, required this.currency});
+
+  @override
+  State<_ListaCategorias> createState() => _ListaCategoriasState();
+}
+
+class _ListaCategoriasState extends State<_ListaCategorias> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +148,7 @@ class _ListaCategorias extends StatelessWidget {
     final theme = Theme.of(context);
 
     return StreamBuilder<QuerySnapshot>(
-      stream: provider.firestoreService.getCategoriasPorTipo(tipo),
+      stream: provider.firestoreService.getCategoriasPorTipo(widget.tipo),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -152,35 +165,110 @@ class _ListaCategorias extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text('Sin categorías aún.', style: theme.textTheme.bodySmall),
                 const SizedBox(height: 4),
-                Text('Tocá + para crear una.', style: theme.textTheme.bodySmall),
+                Text('Toca + para crear una.', style: theme.textTheme.bodySmall),
               ],
             ),
           );
         }
 
         final docs = snapshot.data!.docs;
+        final tieneMuchas = docs.length > 10;
 
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
-          itemCount: docs.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, i) {
-            final data = docs[i].data() as Map<String, dynamic>;
-            final id = docs[i].id;
-            final nombre = data['nombre'] as String;
-            final disponible = (data['disponible'] as num).toDouble();
-            final meta = (data['meta'] as num?)?.toDouble() ?? 0;
-            final esAhorro = tipo == 'ahorro';
+        // Si hay búsqueda activa, filtrar todos; si no, mostrar últimos 10
+        final List<QueryDocumentSnapshot> visibles = _query.isNotEmpty
+            ? docs.where((doc) {
+                final nombre = (doc.data() as Map<String, dynamic>)['nombre']
+                    as String;
+                return nombre
+                    .toLowerCase()
+                    .contains(_query.toLowerCase());
+              }).toList()
+            : docs.take(10).toList();
 
-            return _TarjetaCategoria(
-              id: id,
-              nombre: nombre,
-              disponible: disponible,
-              meta: meta,
-              esAhorro: esAhorro,
-              currency: currency,
-            );
-          },
+        return Column(
+          children: [
+            // Buscador: solo aparece si hay más de 10
+            if (tieneMuchas)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _query = val),
+                  style: theme.textTheme.bodySmall,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar categoría...',
+                    hintStyle: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      size: 18,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    ),
+                    suffixIcon: _query.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() => _query = '');
+                            },
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: theme.colorScheme.onSurface.withOpacity(0.4),
+                            ),
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+
+            // Lista
+            Expanded(
+              child: visibles.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Sin resultados.',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+                      itemCount: visibles.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) {
+                        final data =
+                            visibles[i].data() as Map<String, dynamic>;
+                        final id = visibles[i].id;
+                        final nombre = data['nombre'] as String;
+                        final disponible =
+                            (data['disponible'] as num).toDouble();
+                        final meta =
+                            (data['meta'] as num?)?.toDouble() ?? 0;
+                        final esAhorro = widget.tipo == 'ahorro';
+
+                        return _TarjetaCategoria(
+                          id: id,
+                          nombre: nombre,
+                          disponible: disponible,
+                          meta: meta,
+                          esAhorro: esAhorro,
+                          currency: widget.currency,
+                        );
+                      },
+                    ),
+            ),
+          ],
         );
       },
     );

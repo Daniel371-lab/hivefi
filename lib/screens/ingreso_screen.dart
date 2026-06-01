@@ -36,54 +36,7 @@ class IngresoScreen extends StatelessWidget {
           child: const Icon(Icons.add),
         ),
         body: SafeArea(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: provider.firestoreService.getCategoriasPorTipo('ingreso'),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.inbox_outlined,
-                          size: 48,
-                          color: theme.colorScheme.onSurface.withOpacity(0.3)),
-                      const SizedBox(height: 12),
-                      Text('Sin categorías de ingreso.',
-                          style: theme.textTheme.bodySmall),
-                      const SizedBox(height: 4),
-                      Text('Creá una en Categorías primero.',
-                          style: theme.textTheme.bodySmall),
-                    ],
-                  ),
-                );
-              }
-
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
-                itemCount: snapshot.data!.docs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, i) {
-                  final data = snapshot.data!.docs[i].data()
-                      as Map<String, dynamic>;
-                  final id = snapshot.data!.docs[i].id;
-                  final nombre = data['nombre'] as String;
-                  final disponible = (data['disponible'] as num).toDouble();
-
-                  return _TarjetaIngreso(
-                    id: id,
-                    nombre: nombre,
-                    disponible: disponible,
-                    currency: provider.currency,
-                    provider: provider,
-                  );
-                },
-              );
-            },
-          ),
+          child: _ListaIngresosConBuscador(provider: provider),
         ),
       ),
     );
@@ -95,6 +48,144 @@ class IngresoScreen extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _FormularioIngreso(provider: provider),
+    );
+  }
+}
+
+// ─── Lista ingresos con buscador ─────────────────────────────────────────────
+
+class _ListaIngresosConBuscador extends StatefulWidget {
+  final AppProvider provider;
+  const _ListaIngresosConBuscador({required this.provider});
+
+  @override
+  State<_ListaIngresosConBuscador> createState() =>
+      _ListaIngresosConBuscadorState();
+}
+
+class _ListaIngresosConBuscadorState
+    extends State<_ListaIngresosConBuscador> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: widget.provider.firestoreService
+          .getCategoriasPorTipo('ingreso'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.inbox_outlined,
+                    size: 48,
+                    color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                const SizedBox(height: 12),
+                Text(context.tr('noIncomeCategories'),
+                    style: theme.textTheme.bodySmall),
+                const SizedBox(height: 4),
+                Text(context.tr('createInCategoriesFirst'),
+                    style: theme.textTheme.bodySmall),
+              ],
+            ),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+        final tieneMuchas = docs.length > 10;
+
+        final visibles = _query.isNotEmpty
+            ? docs.where((doc) {
+                final nombre =
+                    (doc.data() as Map<String, dynamic>)['nombre'] as String;
+                return nombre.toLowerCase().contains(_query.toLowerCase());
+              }).toList()
+            : docs.take(10).toList();
+
+        return Column(
+          children: [
+            if (tieneMuchas)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _query = val),
+                  style: theme.textTheme.bodySmall,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar categoría...',
+                    hintStyle: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    ),
+                    prefixIcon: Icon(Icons.search_rounded,
+                        size: 18,
+                        color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                    suffixIcon: _query.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() => _query = '');
+                            },
+                            child: Icon(Icons.close_rounded,
+                                size: 16,
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.4)),
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+            Expanded(
+              child: visibles.isEmpty
+                  ? Center(
+                      child: Text(context.tr('noResults'),
+                          style: theme.textTheme.bodySmall))
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+                      itemCount: visibles.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) {
+                        final data =
+                            visibles[i].data() as Map<String, dynamic>;
+                        final id = visibles[i].id;
+                        final nombre = data['nombre'] as String;
+                        final disponible =
+                            (data['disponible'] as num).toDouble();
+                        return _TarjetaIngreso(
+                          id: id,
+                          nombre: nombre,
+                          disponible: disponible,
+                          currency: widget.provider.currency,
+                          provider: widget.provider,
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

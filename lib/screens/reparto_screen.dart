@@ -114,42 +114,22 @@ class _RepartoScreenState extends State<RepartoScreen> {
                         const SizedBox(height: 16),
 
                         if (gastos.isNotEmpty) ...[
-                          Text('Sobres de gasto',
-                              style: theme.textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 8),
-                          ...gastos.map((doc) {
-                            final data = doc.data() as Map<String, dynamic>;
-                            return _TarjetaSobre(
-                              id: doc.id,
-                              nombre: data['nombre'] as String,
-                              disponible: (data['disponible'] as num).toDouble(),
-                              meta: (data['meta'] as num?)?.toDouble() ?? 0,
-                              tipo: 'gasto',
-                              currency: provider.currency,
-                              provider: provider,
-                            );
-                          }),
+                          _SeccionSobresReparto(
+                            titulo: 'Sobres de gasto',
+                            docs: gastos,
+                            tipo: 'gasto',
+                            provider: provider,
+                          ),
                           const SizedBox(height: 16),
                         ],
 
                         if (ahorros.isNotEmpty) ...[
-                          Text('Sobres de ahorro',
-                              style: theme.textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 8),
-                          ...ahorros.map((doc) {
-                            final data = doc.data() as Map<String, dynamic>;
-                            return _TarjetaSobre(
-                              id: doc.id,
-                              nombre: data['nombre'] as String,
-                              disponible: (data['disponible'] as num).toDouble(),
-                              meta: (data['meta'] as num?)?.toDouble() ?? 0,
-                              tipo: 'ahorro',
-                              currency: provider.currency,
-                              provider: provider,
-                            );
-                          }),
+                          _SeccionSobresReparto(
+                            titulo: 'Sobres de ahorro',
+                            docs: ahorros,
+                            tipo: 'ahorro',
+                            provider: provider,
+                          ),
                         ],
                       ],
                     ),
@@ -430,6 +410,239 @@ class _HistorialReparto extends StatelessWidget {
           }).toList(),
         );
       },
+    );
+  }
+}
+
+// ─── Sección sobres reparto ───────────────────────────────────────────────────
+
+class _SeccionSobresReparto extends StatelessWidget {
+  final String titulo;
+  final List<QueryDocumentSnapshot> docs;
+  final String tipo;
+  final AppProvider provider;
+
+  const _SeccionSobresReparto({
+    required this.titulo,
+    required this.docs,
+    required this.tipo,
+    required this.provider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final ordenados = [...docs]..sort((a, b) {
+        final dispA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+        final dispB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+        return dispB.compareTo(dispA);
+      });
+
+    final visibles = ordenados.take(10).toList();
+    final tieneMas = ordenados.length > 10;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(titulo,
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        ...visibles.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return _TarjetaSobre(
+            id: doc.id,
+            nombre: data['nombre'] as String,
+            disponible: (data['disponible'] as num).toDouble(),
+            meta: (data['meta'] as num?)?.toDouble() ?? 0,
+            tipo: tipo,
+            currency: provider.currency,
+            provider: provider,
+          );
+        }),
+        if (tieneMas)
+          TextButton.icon(
+            onPressed: () => _verTodos(context, ordenados),
+            icon: const Icon(Icons.expand_more_rounded, size: 18),
+            label: Text('Ver todos (${ordenados.length})'),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _verTodos(BuildContext context, List<QueryDocumentSnapshot> docs) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _BottomSheetTodosSobresReparto(
+        docs: docs,
+        tipo: tipo,
+        titulo: titulo,
+        provider: provider,
+      ),
+    );
+  }
+}
+
+// ─── Bottom sheet todos los sobres reparto ────────────────────────────────────
+
+class _BottomSheetTodosSobresReparto extends StatefulWidget {
+  final List<QueryDocumentSnapshot> docs;
+  final String tipo;
+  final String titulo;
+  final AppProvider provider;
+
+  const _BottomSheetTodosSobresReparto({
+    required this.docs,
+    required this.tipo,
+    required this.titulo,
+    required this.provider,
+  });
+
+  @override
+  State<_BottomSheetTodosSobresReparto> createState() =>
+      _BottomSheetTodosSobresRepartoState();
+}
+
+class _BottomSheetTodosSobresRepartoState
+    extends State<_BottomSheetTodosSobresReparto> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final filtrados = _query.isEmpty
+        ? widget.docs
+        : widget.docs.where((doc) {
+            final nombre =
+                (doc.data() as Map<String, dynamic>)['nombre'] as String;
+            return nombre.toLowerCase().contains(_query.toLowerCase());
+          }).toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(widget.titulo,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text('${widget.docs.length} sobres',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    )),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _query = val),
+              style: theme.textTheme.bodySmall,
+              decoration: InputDecoration(
+                hintText: 'Buscar sobre...',
+                hintStyle: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                ),
+                prefixIcon: Icon(Icons.search_rounded,
+                    size: 18,
+                    color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                suffixIcon: _query.isNotEmpty
+                    ? GestureDetector(
+                        onTap: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                        child: Icon(Icons.close_rounded,
+                            size: 16,
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.4)),
+                      )
+                    : null,
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.5,
+            ),
+            child: filtrados.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('Sin resultados.',
+                        style: theme.textTheme.bodySmall),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: filtrados.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) {
+                      final data =
+                          filtrados[i].data() as Map<String, dynamic>;
+                      return _TarjetaSobre(
+                        id: filtrados[i].id,
+                        nombre: data['nombre'] as String,
+                        disponible: (data['disponible'] as num).toDouble(),
+                        meta: (data['meta'] as num?)?.toDouble() ?? 0,
+                        tipo: widget.tipo,
+                        currency: widget.provider.currency,
+                        provider: widget.provider,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

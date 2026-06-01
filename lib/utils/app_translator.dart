@@ -117,6 +117,10 @@ const Map<String, Map<String, String>> _translations = {
     'incomeRegistered': 'Ingreso registrado correctamente.',
     'recentHistory': 'HISTORIAL RECIENTE',
     'available': 'Disponible',
+	'noIncomeCategories': 'Sin categorías de ingreso.',
+    'noExpenseCategories': 'Sin sobres de gasto.',
+    'createInCategoriesFirst': 'Crea una en Categorías primero.',
+    'noResults': 'Sin resultados.',
 
     // Gasto
     'registerExpense': 'REGISTRAR\nGASTO',
@@ -285,6 +289,10 @@ const Map<String, Map<String, String>> _translations = {
     'incomeRegistered': 'Income registered successfully.',
     'recentHistory': 'RECENT HISTORY',
     'available': 'Available',
+	'noIncomeCategories': 'No income categories.',
+    'noExpenseCategories': 'No expense envelopes.',
+    'createInCategoriesFirst': 'Create one in Categories first.',
+    'noResults': 'No results.',
 
     // Gasto
     'registerExpense': 'REGISTER\nEXPENSE',
