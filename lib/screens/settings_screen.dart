@@ -674,32 +674,41 @@ class _ThemeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
     final theme = Theme.of(context);
+    final isDark = provider.themeMode == ThemeMode.dark;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: Icon(Icons.brightness_6_outlined, color: theme.colorScheme.onSurface),
+      leading: Icon(
+        isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+        color: theme.colorScheme.onSurface,
+      ),
       title: Text(context.tr('darkMode'), style: theme.textTheme.bodyMedium),
-      trailing: DropdownButton<ThemeMode>(
-        value: provider.themeMode,
-        underline: const SizedBox(),
-        isDense: true,
-        items: [
-          DropdownMenuItem(
-            value: ThemeMode.system,
-            child: Text(context.tr('themeSystem')),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'PRO',
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+              ),
+            ),
           ),
-          DropdownMenuItem(
-            value: ThemeMode.light,
-            child: Text(context.tr('themeLight')),
-          ),
-          DropdownMenuItem(
-            value: ThemeMode.dark,
-            child: Text(context.tr('themeDark')),
+          const SizedBox(width: 8),
+          Switch(
+            value: isDark,
+            onChanged: (val) => provider.setThemeMode(
+              val ? ThemeMode.dark : ThemeMode.light,
+            ),
           ),
         ],
-        onChanged: (val) {
-          if (val != null) provider.setThemeMode(val);
-        },
       ),
     );
   }

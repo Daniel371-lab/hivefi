@@ -339,7 +339,7 @@ class _HexGrid extends StatelessWidget {
       children: [
         Positioned.fill(
           child: Transform.scale(
-            scale: 0.5,
+            scale: 0.6,
             child: Lottie.asset(
               'assets/images/movimiento.json',
               fit: BoxFit.cover,
