@@ -55,32 +55,45 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
+            preferredSize: const Size.fromHeight(88),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'HIVE',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 48,
+                    width: 48,
+                    child: Lottie.asset(
+                      'assets/images/movimiento.json',
+                      fit: BoxFit.contain,
                     ),
-                    TextSpan(
-                      text: '-FI',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
+                  ),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'HIVE',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '-FI',
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -398,10 +411,10 @@ class _InformeGeneral extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'BALANCE GENERAL',
                       style: TextStyle(
-                        color: const Color(0xFF8FB5A8),
+                        color: Color(0xFF8FB5A8),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1.5,
@@ -440,6 +453,7 @@ class _InformeGeneral extends StatelessWidget {
                       color: Colors.green,
                       total: totalGeneral,
                     ),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -514,10 +528,10 @@ class _InformeDisponible extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'BALANCE DISPONIBLE',
                       style: TextStyle(
-                        color: const Color(0xFF8FB5A8),
+                        color: Color(0xFF8FB5A8),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1.5,
@@ -550,16 +564,19 @@ class _InformeDisponible extends StatelessWidget {
                         final nombre = data['nombre'] as String;
                         final disponible =
                             (data['disponible'] as num).toDouble();
-                        return _FilaInforme(
-                          label: nombre,
-                          monto: disponible,
-                          currency: currency,
-                          color: theme.colorScheme.primary,
-                          total: totalDisponible,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _FilaInforme(
+                            label: nombre,
+                            monto: disponible,
+                            currency: currency,
+                            color: theme.colorScheme.primary,
+                            total: totalDisponible,
+                          ),
                         );
                       }),
                     if (totalSobres > 5) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
                       Text(
                         'y ${totalSobres - 5} sobres más',
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -567,6 +584,7 @@ class _InformeDisponible extends StatelessWidget {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -688,24 +706,7 @@ class _HexGrid extends StatelessWidget {
       ),
     ];
 
-    return Stack(
-  children: [
-    Positioned.fill(
-      child: Transform.scale(
-        scale: 0.6,
-        child: ColorFiltered(
-          colorFilter: const ColorFilter.mode(
-            Colors.transparent,
-            BlendMode.dstIn,
-          ),
-          child: Lottie.asset(
-            'assets/images/movimiento.json',
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
-    ),
-    GridView.builder(
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -716,10 +717,7 @@ class _HexGrid extends StatelessWidget {
       ),
       itemCount: items.length,
       itemBuilder: (context, i) => _HexButton(item: items[i]),
-    ),
-  ],
-);
-
+    );
   }
 }
 
@@ -916,7 +914,6 @@ class _HexButtonState extends State<_HexButton>
   }
 }
 
-
 class _HexClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -1061,7 +1058,6 @@ class _AhorroCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Fila 1: nombre + badge meta alcanzada
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1093,7 +1089,6 @@ class _AhorroCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            // Fila 2: monto a la izquierda, meta y % a la derecha
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -1129,7 +1124,6 @@ class _AhorroCard extends StatelessWidget {
                 ],
               ],
             ),
-            // Barra de progreso (siempre visible si tiene meta)
             if (tieneMeta) ...[
               const SizedBox(height: 8),
               ClipRRect(
