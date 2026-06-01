@@ -152,6 +152,8 @@ class _BalanceCarouselState extends State<_BalanceCarousel> {
                     subtitulo: 'Saldo disponible',
                     progreso: progresoGeneral,
                     currency: currency,
+                    provider: widget.provider,
+                    esGeneral: true,
                   ),
                   _BalanceCard(
                     titulo: 'Balance disponible',
@@ -159,6 +161,8 @@ class _BalanceCarouselState extends State<_BalanceCarousel> {
                     subtitulo: 'Dinero asignado a gastos',
                     progreso: progresoDisponible,
                     currency: currency,
+                    provider: widget.provider,
+                    esGeneral: false,
                   ),
                 ],
               ),
@@ -196,6 +200,8 @@ class _BalanceCard extends StatelessWidget {
   final String subtitulo;
   final double progreso;
   final String currency;
+  final AppProvider provider;
+  final bool esGeneral;
 
   static const Color _cardBg = Color(0xFF0F3A30);
   static const Color _labelColor = Color(0xFF8FB5A8);
@@ -208,6 +214,8 @@ class _BalanceCard extends StatelessWidget {
     required this.subtitulo,
     required this.progreso,
     required this.currency,
+    required this.provider,
+    required this.esGeneral,
   });
 
   @override
@@ -216,74 +224,419 @@ class _BalanceCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-        decoration: BoxDecoration(
-          color: _cardBg,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // <-- Esto evita que la tarjeta se estire
-          children: [
-            Text(
-              titulo.toUpperCase(),
-              style: const TextStyle(
-                color: _labelColor,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              CurrencyFormatter.format(monto, currency),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 24), // <-- Reemplazamos el Spacer() por un espacio fijo
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  subtitulo,
-                  style: const TextStyle(
-                    color: Color(0xFFB0C9C2),
-                    fontSize: 13,
+      child: GestureDetector(
+        onTap: () => esGeneral
+            ? _mostrarInformeGeneral(context)
+            : _mostrarInformeDisponible(context),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+          decoration: BoxDecoration(
+            color: _cardBg,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    titulo.toUpperCase(),
+                    style: const TextStyle(
+                      color: _labelColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.5,
+                    ),
                   ),
-                ),
-                Text(
-                  '$porcentaje%',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: _labelColor,
+                    size: 16,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progreso,
-                minHeight: 6,
-                backgroundColor: _trackColor,
-                valueColor: const AlwaysStoppedAnimation<Color>(_progressColor),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                CurrencyFormatter.format(monto, currency),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    subtitulo,
+                    style: const TextStyle(
+                      color: Color(0xFFB0C9C2),
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    '$porcentaje%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progreso,
+                  minHeight: 6,
+                  backgroundColor: _trackColor,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(_progressColor),
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  void _mostrarInformeGeneral(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _InformeGeneral(
+        provider: provider,
+        currency: currency,
+        totalGeneral: monto,
+      ),
+    );
+  }
+
+  void _mostrarInformeDisponible(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _InformeDisponible(
+        provider: provider,
+        currency: currency,
+        totalDisponible: monto,
       ),
     );
   }
 }
 
+// ─── Informe balance general ──────────────────────────────────────────────────
+
+class _InformeGeneral extends StatelessWidget {
+  final AppProvider provider;
+  final String currency;
+  final double totalGeneral;
+
+  const _InformeGeneral({
+    required this.provider,
+    required this.currency,
+    required this.totalGeneral,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: StreamBuilder<QuerySnapshot>(
+        stream: provider.firestoreService.getTodasLasCategorias(),
+        builder: (context, snapshot) {
+          double totalIngresos = 0;
+          double totalGastos = 0;
+          double totalAhorros = 0;
+
+          if (snapshot.hasData) {
+            for (final doc in snapshot.data!.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final tipo = data['tipo'] as String;
+              final disponible = (data['disponible'] as num).toDouble();
+              if (tipo == 'ingreso') totalIngresos += disponible;
+              if (tipo == 'gasto') totalGastos += disponible;
+              if (tipo == 'ahorro') totalAhorros += disponible;
+            }
+          }
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BALANCE GENERAL',
+                      style: TextStyle(
+                        color: const Color(0xFF8FB5A8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      CurrencyFormatter.format(totalGeneral, currency),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _FilaInforme(
+                      label: 'Ingresos disponibles',
+                      monto: totalIngresos,
+                      currency: currency,
+                      color: honey,
+                      total: totalGeneral,
+                    ),
+                    const SizedBox(height: 12),
+                    _FilaInforme(
+                      label: 'Asignado a gastos',
+                      monto: totalGastos,
+                      currency: currency,
+                      color: Colors.blue,
+                      total: totalGeneral,
+                    ),
+                    const SizedBox(height: 12),
+                    _FilaInforme(
+                      label: 'En ahorros',
+                      monto: totalAhorros,
+                      currency: currency,
+                      color: Colors.green,
+                      total: totalGeneral,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ─── Informe balance disponible ───────────────────────────────────────────────
+
+class _InformeDisponible extends StatelessWidget {
+  final AppProvider provider;
+  final String currency;
+  final double totalDisponible;
+
+  const _InformeDisponible({
+    required this.provider,
+    required this.currency,
+    required this.totalDisponible,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: StreamBuilder<QuerySnapshot>(
+        stream: provider.firestoreService.getCategoriasPorTipo('gasto'),
+        builder: (context, snapshot) {
+          final docs = snapshot.data?.docs ?? [];
+
+          final ordenados = [...docs]..sort((a, b) {
+              final dA =
+                  ((a.data() as Map<String, dynamic>)['disponible'] as num)
+                      .toDouble();
+              final dB =
+                  ((b.data() as Map<String, dynamic>)['disponible'] as num)
+                      .toDouble();
+              return dB.compareTo(dA);
+            });
+
+          final top5 = ordenados.take(5).toList();
+          final totalSobres = ordenados.length;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BALANCE DISPONIBLE',
+                      style: TextStyle(
+                        color: const Color(0xFF8FB5A8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      CurrencyFormatter.format(totalDisponible, currency),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Top sobres con más dinero',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (top5.isEmpty)
+                      Text('Sin sobres de gasto.',
+                          style: theme.textTheme.bodySmall)
+                    else
+                      ...top5.map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final nombre = data['nombre'] as String;
+                        final disponible =
+                            (data['disponible'] as num).toDouble();
+                        return _FilaInforme(
+                          label: nombre,
+                          monto: disponible,
+                          currency: currency,
+                          color: theme.colorScheme.primary,
+                          total: totalDisponible,
+                        );
+                      }),
+                    if (totalSobres > 5) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        'y ${totalSobres - 5} sobres más',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ─── Fila de informe ──────────────────────────────────────────────────────────
+
+class _FilaInforme extends StatelessWidget {
+  final String label;
+  final double monto;
+  final String currency;
+  final Color color;
+  final double total;
+
+  const _FilaInforme({
+    required this.label,
+    required this.monto,
+    required this.currency,
+    required this.color,
+    required this.total,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final porcentaje = total > 0 ? (monto / total).clamp(0.0, 1.0) : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              CurrencyFormatter.format(monto, currency),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: porcentaje,
+            minHeight: 5,
+            backgroundColor:
+                theme.colorScheme.onSurface.withOpacity(0.08),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 // ─── Grid Hexagonal ──────────────────────────────────────────────────────────
 
@@ -336,30 +689,37 @@ class _HexGrid extends StatelessWidget {
     ];
 
     return Stack(
-      children: [
-        Positioned.fill(
-          child: Transform.scale(
-            scale: 0.6,
-            child: Lottie.asset(
-              'assets/images/movimiento.json',
-              fit: BoxFit.cover,
-            ),
+  children: [
+    Positioned.fill(
+      child: Transform.scale(
+        scale: 0.6,
+        child: ColorFiltered(
+          colorFilter: const ColorFilter.mode(
+            Colors.transparent,
+            BlendMode.dstIn,
+          ),
+          child: Lottie.asset(
+            'assets/images/movimiento.json',
+            fit: BoxFit.cover,
           ),
         ),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.95,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, i) => _HexButton(item: items[i]),
-        ),
-      ],
-    );
+      ),
+    ),
+    GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.95,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, i) => _HexButton(item: items[i]),
+    ),
+  ],
+);
+
   }
 }
 
