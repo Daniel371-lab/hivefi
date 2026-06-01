@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
+import '../utils/app_translator.dart';
 
 class IngresoScreen extends StatelessWidget {
   const IngresoScreen({super.key});

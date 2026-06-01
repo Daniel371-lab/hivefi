@@ -7,6 +7,7 @@ import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
 import '../services/ad_service.dart';
+import '../utils/app_translator.dart';
 
 class GastoScreen extends StatelessWidget {
   const GastoScreen({super.key});
