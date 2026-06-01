@@ -384,24 +384,48 @@ class _SeccionDonutState extends State<_SeccionDonut> {
 
     final total =
         gastosPorCategoria.values.fold(0.0, (a, b) => a + b);
-
-    // Agrupar menores al 15% en "Otros"
-    final Map<String, double> agrupado = {};
-    double otros = 0;
+// Candidatos: 10% o menos, ordenados de menor a mayor
     final sorted = gastosPorCategoria.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
+    final candidatos = sorted
+        .where((e) => e.value / total <= 0.10)
+        .toList()
+      ..sort((a, b) => a.value.compareTo(b.value)); // menor a mayor
+
+    // Acumular candidatos hasta llegar al 15%
+    double acumulado = 0;
+    final aAgrupar = <MapEntry<String, double>>[];
+    for (final entry in candidatos) {
+      acumulado += entry.value / total;
+      if (acumulado <= 0.15) {
+        aAgrupar.add(entry);
+      } else {
+        break;
+      }
+    }
+
+    // Si solo hay 1 en el grupo no tiene sentido agruparlo
+    final agruparFinal = aAgrupar.length >= 2 ? aAgrupar : <MapEntry<String, double>>[];
+    final clavesBloqueadas = agruparFinal.map((e) => e.key).toSet();
+
+    final Map<String, double> agrupado = {};
+    double otros = 0;
+
     for (final entry in sorted) {
-      final porcentaje = entry.value / total;
-      if (porcentaje < 0.15 && sorted.length > 3) {
+      if (clavesBloqueadas.contains(entry.key)) {
         otros += entry.value;
       } else {
         agrupado[entry.key] = entry.value;
       }
     }
+
     if (otros > 0) agrupado['Otros'] = otros;
 
-    final entries = agrupado.entries.toList();
+    // Ordenar de mayor a menor
+    final entries = agrupado.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+	
 
     return _TarjetaSeccion(
       titulo: '¿En qué gasté más?',

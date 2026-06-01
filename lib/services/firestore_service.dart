@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'connectivity_service.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -13,6 +14,13 @@ class FirestoreService {
   CollectionReference get _movimientos =>
       _db.collection('users').doc(_uid).collection('movimientos');
 
+  Future<void> _verificarInternet() async {
+    final tiene = await ConnectivityService.instance.tieneInternet();
+    if (!tiene) {
+      throw Exception('Sin conexión a internet. Conéctate e intenta de nuevo.');
+    }
+  }
+
   // ─── CATEGORÍAS ────────────────────────────────────────────────────────────
 
   Future<void> crearCategoria({
@@ -20,6 +28,7 @@ class FirestoreService {
     required String tipo,
     double meta = 0,
   }) async {
+    await _verificarInternet();
     await _categorias.add({
       'nombre': nombre.toUpperCase().trim(),
       'tipo': tipo,
@@ -52,6 +61,7 @@ class FirestoreService {
   }
 
   Future<void> eliminarCategoria(String categoriaId, double disponible) async {
+    await _verificarInternet();
     final batch = _db.batch();
     batch.delete(_categorias.doc(categoriaId));
     await batch.commit();
@@ -61,6 +71,7 @@ class FirestoreService {
     required String categoriaId,
     required String nuevoNombre,
   }) async {
+    await _verificarInternet();
     await _categorias.doc(categoriaId).update({
       'nombre': nuevoNombre.toUpperCase().trim(),
     });
@@ -73,6 +84,7 @@ class FirestoreService {
     required String categoriaNombre,
     required double monto,
   }) async {
+    await _verificarInternet();
     final batch = _db.batch();
     batch.update(_categorias.doc(categoriaId), {
       'disponible': FieldValue.increment(monto),
@@ -95,6 +107,7 @@ class FirestoreService {
     required String categoriaNombre,
     required double monto,
   }) async {
+    await _verificarInternet();
     final batch = _db.batch();
     batch.update(_categorias.doc(categoriaId), {
       'disponible': FieldValue.increment(-monto),
@@ -118,6 +131,7 @@ class FirestoreService {
     required double montoAnterior,
     required double montoNuevo,
   }) async {
+    await _verificarInternet();
     final batch = _db.batch();
     final diferencia = montoNuevo - montoAnterior;
     batch.update(_categorias.doc(categoriaId), {
@@ -135,6 +149,7 @@ class FirestoreService {
     required String categoriaId,
     required double monto,
   }) async {
+    await _verificarInternet();
     final batch = _db.batch();
     batch.update(_categorias.doc(categoriaId), {
       'disponible': FieldValue.increment(monto),
@@ -150,6 +165,7 @@ class FirestoreService {
     required String destinoNombre,
     required double monto,
   }) async {
+    await _verificarInternet();
     final batch = _db.batch();
     batch.update(_categorias.doc(origenId), {
       'disponible': FieldValue.increment(-monto),
@@ -177,6 +193,7 @@ class FirestoreService {
     required String destinoNombre,
     required double monto,
   }) async {
+    await _verificarInternet();
     final batch = _db.batch();
     batch.update(_categorias.doc(origenId), {
       'disponible': FieldValue.increment(-monto),
@@ -204,10 +221,12 @@ class FirestoreService {
   }
 
   Future<void> eliminarMovimiento(String movimientoId) async {
+    await _verificarInternet();
     await _movimientos.doc(movimientoId).delete();
   }
 
   Future<void> eliminarTodosLosDatos() async {
+    await _verificarInternet();
     final categoriasSnap = await _categorias.get();
     final movimientosSnap = await _movimientos.get();
 
@@ -216,7 +235,6 @@ class FirestoreService {
       ...movimientosSnap.docs,
     ];
 
-    // Batch de hasta 500 operaciones
     const batchSize = 500;
     for (int i = 0; i < todosLosDocs.length; i += batchSize) {
       final batch = _db.batch();
@@ -253,6 +271,7 @@ class FirestoreService {
     required double montoAnterior,
     required double montoNuevo,
   }) async {
+    await _verificarInternet();
     final diferencia = montoNuevo - montoAnterior;
     final batch = _db.batch();
     batch.update(_categorias.doc(origenId), {
@@ -274,6 +293,7 @@ class FirestoreService {
     required double montoAnterior,
     required double montoNuevo,
   }) async {
+    await _verificarInternet();
     final diferencia = montoNuevo - montoAnterior;
     final batch = _db.batch();
     batch.update(_categorias.doc(categoriaId), {
@@ -313,7 +333,7 @@ class FirestoreService {
     return snapshot.docs.isNotEmpty;
   }
 
- // ─── USUARIO ───────────────────────────────────────────────────────────────
+  // ─── USUARIO ───────────────────────────────────────────────────────────────
 
   Future<bool> monedaConfigurada() async {
     final doc = await _db.collection('users').doc(_uid).get();
@@ -330,6 +350,7 @@ class FirestoreService {
   }
 
   Future<void> guardarMonedaUsuario(String currencyCode) async {
+    await _verificarInternet();
     await _db.collection('users').doc(_uid).set(
       {
         'monedaConfigurada': true,

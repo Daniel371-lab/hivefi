@@ -38,6 +38,11 @@ void main() {
         ),
       );
 
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      );
+
       await MobileAds.instance.initialize();
       await AdService.instance.precargar();
 
