@@ -8,7 +8,7 @@ extension AppTranslator on BuildContext {
 }
 
 const Map<String, Map<String, String>> _translations = {
-  'es': {
+    'es': {
     // General
     'cancel': 'Cancelar',
     'confirm': 'Confirmar',
@@ -125,7 +125,6 @@ const Map<String, Map<String, String>> _translations = {
     'organize_your_money': 'Organizá tu dinero en categorías.',
     'incomes': 'Ingresos',
     'expenses': 'Gastos',
-    'savings': 'Ahorros',
     'no_categories_yet': 'Sin categorías aún.',
     'tap_plus_to_create': 'Toca + para crear una.',
     'search_category': 'Buscar categoría...',
@@ -145,8 +144,6 @@ const Map<String, Map<String, String>> _translations = {
     'error_creating_category': 'Error al crear la categoría.',
     'new_category': 'Nueva categoría',
     'type': 'Tipo',
-    'income': 'Ingreso',
-    'expense': 'Gasto',
     'saving': 'Ahorro',
     'example_category_name': 'Ej: Sueldo, Comida, Viaje...',
     'savings_goal_optional': 'Meta de ahorro (opcional)',
@@ -293,8 +290,7 @@ const Map<String, Map<String, String>> _translations = {
     'emptyAmount': 'Ingresa un monto.',
     'invalidAmount': 'El monto no es válido.',
   },
-  'en': {
-	  
+    'en': {
     // General
     'cancel': 'Cancel',
     'confirm': 'Confirm',
@@ -411,7 +407,6 @@ const Map<String, Map<String, String>> _translations = {
     'organize_your_money': 'Organize your money in categories.',
     'incomes': 'Incomes',
     'expenses': 'Expenses',
-    'savings': 'Savings',
     'no_categories_yet': 'No categories yet.',
     'tap_plus_to_create': 'Tap + to create one.',
     'search_category': 'Search category...',
@@ -431,8 +426,6 @@ const Map<String, Map<String, String>> _translations = {
     'error_creating_category': 'Error creating category.',
     'new_category': 'New category',
     'type': 'Type',
-    'income': 'Income',
-    'expense': 'Expense',
     'saving': 'Saving',
     'example_category_name': 'Ex: Salary, Food, Travel...',
     'savings_goal_optional': 'Savings goal (optional)',
