@@ -7,6 +7,9 @@ import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
+import '../screens/premium_screen.dart';
+import 'package:provider/provider.dart';
+import '../services/premium_service.dart';
 
 class CategoriasScreen extends StatefulWidget {
   const CategoriasScreen({super.key});
@@ -653,6 +656,25 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
 
     try {
       final provider = context.read<AppProvider>();
+      final premium = context.read<PremiumService>();
+
+      // Verificar límite free
+      if (!premium.isPremium) {
+        final limites = {'ingreso': 3, 'gasto': 8, 'ahorro': 2};
+        final snap = await provider.firestoreService
+            .getCategoriasPorTipo(_tipo)
+            .first;
+        if (snap.docs.length >= limites[_tipo]!) {
+          if (mounted) {
+            Navigator.pop(context);
+            showDialog(
+              context: context,
+              builder: (_) => const PremiumScreen(),
+            );
+          }
+          return;
+        }
+      }
 
       // Validar nombre duplicado
       final existe = await provider.firestoreService

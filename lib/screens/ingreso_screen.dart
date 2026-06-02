@@ -11,7 +11,7 @@ import '../utils/app_translator.dart';
 class IngresoScreen extends StatelessWidget {
   const IngresoScreen({super.key});
 
-  @override
+    @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final provider = context.read<AppProvider>();
@@ -37,7 +37,29 @@ class IngresoScreen extends StatelessWidget {
           child: const Icon(Icons.add),
         ),
         body: SafeArea(
-          child: _ListaIngresosConBuscador(provider: provider),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Sobres de ingreso',
+                        style: theme.textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text('Dinero disponible para distribuir.',
+                        style: theme.textTheme.bodySmall),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _ListaIngresosConBuscador(provider: provider),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -51,7 +73,7 @@ class IngresoScreen extends StatelessWidget {
       builder: (_) => _FormularioIngreso(provider: provider),
     );
   }
-}
+
 
 // ─── Lista ingresos con buscador ─────────────────────────────────────────────
 

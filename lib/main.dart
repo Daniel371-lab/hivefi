@@ -23,6 +23,7 @@ import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/currency_setup_screen.dart';
 import 'services/ad_service.dart';
+import 'services/premium_service.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -57,10 +58,13 @@ void main() {
         systemNavigationBarDividerColor: Colors.transparent,
       ));
 
+      await PremiumService.instance.inicializar();
+
       runApp(
         MultiProvider(
           providers: [
             ChangeNotifierProvider(create: (_) => AppProvider()),
+            ChangeNotifierProvider.value(value: PremiumService.instance),
           ],
           child: const HivefiApp(),
         ),

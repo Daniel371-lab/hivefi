@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
 import '../services/ad_service.dart';
+import '../screens/premium_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -49,7 +50,10 @@ class SettingsScreen extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.workspace_premium_outlined,
                 label: context.tr('premium'),
-                onTap: () {},
+                onTap: () => showDialog(
+                  context: context,
+                  builder: (_) => const PremiumScreen(),
+                ),
                 trailing: _BadgePremium(),
               ),
               const _AdFreeTile(),
@@ -473,13 +477,19 @@ class _ProfileSheetState extends State<_ProfileSheet> {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: _loadingReset ? null : _sendReset,
+              style: OutlinedButton.styleFrom(
+                alignment: Alignment.center,
+              ),
               child: _loadingReset
                   ? const SizedBox(
                       height: 18,
                       width: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(context.tr('sendResetEmail')),
+                  : Text(
+                      context.tr('sendResetEmail'),
+                      textAlign: TextAlign.center,
+                    ),
             ),
           ),
         ],
@@ -673,6 +683,7 @@ class _ThemeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
+    final premium = context.watch<PremiumService>();
     final theme = Theme.of(context);
     final isDark = provider.themeMode == ThemeMode.dark;
 
@@ -704,9 +715,18 @@ class _ThemeTile extends StatelessWidget {
           const SizedBox(width: 8),
           Switch(
             value: isDark,
-            onChanged: (val) => provider.setThemeMode(
-              val ? ThemeMode.dark : ThemeMode.light,
-            ),
+            onChanged: (val) {
+              if (!premium.isPremium) {
+                showDialog(
+                  context: context,
+                  builder: (_) => const PremiumScreen(),
+                );
+                return;
+              }
+              provider.setThemeMode(
+                val ? ThemeMode.dark : ThemeMode.light,
+              );
+            },
           ),
         ],
       ),

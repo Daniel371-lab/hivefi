@@ -43,6 +43,21 @@ const Map<String, Map<String, String>> _translations = {
     'sectionBenefits': 'BENEFICIOS',
     'sectionAbout': 'ACERCA DE',
     'sectionSession': 'SESIÓN',
+	
+	//Premium
+	'premiumSubtitulo': 'Pago único. Sin suscripciones.',
+    'premiumBeneficio1': 'Modo oscuro',
+    'premiumBeneficio1Desc': 'Cuida tus ojos con el tema oscuro.',
+    'premiumBeneficio2': 'Categorías ilimitadas',
+    'premiumBeneficio2Desc': 'Crea todos los sobres que necesitas.',
+    'premiumBeneficio3': 'Sin anuncios para siempre',
+    'premiumBeneficio3Desc': 'Experiencia limpia sin interrupciones.',
+    'premiumPagoUnico': 'Pago único — acceso de por vida',
+    'premiumActivar': 'Activar Premium',
+    'premiumActivo': 'Premium activo',
+    'premiumRestaurar': 'Restaurar compra anterior',
+    'premiumRestaurado': 'Compra restaurada correctamente.',
+    'premiumErrorCompra': 'No se pudo completar la compra. Intenta de nuevo.',
 
     // Settings — items
     'settings': 'Ajustes',
@@ -215,6 +230,22 @@ const Map<String, Map<String, String>> _translations = {
     'sectionBenefits': 'BENEFITS',
     'sectionAbout': 'ABOUT',
     'sectionSession': 'SESSION',
+
+//Premium
+
+'premiumSubtitulo': 'One-time payment. No subscriptions.',
+    'premiumBeneficio1': 'Dark mode',
+    'premiumBeneficio1Desc': 'Easy on the eyes with a dark theme.',
+    'premiumBeneficio2': 'Unlimited categories',
+    'premiumBeneficio2Desc': 'Create as many envelopes as you need.',
+    'premiumBeneficio3': 'No ads forever',
+    'premiumBeneficio3Desc': 'Clean experience without interruptions.',
+    'premiumPagoUnico': 'One-time payment — lifetime access',
+    'premiumActivar': 'Activate Premium',
+    'premiumActivo': 'Premium active',
+    'premiumRestaurar': 'Restore previous purchase',
+    'premiumRestaurado': 'Purchase restored successfully.',
+    'premiumErrorCompra': 'Could not complete purchase. Please try again.',
 
     // Settings — items
     'settings': 'Settings',
