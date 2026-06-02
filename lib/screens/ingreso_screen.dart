@@ -73,7 +73,7 @@ class IngresoScreen extends StatelessWidget {
       builder: (_) => _FormularioIngreso(provider: provider),
     );
   }
-
+}
 
 // ─── Lista ingresos con buscador ─────────────────────────────────────────────
 
