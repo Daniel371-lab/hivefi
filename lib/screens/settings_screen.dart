@@ -8,6 +8,7 @@ import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
 import '../services/ad_service.dart';
 import '../screens/premium_screen.dart';
+import '../services/premium_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
