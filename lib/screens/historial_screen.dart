@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/app_translator.dart';
 
 class HistorialScreen extends StatefulWidget {
   const HistorialScreen({super.key});
@@ -19,16 +20,18 @@ class _HistorialScreenState extends State<HistorialScreen> {
   int _anioSeleccionado = DateTime.now().year;
   int _mesesTendencia = 3;
 
-  final List<String> _nombresMeses = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  List<String> _nombresMeses(BuildContext context) => [
+    context.tr('mes_1'), context.tr('mes_2'), context.tr('mes_3'),
+    context.tr('mes_4'), context.tr('mes_5'), context.tr('mes_6'),
+    context.tr('mes_7'), context.tr('mes_8'), context.tr('mes_9'),
+    context.tr('mes_10'), context.tr('mes_11'), context.tr('mes_12'),
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
     final provider = context.read<AppProvider>();
+    final nombresMeses = _nombresMeses(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: theme.brightness == Brightness.dark
@@ -43,7 +46,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         bottomNavigationBar: const BannerAdWidget(),
-        appBar: AppBar(title: const Text('Historial')),
+        appBar: AppBar(title: Text(context.tr('historialAppBar'))),
         body: SafeArea(
           child: StreamBuilder<QuerySnapshot>(
             stream: provider.firestoreService.getMovimientos(),
@@ -54,7 +57,6 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
               final todos = snapshot.data?.docs ?? [];
 
-              // Filtrar por mes y año seleccionado
               final movimientosMes = todos.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final fecha = data['fecha'] != null
@@ -70,64 +72,44 @@ class _HistorialScreenState extends State<HistorialScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Selector mes/año
                     _SelectorFecha(
                       mes: _mesSeleccionado,
                       anio: _anioSeleccionado,
-                      nombresMeses: _nombresMeses,
-                      onCambio: (mes, anio) =>
-                          setState(() {
-                            _mesSeleccionado = mes;
-                            _anioSeleccionado = anio;
-                          }),
+                      nombresMeses: nombresMeses,
+                      onCambio: (mes, anio) => setState(() {
+                        _mesSeleccionado = mes;
+                        _anioSeleccionado = anio;
+                      }),
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Resumen rápido
                     _ResumenRapido(
                       movimientos: movimientosMes,
                       currency: provider.currency,
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Donut de gastos
                     _SeccionDonut(
                       movimientos: movimientosMes,
                       currency: provider.currency,
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Tendencia barras
                     _SeccionTendencia(
                       todos: todos,
                       meses: _mesesTendencia,
-                      nombresMeses: _nombresMeses,
+                      nombresMeses: nombresMeses,
                       currency: provider.currency,
                       onCambioMeses: (val) =>
                           setState(() => _mesesTendencia = val),
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Top sobres
                     _SeccionTopSobres(
                       movimientos: movimientosMes,
                       currency: provider.currency,
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Progreso ahorros
                     _SeccionAhorros(provider: provider),
-
                     const SizedBox(height: 20),
-
-                                       // Movimientos recientes (Solo los últimos 10)
                     _SeccionMovimientos(
-                      movimientos: movimientosMes.take(10).toList(), // <-- El cambio está aquí
+                      movimientos: movimientosMes.take(10).toList(),
                       currency: provider.currency,
                     ),
                   ],
@@ -159,7 +141,6 @@ class _SelectorFecha extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
     final anioActual = DateTime.now().year;
     final anios = List.generate(5, (i) => anioActual - i);
 
@@ -267,7 +248,7 @@ class _ResumenRapido extends StatelessWidget {
       children: [
         Expanded(
           child: _ChipResumen(
-            label: 'Ingresos',
+            label: context.tr('resumenIngresos'),
             monto: totalIngresos,
             color: Colors.green,
             currency: currency,
@@ -276,7 +257,7 @@ class _ResumenRapido extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _ChipResumen(
-            label: 'Gastos',
+            label: context.tr('resumenGastos'),
             monto: totalGastos,
             color: Colors.red,
             currency: currency,
@@ -285,7 +266,7 @@ class _ResumenRapido extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _ChipResumen(
-            label: 'Saldo',
+            label: context.tr('resumenSaldo'),
             monto: saldo,
             color: saldo >= 0 ? honey : Colors.red,
             currency: currency,
@@ -366,34 +347,30 @@ class _SeccionDonutState extends State<_SeccionDonut> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
 
-    // Calcular gastos por categoría
     final Map<String, double> gastosPorCategoria = {};
     for (final doc in widget.movimientos) {
       final data = doc.data() as Map<String, dynamic>;
       if (data['tipo'] != 'gasto') continue;
-      final nombre = data['categoriaOrigenNombre'] as String? ?? 'Otros';
+      final nombre = data['categoriaOrigenNombre'] as String? ?? context.tr('otrosLabel');
       final monto = (data['monto'] as num).toDouble().abs();
       gastosPorCategoria[nombre] = (gastosPorCategoria[nombre] ?? 0) + monto;
     }
 
     if (gastosPorCategoria.isEmpty) {
-      return _TarjetaVacia(mensaje: 'Sin gastos registrados este mes.');
+      return _TarjetaVacia(mensaje: context.tr('donutSinGastos'));
     }
 
-    final total =
-        gastosPorCategoria.values.fold(0.0, (a, b) => a + b);
-// Candidatos: 10% o menos, ordenados de menor a mayor
+    final total = gastosPorCategoria.values.fold(0.0, (a, b) => a + b);
+
     final sorted = gastosPorCategoria.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     final candidatos = sorted
         .where((e) => e.value / total <= 0.10)
         .toList()
-      ..sort((a, b) => a.value.compareTo(b.value)); // menor a mayor
+      ..sort((a, b) => a.value.compareTo(b.value));
 
-    // Acumular candidatos hasta llegar al 15%
     double acumulado = 0;
     final aAgrupar = <MapEntry<String, double>>[];
     for (final entry in candidatos) {
@@ -405,7 +382,6 @@ class _SeccionDonutState extends State<_SeccionDonut> {
       }
     }
 
-    // Si solo hay 1 en el grupo no tiene sentido agruparlo
     final agruparFinal = aAgrupar.length >= 2 ? aAgrupar : <MapEntry<String, double>>[];
     final clavesBloqueadas = agruparFinal.map((e) => e.key).toSet();
 
@@ -420,15 +396,13 @@ class _SeccionDonutState extends State<_SeccionDonut> {
       }
     }
 
-    if (otros > 0) agrupado['Otros'] = otros;
+    if (otros > 0) agrupado[context.tr('otrosLabel')] = otros;
 
-    // Ordenar de mayor a menor
     final entries = agrupado.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-	
 
     return _TarjetaSeccion(
-      titulo: '¿En qué gasté más?',
+      titulo: context.tr('donutTitulo'),
       child: Column(
         children: [
           SizedBox(
@@ -446,8 +420,7 @@ class _SeccionDonutState extends State<_SeccionDonut> {
                         _touched = -1;
                         return;
                       }
-                      _touched =
-                          response.touchedSection!.touchedSectionIndex;
+                      _touched = response.touchedSection!.touchedSectionIndex;
                     });
                   },
                 ),
@@ -470,7 +443,6 @@ class _SeccionDonutState extends State<_SeccionDonut> {
             ),
           ),
           const SizedBox(height: 16),
-          // Leyenda
           ...List.generate(entries.length, (i) {
             final porcentaje = entries[i].value / total * 100;
             return Padding(
@@ -539,7 +511,6 @@ class _SeccionTendencia extends StatelessWidget {
     final honey = theme.colorScheme.primary;
     final now = DateTime.now();
 
-    // Calcular datos por mes
     final List<Map<String, dynamic>> datosMeses = [];
     for (int i = meses - 1; i >= 0; i--) {
       final fecha = DateTime(now.year, now.month - i, 1);
@@ -574,17 +545,16 @@ class _SeccionTendencia extends StatelessWidget {
         .fold(0.0, (a, b) => a > b ? a : b);
 
     return _TarjetaSeccion(
-      titulo: 'Ingresos vs Gastos',
+      titulo: context.tr('tendenciaTitulo'),
       accion: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [3, 6, 12].map((m) {
+        children: [1, 3, 6].map((m) {
           final selected = m == meses;
           return GestureDetector(
             onTap: () => onCambioMeses(m),
             child: Container(
               margin: const EdgeInsets.only(left: 4),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: selected
                     ? honey
@@ -693,13 +663,13 @@ class _SeccionTopSobres extends StatelessWidget {
     for (final doc in movimientos) {
       final data = doc.data() as Map<String, dynamic>;
       if (data['tipo'] != 'gasto') continue;
-      final nombre = data['categoriaOrigenNombre'] as String? ?? 'Sin nombre';
+      final nombre = data['categoriaOrigenNombre'] as String? ?? context.tr('sinNombre');
       final monto = (data['monto'] as num).toDouble().abs();
       gastosPorSobre[nombre] = (gastosPorSobre[nombre] ?? 0) + monto;
     }
 
     if (gastosPorSobre.isEmpty) {
-      return _TarjetaVacia(mensaje: 'Sin gastos registrados este mes.');
+      return _TarjetaVacia(mensaje: context.tr('topSobresSinGastos'));
     }
 
     final sorted = gastosPorSobre.entries.toList()
@@ -708,7 +678,7 @@ class _SeccionTopSobres extends StatelessWidget {
     final maxMonto = top.first.value;
 
     return _TarjetaSeccion(
-      titulo: 'Sobres más activos',
+      titulo: context.tr('topSobresTitulo'),
       child: Column(
         children: List.generate(top.length, (i) {
           final progreso = top[i].value / maxMonto;
@@ -796,7 +766,7 @@ class _SeccionAhorros extends StatelessWidget {
         if (docs.isEmpty) return const SizedBox();
 
         return _TarjetaSeccion(
-          titulo: 'Progreso de ahorros',
+          titulo: context.tr('progresoAhorrosTitulo'),
           child: Column(
             children: docs.map((doc) {
               final data = doc.data() as Map<String, dynamic>;
@@ -870,15 +840,14 @@ class _SeccionMovimientos extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (movimientos.isEmpty) {
-      return _TarjetaVacia(mensaje: 'Sin movimientos este mes.');
+      return _TarjetaVacia(mensaje: context.tr('sinMovimientosMes'));
     }
 
     return _TarjetaSeccion(
-      titulo: 'Movimientos',
+      titulo: context.tr('movimientosTitulo'),
       child: Column(
         children: movimientos.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          final tipo = data['tipo'] as String;
           final descripcion = data['descripcion'] as String? ?? '';
           final monto = (data['monto'] as num).toDouble();
           final fecha = data['fecha'] != null
