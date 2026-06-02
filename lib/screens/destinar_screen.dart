@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
+import '../utils/app_translator.dart';
 
 class DestinarScreen extends StatelessWidget {
   const DestinarScreen({super.key});
@@ -28,7 +29,7 @@ class DestinarScreen extends StatelessWidget {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         bottomNavigationBar: const BannerAdWidget(),
-        appBar: AppBar(title: const Text('Destinar dinero')),
+        appBar: AppBar(title: Text(context.tr('allocate_money_title'))),
         floatingActionButton: FloatingActionButton(
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
@@ -62,12 +63,12 @@ class DestinarScreen extends StatelessWidget {
                             size: 48,
                             color: theme.colorScheme.onSurface.withOpacity(0.3)),
                         const SizedBox(height: 12),
-                        Text('Sin dinero disponible',
+                        Text(context.tr('no_available_money'),
                             style: theme.textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
                         Text(
-                          'Primero registrá un ingreso para poder destinar dinero.',
+                          context.tr('register_income_first'),
                           style: theme.textTheme.bodySmall,
                           textAlign: TextAlign.center,
                         ),
@@ -82,11 +83,11 @@ class DestinarScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Distribuí tu dinero',
+                    Text(context.tr('distribute_your_money'),
                         style: theme.textTheme.headlineMedium
                             ?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('Asigná tu dinero a sobres de gasto o ahorro.',
+                    Text(context.tr('assign_money_to_envelopes'),
                         style: theme.textTheme.bodySmall),
                     const SizedBox(height: 12),
 
@@ -123,13 +124,13 @@ class DestinarScreen extends StatelessWidget {
                             builder: (_) => _BottomSheetTodosSobres(
                               docs: ordenados,
                               tipo: 'ingreso',
-                              titulo: 'Todos los ingresos',
+                              titulo: context.tr('all_incomes'),
                               provider: provider,
                             ),
                           );
                         },
                         icon: const Icon(Icons.expand_more_rounded, size: 18),
-                        label: Text('Ver todos (${todosIngresos.length})'),
+                        label: Text('${context.tr('view_all')} (${todosIngresos.length})'),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           visualDensity: VisualDensity.compact,
@@ -139,7 +140,7 @@ class DestinarScreen extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     _SeccionDestino(
-                      titulo: 'Sobres de gasto',
+                      titulo: context.tr('expense_envelopes'),
                       tipo: 'gasto',
                       provider: provider,
                     ),
@@ -147,7 +148,7 @@ class DestinarScreen extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     _SeccionDestino(
-                      titulo: 'Sobres de ahorro',
+                      titulo: context.tr('savings_envelopes'),
                       tipo: 'ahorro',
                       provider: provider,
                     ),
@@ -328,7 +329,7 @@ class _SeccionDestino extends StatelessWidget {
               TextButton.icon(
                 onPressed: () => _verTodos(context, ordenados),
                 icon: const Icon(Icons.expand_more_rounded, size: 18),
-                label: Text('Ver todos (${ordenados.length})'),
+                label: Text('${context.tr('view_all')} (${ordenados.length})'),
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
@@ -428,7 +429,7 @@ class _BottomSheetTodosSobresState extends State<_BottomSheetTodosSobres> {
                 Text(widget.titulo,
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
-                Text('${widget.docs.length} sobres',
+                Text('${widget.docs.length} ${context.tr('envelopes')}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     )),
@@ -443,7 +444,7 @@ class _BottomSheetTodosSobresState extends State<_BottomSheetTodosSobres> {
               onChanged: (val) => setState(() => _query = val),
               style: theme.textTheme.bodySmall,
               decoration: InputDecoration(
-                hintText: 'Buscar sobre...',
+                hintText: context.tr('search_envelope'),
                 hintStyle: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
@@ -482,7 +483,7 @@ class _BottomSheetTodosSobresState extends State<_BottomSheetTodosSobres> {
             child: filtrados.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Text('Sin resultados.',
+                    child: Text(context.tr('no_results'),
                         style: theme.textTheme.bodySmall),
                   )
                 : ListView.separated(
@@ -607,7 +608,7 @@ class _TarjetaDestinoState extends State<_TarjetaDestino> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Meta: ${CurrencyFormatter.format(widget.meta, widget.currency)}',
+                    '${context.tr('goal')}: ${CurrencyFormatter.format(widget.meta, widget.currency)}',
                     style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
                   ),
                   Text(
@@ -688,7 +689,7 @@ class _HistorialDestinar extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Text('Sin movimientos aún.',
+          return Text(context.tr('no_movements_yet'),
               style: theme.textTheme.bodySmall?.copyWith(fontSize: 11));
         }
 
@@ -880,7 +881,7 @@ class _FormularioEditarDestinarState extends State<_FormularioEditarDestinar> {
 
   Future<void> _guardar() async {
     if (_montoController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Ingresá un monto.');
+      setState(() => _errorMessage = context.tr('enter_an_amount'));
       return;
     }
 
@@ -888,14 +889,14 @@ class _FormularioEditarDestinarState extends State<_FormularioEditarDestinar> {
         _montoController.text, widget.provider.currency);
 
     if (nuevoMonto <= 0) {
-      setState(() => _errorMessage = 'El monto no es válido.');
+      setState(() => _errorMessage = context.tr('invalid_amount'));
       return;
     }
 
     final diferencia = nuevoMonto - widget.montoActual;
     if (diferencia > 0 && diferencia > widget.disponibleOrigen) {
       setState(() => _errorMessage =
-          'No tenés suficiente en el ingreso. Disponible: ${CurrencyFormatter.format(widget.disponibleOrigen, widget.provider.currency)}');
+          '${context.tr('insufficient_income')} ${CurrencyFormatter.format(widget.disponibleOrigen, widget.provider.currency)}');
       return;
     }
 
@@ -914,7 +915,7 @@ class _FormularioEditarDestinarState extends State<_FormularioEditarDestinar> {
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _errorMessage = 'Error al editar el destino.');
+      setState(() => _errorMessage = context.tr('error_editing_destination'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -948,7 +949,7 @@ class _FormularioEditarDestinarState extends State<_FormularioEditarDestinar> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Editar destino',
+            Text(context.tr('edit_destination'),
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
@@ -957,7 +958,7 @@ class _FormularioEditarDestinarState extends State<_FormularioEditarDestinar> {
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 20),
-            Text('Nuevo monto',
+            Text(context.tr('new_amount'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -991,7 +992,7 @@ class _FormularioEditarDestinarState extends State<_FormularioEditarDestinar> {
                         height: 22,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.5, color: Colors.white))
-                    : const Text('Guardar cambios'),
+                    : Text(context.tr('save_changes')),
               ),
             ),
           ],
@@ -1077,15 +1078,15 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
 
   Future<void> _confirmar() async {
     if (_origenId == null) {
-      setState(() => _errorMessage = 'Seleccioná de dónde sale el dinero.');
+      setState(() => _errorMessage = context.tr('select_source_of_money'));
       return;
     }
     if (_destinoId == null) {
-      setState(() => _errorMessage = 'Seleccioná a dónde va el dinero.');
+      setState(() => _errorMessage = context.tr('select_destination_of_money'));
       return;
     }
     if (_montoController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Ingresá un monto.');
+      setState(() => _errorMessage = context.tr('enter_an_amount'));
       return;
     }
 
@@ -1093,13 +1094,13 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
         _montoController.text, widget.provider.currency);
 
     if (monto <= 0) {
-      setState(() => _errorMessage = 'El monto no es válido.');
+      setState(() => _errorMessage = context.tr('invalid_amount'));
       return;
     }
 
     if (_origenDisponible != null && monto > _origenDisponible!) {
       setState(() => _errorMessage =
-          'No tenés suficiente dinero. Disponible: ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}');
+          '${context.tr('insufficient_money')} ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}');
       return;
     }
 
@@ -1118,7 +1119,7 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _errorMessage = 'Error al destinar el dinero.');
+      setState(() => _errorMessage = context.tr('error_allocating_money'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -1153,11 +1154,11 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Destinar dinero',
+            Text(context.tr('allocate_money'),
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
-            Text('¿De dónde sale el dinero?',
+            Text(context.tr('where_does_money_come_from'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -1168,14 +1169,14 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
                       color: Colors.orange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      'No tenés ingresos con dinero disponible.',
-                      style: TextStyle(color: Colors.orange, fontSize: 13),
+                    child: Text(
+                      context.tr('no_incomes_available'),
+                      style: const TextStyle(color: Colors.orange, fontSize: 13),
                     ),
                   )
                 : DropdownButtonFormField<String>(
                     value: _origenId,
-                    hint: const Text('Seleccioná el ingreso'),
+                    hint: Text(context.tr('select_income')),
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -1221,7 +1222,7 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  'Disponible: ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}',
+                  '${context.tr('available')}: ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}',
                   style: TextStyle(
                       color: honey,
                       fontWeight: FontWeight.w600,
@@ -1230,7 +1231,7 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
               ),
             ],
             const SizedBox(height: 20),
-            Text('¿A qué sobre lo asignás?',
+            Text(context.tr('which_envelope_assign'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -1241,14 +1242,14 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
                       color: Colors.orange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      'No tenés sobres de gasto ni ahorro creados.',
-                      style: TextStyle(color: Colors.orange, fontSize: 13),
+                    child: Text(
+                      context.tr('no_expense_savings_envelopes'),
+                      style: const TextStyle(color: Colors.orange, fontSize: 13),
                     ),
                   )
                 : DropdownButtonFormField<String>(
                     value: _destinoId,
-                    hint: const Text('Seleccioná el destino'),
+                    hint: Text(context.tr('select_destination')),
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -1274,8 +1275,8 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
                                     ),
                                     child: Text(
                                       c['tipo'] == 'ahorro'
-                                          ? 'Ahorro'
-                                          : 'Gasto',
+                                          ? context.tr('savings')
+                                          : context.tr('expense'),
                                       style: TextStyle(
                                           color: honey,
                                           fontSize: 10,
@@ -1296,7 +1297,7 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
                     },
                   ),
             const SizedBox(height: 20),
-            Text('Monto a destinar',
+            Text(context.tr('amount_to_allocate'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -1341,7 +1342,7 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
                         height: 22,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.5, color: Colors.white))
-                    : const Text('Confirmar destino'),
+                    : Text(context.tr('confirm_allocation')),
               ),
             ),
           ],

@@ -29,7 +29,7 @@ class IngresoScreen extends StatelessWidget {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         bottomNavigationBar: const BannerAdWidget(),
-        appBar: AppBar(title: const Text('Ingresos')),
+        appBar: AppBar(title: Text(context.tr('title_incomes'))),
         floatingActionButton: FloatingActionButton(
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
@@ -45,11 +45,11 @@ class IngresoScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Sobres de ingreso',
+                    Text(context.tr('income_envelopes_title'),
                         style: theme.textTheme.headlineMedium
                             ?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('Dinero disponible para distribuir.',
+                    Text(context.tr('income_envelopes_desc'),
                         style: theme.textTheme.bodySmall),
                     const SizedBox(height: 16),
                   ],
@@ -149,7 +149,7 @@ class _ListaIngresosConBuscadorState
                   onChanged: (val) => setState(() => _query = val),
                   style: theme.textTheme.bodySmall,
                   decoration: InputDecoration(
-                    hintText: 'Buscar categoría...',
+                    hintText: context.tr('search_category_hint'),
                     hintStyle: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.4),
                     ),
@@ -346,7 +346,7 @@ class _HistorialIngreso extends StatelessWidget {
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Text(
-            'Sin movimientos aún.',
+            context.tr('no_movements_yet'),
             style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
           );
         }
@@ -426,8 +426,7 @@ class _FilaMovimientoIngresoState extends State<_FilaMovimientoIngreso> {
     if (_fueDestinado) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-              'No se puede editar: este ingreso ya fue destinado.'),
+          content: Text(context.tr('cannot_edit_destined_income')),
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -547,12 +546,12 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
 
   Future<void> _confirmar() async {
     if (_categoriaSeleccionada == null) {
-      setState(() => _errorMessage = 'Seleccioná una categoría.');
+      setState(() => _errorMessage = context.tr('error_select_category'));
       return;
     }
 
     if (_montoController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Ingresá un monto.');
+      setState(() => _errorMessage = context.tr('error_enter_amount'));
       return;
     }
 
@@ -560,7 +559,7 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
         _montoController.text, widget.provider.currency);
 
     if (monto <= 0) {
-      setState(() => _errorMessage = 'El monto no es válido.');
+      setState(() => _errorMessage = context.tr('error_invalid_amount'));
       return;
     }
 
@@ -577,7 +576,7 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _errorMessage = 'Error al registrar el ingreso.');
+      setState(() => _errorMessage = context.tr('error_registering_income'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -611,19 +610,19 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Registrar ingreso',
+            Text(context.tr('register_income_title'),
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
-            Text('¿A qué cuenta entra el dinero?',
+            Text(context.tr('which_account_money_enters'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             _categorias.isEmpty
-                ? const Text('Cargando categorías...')
+                ? Text(context.tr('loading_categories'))
                 : DropdownButtonFormField<String>(
                     value: _categoriaSeleccionada,
-                    hint: const Text('Seleccioná una categoría'),
+                    hint: Text(context.tr('select_category_hint')),
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -650,7 +649,7 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
                     },
                   ),
             const SizedBox(height: 20),
-            Text('Monto del ingreso',
+            Text(context.tr('income_amount_label'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -697,7 +696,7 @@ class _FormularioIngresoState extends State<_FormularioIngreso> {
                         height: 22,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.5, color: Colors.white))
-                    : const Text('Confirmar ingreso'),
+                    : Text(context.tr('confirm_income')),
               ),
             ),
           ],
@@ -749,7 +748,7 @@ class _FormularioEditarIngresoState extends State<_FormularioEditarIngreso> {
 
   Future<void> _guardar() async {
     if (_montoController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Ingresá un monto.');
+      setState(() => _errorMessage = context.tr('error_enter_amount'));
       return;
     }
 
@@ -757,7 +756,7 @@ class _FormularioEditarIngresoState extends State<_FormularioEditarIngreso> {
         _montoController.text, widget.provider.currency);
 
     if (nuevoMonto <= 0) {
-      setState(() => _errorMessage = 'El monto no es válido.');
+      setState(() => _errorMessage = context.tr('error_invalid_amount'));
       return;
     }
 
@@ -775,7 +774,7 @@ class _FormularioEditarIngresoState extends State<_FormularioEditarIngreso> {
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _errorMessage = 'Error al editar el ingreso.');
+      setState(() => _errorMessage = context.tr('error_editing_income'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -809,11 +808,11 @@ class _FormularioEditarIngresoState extends State<_FormularioEditarIngreso> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Editar ingreso',
+            Text(context.tr('edit_income_title'),
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
-            Text('Nuevo monto',
+            Text(context.tr('new_amount_label'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -847,7 +846,7 @@ class _FormularioEditarIngresoState extends State<_FormularioEditarIngreso> {
                         height: 22,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.5, color: Colors.white))
-                    : const Text('Guardar cambios'),
+                    : Text(context.tr('save_changes')),
               ),
             ),
           ],

@@ -38,9 +38,9 @@ class HomeScreen extends StatelessWidget {
             stream: Stream.value(null),
             builder: (context, _) {
               final user = context.read<AppProvider>().authService.currentUser;
-              final nombre = user?.displayName?.split(' ').first ?? 'Usuario';
+              final nombre = user?.displayName?.split(' ').first ?? context.tr('default_user');
               return Text(
-                'Hola, $nombre',
+                '${context.tr('hello')}, $nombre',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -160,18 +160,18 @@ class _BalanceCarouselState extends State<_BalanceCarousel> {
                 onPageChanged: (i) => setState(() => _currentPage = i),
                 children: [
                   _BalanceCard(
-                    titulo: 'Balance general',
+                    titulo: context.tr('general_balance'),
                     monto: balanceGeneral,
-                    subtitulo: 'Saldo disponible',
+                    subtitulo: context.tr('available_balance_subtitle'),
                     progreso: progresoGeneral,
                     currency: currency,
                     provider: widget.provider,
                     esGeneral: true,
                   ),
                   _BalanceCard(
-                    titulo: 'Balance disponible',
+                    titulo: context.tr('available_balance_title'),
                     monto: balanceDisponible,
-                    subtitulo: 'Dinero asignado a gastos',
+                    subtitulo: context.tr('money_assigned_to_expenses'),
                     progreso: progresoDisponible,
                     currency: currency,
                     provider: widget.provider,
@@ -411,9 +411,9 @@ class _InformeGeneral extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'BALANCE GENERAL',
-                      style: TextStyle(
+                    Text(
+                      context.tr('general_balance_upper'),
+                      style: const TextStyle(
                         color: Color(0xFF8FB5A8),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -431,7 +431,7 @@ class _InformeGeneral extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     _FilaInforme(
-                      label: 'Ingresos disponibles',
+                      label: context.tr('available_income'),
                       monto: totalIngresos,
                       currency: currency,
                       color: honey,
@@ -439,7 +439,7 @@ class _InformeGeneral extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _FilaInforme(
-                      label: 'Asignado a gastos',
+                      label: context.tr('assigned_to_expenses'),
                       monto: totalGastos,
                       currency: currency,
                       color: Colors.blue,
@@ -447,7 +447,7 @@ class _InformeGeneral extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _FilaInforme(
-                      label: 'En ahorros',
+                      label: context.tr('in_savings'),
                       monto: totalAhorros,
                       currency: currency,
                       color: Colors.green,
@@ -528,9 +528,9 @@ class _InformeDisponible extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'BALANCE DISPONIBLE',
-                      style: TextStyle(
+                    Text(
+                      context.tr('available_balance_upper'),
+                      style: const TextStyle(
                         color: Color(0xFF8FB5A8),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -548,7 +548,7 @@ class _InformeDisponible extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Top sobres con más dinero',
+                      context.tr('top_envelopes'),
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurfaceVariant,
@@ -556,7 +556,7 @@ class _InformeDisponible extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     if (top5.isEmpty)
-                      Text('Sin sobres de gasto.',
+                      Text(context.tr('no_expense_envelopes'),
                           style: theme.textTheme.bodySmall)
                     else
                       ...top5.map((doc) {
@@ -578,7 +578,7 @@ class _InformeDisponible extends StatelessWidget {
                     if (totalSobres > 5) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'y ${totalSobres - 5} sobres más',
+                        '${context.tr('and_word')} ${totalSobres - 5} ${context.tr('more_envelopes')}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -818,7 +818,7 @@ class _HexButtonState extends State<_HexButton>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Toca para continuar',
+                      context.tr('tap_to_continue'),
                       style: TextStyle(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.w700,
@@ -1077,9 +1077,9 @@ class _AhorroCard extends StatelessWidget {
                       color: Colors.green.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
-                      'Meta alcanzada',
-                      style: TextStyle(
+                    child: Text(
+                      context.tr('goal_reached'),
+                      style: const TextStyle(
                         color: Colors.green,
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
@@ -1139,11 +1139,11 @@ class _AhorroCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 6),
-            const Align(
+            Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'Tocar para usar →',
-                style: TextStyle(color: Color(0xFF8FB5A8), fontSize: 10),
+                context.tr('tap_to_use'),
+                style: const TextStyle(color: Color(0xFF8FB5A8), fontSize: 10),
               ),
             ),
           ],

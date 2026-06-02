@@ -8,7 +8,6 @@ import '../utils/app_translator.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
 import '../screens/premium_screen.dart';
-import 'package:provider/provider.dart';
 import '../services/premium_service.dart';
 
 class CategoriasScreen extends StatefulWidget {
@@ -62,7 +61,7 @@ class _CategoriasScreenState extends State<CategoriasScreen>
       child: Scaffold(
         extendBodyBehindAppBar: true,
         bottomNavigationBar: const BannerAdWidget(),
-        appBar: AppBar(title: const Text('Categorías')),
+        appBar: AppBar(title: Text(context.tr('categories_title'))),
         floatingActionButton: FloatingActionButton(
           backgroundColor: honey,
           foregroundColor: theme.colorScheme.onPrimary,
@@ -81,12 +80,12 @@ class _CategoriasScreenState extends State<CategoriasScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Tus sobres',
+                      context.tr('your_envelopes'),
                       style: theme.textTheme.headlineMedium
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
-                    Text('Organizá tu dinero en categorías.',
+                    Text(context.tr('organize_your_money'),
                         style: theme.textTheme.bodySmall),
                     const SizedBox(height: 16),
                     TabBar(
@@ -97,10 +96,10 @@ class _CategoriasScreenState extends State<CategoriasScreen>
                       indicatorColor: honey,
                       labelStyle: const TextStyle(
                           fontWeight: FontWeight.w600, fontSize: 13),
-                      tabs: const [
-                        Tab(text: 'Ingresos'),
-                        Tab(text: 'Gastos'),
-                        Tab(text: 'Ahorros'),
+                      tabs: [
+                        Tab(text: context.tr('incomes')),
+                        Tab(text: context.tr('expenses')),
+                        Tab(text: context.tr('savings')),
                       ],
                     ),
                   ],
@@ -123,6 +122,7 @@ class _CategoriasScreenState extends State<CategoriasScreen>
     );
   }
 }
+
 // ─── Lista de categorías ─────────────────────────────────────────────────────
 
 class _ListaCategorias extends StatefulWidget {
@@ -166,9 +166,9 @@ class _ListaCategoriasState extends State<_ListaCategorias> {
                     size: 48,
                     color: theme.colorScheme.onSurface.withOpacity(0.3)),
                 const SizedBox(height: 12),
-                Text('Sin categorías aún.', style: theme.textTheme.bodySmall),
+                Text(context.tr('no_categories_yet'), style: theme.textTheme.bodySmall),
                 const SizedBox(height: 4),
-                Text('Toca + para crear una.', style: theme.textTheme.bodySmall),
+                Text(context.tr('tap_plus_to_create'), style: theme.textTheme.bodySmall),
               ],
             ),
           );
@@ -199,7 +199,7 @@ class _ListaCategoriasState extends State<_ListaCategorias> {
                   onChanged: (val) => setState(() => _query = val),
                   style: theme.textTheme.bodySmall,
                   decoration: InputDecoration(
-                    hintText: 'Buscar categoría...',
+                    hintText: context.tr('search_category'),
                     hintStyle: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.4),
                     ),
@@ -241,7 +241,7 @@ class _ListaCategoriasState extends State<_ListaCategorias> {
               child: visibles.isEmpty
                   ? Center(
                       child: Text(
-                        'Sin resultados.',
+                        context.tr('no_results'),
                         style: theme.textTheme.bodySmall,
                       ),
                     )
@@ -363,8 +363,8 @@ class _TarjetaCategoria extends StatelessWidget {
                   onTap: () => tieneDinero
                       ? ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text(
-                              'No se puede eliminar: la categoría tiene dinero asignado.',
+                            content: Text(
+                              context.tr('cannot_delete_category_with_money'),
                             ),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
@@ -390,7 +390,7 @@ class _TarjetaCategoria extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Meta: ${CurrencyFormatter.format(meta, currency)}',
+                    '${context.tr('goal')}: ${CurrencyFormatter.format(meta, currency)}',
                     style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
                   ),
                   Text(
@@ -426,8 +426,8 @@ class _TarjetaCategoria extends StatelessWidget {
                     ),
                     onPressed: () =>
                         _usarAhorro(context, provider, id, nombre, disponible),
-                    child: const Text('Usar ahorro',
-                        style: TextStyle(
+                    child: Text(context.tr('use_savings'),
+                        style: const TextStyle(
                             fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ),
@@ -443,12 +443,12 @@ class _TarjetaCategoria extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Eliminar categoría'),
-        content: const Text('¿Seguro que querés eliminar esta categoría?'),
+        title: Text(context.tr('delete_category')),
+        content: Text(context.tr('confirm_delete_category')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(context.tr('cancel')),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -456,7 +456,7 @@ class _TarjetaCategoria extends StatelessWidget {
               Navigator.pop(context);
               await provider.firestoreService.eliminarCategoria(id, 0);
             },
-            child: const Text('Eliminar'),
+            child: Text(context.tr('delete')),
           ),
         ],
       ),
@@ -469,17 +469,17 @@ class _TarjetaCategoria extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Editar nombre'),
+        title: Text(context.tr('edit_name')),
         content: TextField(
           controller: controller,
           textCapitalization: TextCapitalization.words,
           maxLength: 15,
-          decoration: const InputDecoration(hintText: 'Nuevo nombre'),
+          decoration: InputDecoration(hintText: context.tr('new_name')),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(context.tr('cancel')),
           ),
           TextButton(
             onPressed: () async {
@@ -491,7 +491,7 @@ class _TarjetaCategoria extends StatelessWidget {
                 );
               }
             },
-            child: const Text('Guardar'),
+            child: Text(context.tr('save')),
           ),
         ],
       ),
@@ -558,21 +558,21 @@ class _DialogoUsarAhorroState extends State<_DialogoUsarAhorro> {
     final provider = context.read<AppProvider>();
 
     return AlertDialog(
-      title: const Text('Usar ahorro'),
+      title: Text(context.tr('use_savings')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('¿A qué sobre de gasto querés enviar el dinero?',
+          Text(context.tr('where_to_send_savings'),
               style: theme.textTheme.bodySmall),
           const SizedBox(height: 12),
           if (_gastosDisponibles.isEmpty)
-            const Text('No tenés categorías de gasto creadas.')
+            Text(context.tr('no_expense_categories'))
           else
             DropdownButton<String>(
               value: _destinoId,
               isExpanded: true,
-              hint: const Text('Seleccioná un sobre'),
+              hint: Text(context.tr('select_envelope')),
               items: _gastosDisponibles
                   .map((g) => DropdownMenuItem(
                         value: g['id'] as String,
@@ -586,7 +586,7 @@ class _DialogoUsarAhorroState extends State<_DialogoUsarAhorro> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text(context.tr('cancel')),
         ),
         TextButton(
           onPressed: _destinoId == null || _isLoading
@@ -604,7 +604,7 @@ class _DialogoUsarAhorroState extends State<_DialogoUsarAhorro> {
                   );
                   if (mounted) Navigator.pop(context);
                 },
-          child: const Text('Confirmar'),
+          child: Text(context.tr('confirm')),
         ),
       ],
     );
@@ -645,7 +645,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
 
   Future<void> _crear() async {
     if (_nombreController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'El nombre no puede estar vacío.');
+      setState(() => _errorMessage = context.tr('name_cannot_be_empty'));
       return;
     }
 
@@ -689,7 +689,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
 
       if (existe) {
         setState(() {
-          _errorMessage = 'Ya existe una categoría con este nombre.';
+          _errorMessage = context.tr('category_already_exists');
           _isLoading = false;
         });
         return;
@@ -708,7 +708,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _errorMessage = 'Error al crear la categoría.');
+      setState(() => _errorMessage = context.tr('error_creating_category'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -743,32 +743,32 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Nueva categoría',
+            Text(context.tr('new_category'),
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
 
             // Tipo
-            Text('Tipo',
+            Text(context.tr('type'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(
               children: [
                 _ChipTipo(
-                    label: 'Ingreso',
+                    label: context.tr('income'),
                     valor: 'ingreso',
                     seleccionado: _tipo,
                     onTap: () => setState(() => _tipo = 'ingreso')),
                 const SizedBox(width: 8),
                 _ChipTipo(
-                    label: 'Gasto',
+                    label: context.tr('expense'),
                     valor: 'gasto',
                     seleccionado: _tipo,
                     onTap: () => setState(() => _tipo = 'gasto')),
                 const SizedBox(width: 8),
                 _ChipTipo(
-                    label: 'Ahorro',
+                    label: context.tr('saving'),
                     valor: 'ahorro',
                     seleccionado: _tipo,
                     onTap: () => setState(() => _tipo = 'ahorro')),
@@ -778,7 +778,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
             const SizedBox(height: 20),
 
             // Nombre
-            Text('Nombre',
+            Text(context.tr('name'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -790,7 +790,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
                   : TextInputAction.done,
               maxLength: 15,
               decoration:
-                  const InputDecoration(hintText: 'Ej: Sueldo, Comida, Viaje...'),
+                  InputDecoration(hintText: context.tr('example_category_name')),
               onChanged: (_) {
                 if (_errorMessage != null)
                   setState(() => _errorMessage = null);
@@ -803,19 +803,19 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
             // Meta solo para ahorro
             if (_tipo == 'ahorro') ...[
               const SizedBox(height: 20),
-              Text('Meta de ahorro (opcional)',
+              Text(context.tr('savings_goal_optional'),
                   style: theme.textTheme.bodySmall
                       ?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-                TextField(
+              TextField(
                 controller: _metaController,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  ThousandsFormatter(currencyCode: _currency), // <-- Aquí agregamos tu formateador de miles
+                  ThousandsFormatter(currencyCode: _currency),
                 ],
-                decoration: const InputDecoration(hintText: 'Ej: 1.000.000'), // Actualicé el hintText para que se vea con el separador
+                decoration: InputDecoration(hintText: context.tr('example_amount')),
                 onSubmitted: (_) => _crear(),
               ),
             ],
@@ -847,7 +847,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
                         height: 22,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.5, color: Colors.white))
-                    : const Text('Crear categoría'),
+                    : Text(context.tr('create_category')),
               ),
             ),
           ],

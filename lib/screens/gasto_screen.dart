@@ -30,7 +30,7 @@ class GastoScreen extends StatelessWidget {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         bottomNavigationBar: const BannerAdWidget(),
-        appBar: AppBar(title: const Text('Gastos')),
+        appBar: AppBar(title: Text(context.tr('title_expenses'))),
         floatingActionButton: FloatingActionButton(
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
@@ -46,11 +46,11 @@ class GastoScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Sobres de gasto',
+                    Text(context.tr('expense_envelopes_title'),
                         style: theme.textTheme.headlineMedium
                             ?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('Solo podés gastar dinero que fue destinado.',
+                    Text(context.tr('expense_envelopes_desc'),
                         style: theme.textTheme.bodySmall),
                     const SizedBox(height: 16),
                   ],
@@ -149,7 +149,7 @@ class _ListaGastosConBuscadorState extends State<_ListaGastosConBuscador> {
                   onChanged: (val) => setState(() => _query = val),
                   style: theme.textTheme.bodySmall,
                   decoration: InputDecoration(
-                    hintText: 'Buscar sobre...',
+                    hintText: context.tr('search_envelope_hint'),
                     hintStyle: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.4),
                     ),
@@ -283,9 +283,9 @@ class _TarjetaGastoState extends State<_TarjetaGasto> {
                             color: Colors.red.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'Sin fondos',
-                            style: TextStyle(
+                          child: Text(
+                            context.tr('no_funds'),
+                            style: const TextStyle(
                                 color: Colors.red,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600),
@@ -373,7 +373,7 @@ class _HistorialGastos extends StatelessWidget {
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Text(
-            'Sin movimientos aún.',
+            context.tr('no_movements_yet'),
             style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
           );
         }
@@ -450,14 +450,14 @@ class _FilaGasto extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Eliminar gasto'),
+        title: Text(context.tr('delete_expense_title')),
         content: Text(
-          'Se eliminará el gasto y se devolverán ${CurrencyFormatter.format(monto, currency)} al sobre.',
+          '${context.tr('delete_expense_desc_1')} ${CurrencyFormatter.format(monto, currency)} ${context.tr('delete_expense_desc_2')}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(context.tr('cancel_button')),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -469,7 +469,7 @@ class _FilaGasto extends StatelessWidget {
                 monto: monto,
               );
             },
-            child: const Text('Eliminar'),
+            child: Text(context.tr('delete_button')),
           ),
         ],
       ),
@@ -580,12 +580,12 @@ class _FormularioGastoState extends State<_FormularioGasto> {
 
   Future<void> _confirmar() async {
     if (_categoriaSeleccionada == null) {
-      setState(() => _errorMessage = 'Seleccioná un sobre.');
+      setState(() => _errorMessage = context.tr('error_select_envelope'));
       return;
     }
 
     if (_montoController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Ingresá un monto.');
+      setState(() => _errorMessage = context.tr('error_enter_amount'));
       return;
     }
 
@@ -593,13 +593,13 @@ class _FormularioGastoState extends State<_FormularioGasto> {
         _montoController.text, widget.provider.currency);
 
     if (monto <= 0) {
-      setState(() => _errorMessage = 'El monto no es válido.');
+      setState(() => _errorMessage = context.tr('error_invalid_amount'));
       return;
     }
 
     if (_disponibleSeleccionado != null && monto > _disponibleSeleccionado!) {
       setState(() => _errorMessage =
-          'No tenés suficiente dinero. Disponible: ${CurrencyFormatter.format(_disponibleSeleccionado!, widget.provider.currency)}');
+          '${context.tr('error_insufficient_funds')} ${CurrencyFormatter.format(_disponibleSeleccionado!, widget.provider.currency)}');
       return;
     }
 
@@ -617,7 +617,7 @@ class _FormularioGastoState extends State<_FormularioGasto> {
       if (mounted) Navigator.pop(context);
       await AdService.instance.mostrarInterstitialSiCorresponde();
     } catch (e) {
-      setState(() => _errorMessage = 'Error al registrar el gasto.');
+      setState(() => _errorMessage = context.tr('error_registering_expense'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -652,11 +652,11 @@ class _FormularioGastoState extends State<_FormularioGasto> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Registrar gasto',
+            Text(context.tr('register_expense_title'),
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
-            Text('¿De qué sobre sale el dinero?',
+            Text(context.tr('from_which_envelope'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -667,14 +667,14 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                       color: Colors.orange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      'No tenés sobres con dinero disponible. Primero destiná dinero.',
-                      style: TextStyle(color: Colors.orange, fontSize: 13),
+                    child: Text(
+                      context.tr('no_envelopes_available'),
+                      style: const TextStyle(color: Colors.orange, fontSize: 13),
                     ),
                   )
                 : DropdownButtonFormField<String>(
                     value: _categoriaSeleccionada,
-                    hint: const Text('Seleccioná un sobre'),
+                    hint: Text(context.tr('select_envelope_hint')),
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -720,7 +720,7 @@ class _FormularioGastoState extends State<_FormularioGasto> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  'Disponible: ${CurrencyFormatter.format(_disponibleSeleccionado!, widget.provider.currency)}',
+                  '${context.tr('available_label')}: ${CurrencyFormatter.format(_disponibleSeleccionado!, widget.provider.currency)}',
                   style: TextStyle(
                       color: honey,
                       fontWeight: FontWeight.w600,
@@ -729,7 +729,7 @@ class _FormularioGastoState extends State<_FormularioGasto> {
               ),
             ],
             const SizedBox(height: 20),
-            Text('Monto a gastar',
+            Text(context.tr('amount_to_spend_label'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -775,7 +775,7 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                         height: 22,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.5, color: Colors.white))
-                    : const Text('Confirmar gasto'),
+                    : Text(context.tr('confirm_expense_button')),
               ),
             ),
           ],
@@ -830,7 +830,7 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
 
   Future<void> _guardar() async {
     if (_montoController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Ingresá un monto.');
+      setState(() => _errorMessage = context.tr('error_enter_amount'));
       return;
     }
 
@@ -838,7 +838,7 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
         _montoController.text, widget.provider.currency);
 
     if (nuevoMonto <= 0) {
-      setState(() => _errorMessage = 'El monto no es válido.');
+      setState(() => _errorMessage = context.tr('error_invalid_amount'));
       return;
     }
 
@@ -846,7 +846,7 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
     final maxPermitido = widget.disponibleSobre + widget.montoActual;
     if (nuevoMonto > maxPermitido) {
       setState(() => _errorMessage =
-          'El monto supera el límite del sobre. Máximo: ${CurrencyFormatter.format(maxPermitido, widget.provider.currency)}');
+          '${context.tr('error_amount_exceeds_limit')} ${CurrencyFormatter.format(maxPermitido, widget.provider.currency)}');
       return;
     }
 
@@ -864,7 +864,7 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _errorMessage = 'Error al editar el gasto.');
+      setState(() => _errorMessage = context.tr('error_editing_expense'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -898,14 +898,14 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Editar gasto',
+            Text(context.tr('edit_expense_title'),
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text('Sobre: ${widget.categoriaNombre}',
+            Text('${context.tr('envelope_label')}: ${widget.categoriaNombre}',
                 style: theme.textTheme.bodySmall),
             const SizedBox(height: 20),
-            Text('Nuevo monto',
+            Text(context.tr('new_amount_label'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -939,7 +939,7 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
                         height: 22,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.5, color: Colors.white))
-                    : const Text('Guardar cambios'),
+                    : Text(context.tr('save_changes')),
               ),
             ),
           ],
