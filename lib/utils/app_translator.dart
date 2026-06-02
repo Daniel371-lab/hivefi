@@ -8,7 +8,7 @@ extension AppTranslator on BuildContext {
 }
 
 const Map<String, Map<String, String>> _translations = {
-    'es': {
+  'es': {
     // General
     'cancel': 'Cancelar',
     'confirm': 'Confirmar',
@@ -23,6 +23,17 @@ const Map<String, Map<String, String>> _translations = {
     'language_setup_title': 'Elige tu idioma',
     'language_setup_subtitle': 'Puedes cambiarlo después en Configuración.',
     'language_setup_next': 'SIGUIENTE',
+    'saving': 'Ahorro',
+    'expense': 'Gasto',
+    'available': 'Disponible',
+    'continue': 'Continuar',
+    'goal': 'Meta',
+    'no_results': 'Sin resultados.',
+    'view_all': 'Ver todos',
+    'envelopes': 'sobres',
+    'error_enter_amount': 'Ingresá un monto.',
+    'error_invalid_amount': 'El monto no es válido.',
+    'error_insufficient_funds': 'No tenés suficiente dinero en ese sobre. Disponible:',
 
     // Home
     'balanceGeneral': 'BALANCE GENERAL',
@@ -48,13 +59,12 @@ const Map<String, Map<String, String>> _translations = {
 
     // Navegación
     'income': 'INGRESO',
-    'expense': 'GASTO',
     'destinar': 'DESTINAR',
     'categories': 'CATEGORÍAS',
     'reparto': 'REPARTO',
     'history': 'HISTORIAL',
 
-    // Settings
+    // Settings & Perfil y Auth
     'sectionAccount': 'CUENTA',
     'sectionAppearance': 'APARIENCIA',
     'sectionBenefits': 'BENEFICIOS',
@@ -77,23 +87,6 @@ const Map<String, Map<String, String>> _translations = {
     'aboutApp': 'Acerca de Hivefi',
     'appVersion': 'Versión 2.0.0',
     'madeBy': 'Desarrollado por',
-
-    // Premium
-    'premiumSubtitulo': 'Pago único. Sin suscripciones.',
-    'premiumBeneficio1': 'Modo oscuro',
-    'premiumBeneficio1Desc': 'Cuida tus ojos con el tema oscuro.',
-    'premiumBeneficio2': 'Categorías ilimitadas',
-    'premiumBeneficio2Desc': 'Crea todos los sobres que necesitas.',
-    'premiumBeneficio3': 'Sin anuncios para siempre',
-    'premiumBeneficio3Desc': 'Experiencia limpia sin interrupciones.',
-    'premiumPagoUnico': 'Pago único — acceso de por vida',
-    'premiumActivar': 'Activar Premium',
-    'premiumActivo': 'Premium activo',
-    'premiumRestaurar': 'Restaurar compra anterior',
-    'premiumRestaurado': 'Compra restaurada correctamente.',
-    'premiumErrorCompra': 'No se pudo completar la compra. Intenta de nuevo.',
-
-    // Perfil y Auth
     'saveName': 'GUARDAR NOMBRE',
     'nameEmpty': 'El nombre no puede estar vacío.',
     'nameUpdated': 'Nombre actualizado correctamente.',
@@ -118,6 +111,21 @@ const Map<String, Map<String, String>> _translations = {
     'passwordMismatch': 'Las contraseñas no coinciden.',
     'passwordTooShort': 'La contraseña debe tener al menos 6 caracteres.',
 
+    // Premium
+    'premiumSubtitulo': 'Pago único. Sin suscripciones.',
+    'premiumBeneficio1': 'Modo oscuro',
+    'premiumBeneficio1Desc': 'Cuida tus ojos con el tema oscuro.',
+    'premiumBeneficio2': 'Categorías ilimitadas',
+    'premiumBeneficio2Desc': 'Crea todos los sobres que necesitas.',
+    'premiumBeneficio3': 'Sin anuncios para siempre',
+    'premiumBeneficio3Desc': 'Experiencia limpia sin interrupciones.',
+    'premiumPagoUnico': 'Pago único — acceso de por vida',
+    'premiumActivar': 'Activar Premium',
+    'premiumActivo': 'Premium activo',
+    'premiumRestaurar': 'Restaurar compra anterior',
+    'premiumRestaurado': 'Compra restaurada correctamente.',
+    'premiumErrorCompra': 'No se pudo completar la compra. Intenta de nuevo.',
+
     // Categorías y Sobres
     'newCategory': 'NUEVA\nCATEGORÍA',
     'categories_title': 'Categorías',
@@ -128,9 +136,7 @@ const Map<String, Map<String, String>> _translations = {
     'no_categories_yet': 'Sin categorías aún.',
     'tap_plus_to_create': 'Toca + para crear una.',
     'search_category': 'Buscar categoría...',
-    'no_results': 'Sin resultados.',
     'cannot_delete_category_with_money': 'No se puede eliminar: la categoría tiene dinero asignado.',
-    'goal': 'Meta',
     'use_savings': 'Usar ahorro',
     'delete_category': 'Eliminar categoría',
     'confirm_delete_category': '¿Seguro que querés eliminar esta categoría?',
@@ -142,9 +148,7 @@ const Map<String, Map<String, String>> _translations = {
     'select_envelope': 'Seleccioná un sobre',
     'category_already_exists': 'Ya existe una categoría con este nombre.',
     'error_creating_category': 'Error al crear la categoría.',
-    'new_category': 'Nueva categoría',
     'type': 'Tipo',
-    'saving': 'Ahorro',
     'example_category_name': 'Ej: Sueldo, Comida, Viaje...',
     'savings_goal_optional': 'Meta de ahorro (opcional)',
     'example_amount': 'Ej: 1.000.000',
@@ -157,7 +161,6 @@ const Map<String, Map<String, String>> _translations = {
     'confirmIncome': 'CONFIRMAR ENTRADA',
     'incomeRegistered': 'Ingreso registrado correctamente.',
     'recentHistory': 'HISTORIAL RECIENTE',
-    'available': 'Disponible',
     'noIncomeCategories': 'Sin categorías de ingreso.',
     'createInCategoriesFirst': 'Crea una en Categorías primero.',
     'title_incomes': 'Ingresos',
@@ -172,8 +175,6 @@ const Map<String, Map<String, String>> _translations = {
     'select_category_hint': 'Seleccioná una categoría',
     'income_amount_label': 'Monto del ingreso',
     'error_select_category': 'Seleccioná una categoría.',
-    'error_enter_amount': 'Ingresá un monto.',
-    'error_invalid_amount': 'El monto no es válido.',
     'error_registering_income': 'Error al registrar el ingreso.',
     'confirm_income': 'Confirmar ingreso',
     'edit_income_title': 'Editar ingreso',
@@ -199,7 +200,6 @@ const Map<String, Map<String, String>> _translations = {
     'cancel_button': 'Cancelar',
     'delete_button': 'Eliminar',
     'error_select_envelope': 'Seleccioná un sobre.',
-    'error_insufficient_funds': 'No tenés suficiente dinero. Disponible:',
     'error_registering_expense': 'Error al registrar el gasto.',
     'register_expense_title': 'Registrar gasto',
     'from_which_envelope': '¿De qué sobre sale el dinero?',
@@ -213,7 +213,7 @@ const Map<String, Map<String, String>> _translations = {
     'edit_expense_title': 'Editar gasto',
     'envelope_label': 'Sobre',
 
-    // Destinar
+    // Destinar y Reparto
     'allocateMoney': 'DESTINAR\nDINERO',
     'allocateSubtitle': 'Distribuye tus ingresos en sobres de gasto o ahorro.',
     'whereMoneyFrom': '¿DE DÓNDE SALE EL DINERO?',
@@ -229,11 +229,9 @@ const Map<String, Map<String, String>> _translations = {
     'register_income_first': 'Primero registrá un ingreso para poder destinar dinero.',
     'distribute_your_money': 'Distribuí tu dinero',
     'assign_money_to_envelopes': 'Asigná tu dinero a sobres de gasto o ahorro.',
-    'view_all': 'Ver todos',
     'all_incomes': 'Todos los ingresos',
     'expense_envelopes': 'Sobres de gasto',
     'savings_envelopes': 'Sobres de ahorro',
-    'envelopes': 'sobres',
     'search_envelope': 'Buscar sobre...',
     'enter_an_amount': 'Ingresá un monto.',
     'invalid_amount': 'El monto no es válido.',
@@ -254,48 +252,27 @@ const Map<String, Map<String, String>> _translations = {
     'insufficient_money': 'No tenés suficiente dinero. Disponible:',
     'error_allocating_money': 'Error al destinar el dinero.',
     'confirm_allocation': 'Confirmar destino',
-
-        // Reparto
     'reparto_title': 'Reparto',
     'no_envelopes_created': 'Sin sobres creados',
     'create_categories_first': 'Creá categorías de gasto o ahorro primero.',
     'move_money_between_envelopes': 'Mover dinero entre sobres',
     'reassign_money_desc': 'Reasigná dinero entre tus sobres de gasto y ahorro.',
     'savings_envelopes_title': 'Sobres de ahorro',
-    'goal_reached': 'Meta alcanzada',
     'in_progress': 'En progreso',
-    'goal': 'Meta',
-    'no_movements_yet': 'Sin movimientos aún.',
-    'view_all': 'Ver todos',
-    'envelopes': 'sobres',
-    'search_envelope_hint': 'Buscar sobre...',
-    'no_results': 'Sin resultados.',
-    'error_select_source': 'Seleccioná el sobre de origen.',
-    'error_select_destination': 'Seleccioná el sobre de destino.',
-    'error_same_source_destination': 'El origen y destino no pueden ser iguales.',
-    'error_enter_amount': 'Ingresá un monto.',
-    'error_invalid_amount': 'El monto no es válido.',
-    'error_insufficient_funds': 'No tenés suficiente dinero en ese sobre. Disponible:',
     'are_you_sure': '¿Estás seguro?',
     'saving_meta_warning_part1': 'Este sobre de ahorro aún no alcanzó su meta. Si movés',
     'saving_meta_warning_part2': 'reducirás el dinero destinado a ese ahorro. ¿Querés continuar?',
-    'cancel': 'Cancelar',
-    'continue': 'Continuar',
     'error_performing_split': 'Error al realizar el reparto.',
     'move_money_title': 'Mover dinero',
     'reassign_money_short_desc': 'Reasigná dinero entre tus sobres.',
     'from_which_envelope_question': '¿De qué sobre sacás el dinero?',
     'select_source_hint': 'Seleccioná el origen',
-    'saving': 'Ahorro',
-    'expense': 'Gasto',
-    'available': 'Disponible',
     'to_which_envelope_question': '¿A qué sobre lo enviás?',
     'select_destination_hint': 'Seleccioná el destino',
     'amount_to_move': 'Monto a mover',
     'confirm_split_button': 'Confirmar reparto',
 
-	
-    // Historial
+    // Historial y Tooltips
     'historialTitle': 'ANÁLISIS\nDE CUENTA',
     'filterByMonth': 'FILTRAR POR MES',
     'year': 'AÑO',
@@ -323,8 +300,6 @@ const Map<String, Map<String, String>> _translations = {
     'progresoAhorrosTitulo': 'Progreso de ahorros',
     'movimientosTitulo': 'Movimientos',
     'sinMovimientosMes': 'Sin movimientos este mes.',
-	
-    // Tooltips
     'tooltip_ingreso': 'Aquí registras el dinero que recibes. Selecciona una cuenta y confirma el monto.',
     'tooltip_gasto': 'Aquí registras tus gastos. El dinero se descuenta del sobre seleccionado.',
     'tooltip_destinar': 'Mueve dinero de tus ingresos hacia un sobre de gasto o ahorro.',
@@ -334,7 +309,7 @@ const Map<String, Map<String, String>> _translations = {
     'emptyAmount': 'Ingresa un monto.',
     'invalidAmount': 'El monto no es válido.',
   },
-    'en': {
+  'en': {
     // General
     'cancel': 'Cancel',
     'confirm': 'Confirm',
@@ -349,6 +324,17 @@ const Map<String, Map<String, String>> _translations = {
     'language_setup_title': 'Choose your language',
     'language_setup_subtitle': 'You can change it later in Settings.',
     'language_setup_next': 'NEXT',
+    'saving': 'Saving',
+    'expense': 'Expense',
+    'available': 'Available',
+    'continue': 'Continue',
+    'goal': 'Goal',
+    'no_results': 'No results.',
+    'view_all': 'View all',
+    'envelopes': 'envelopes',
+    'error_enter_amount': 'Enter an amount.',
+    'error_invalid_amount': 'Invalid amount.',
+    'error_insufficient_funds': 'Not enough money in that envelope. Available:',
 
     // Home
     'balanceGeneral': 'GENERAL BALANCE',
@@ -374,7 +360,6 @@ const Map<String, Map<String, String>> _translations = {
 
     // Navegación
     'income': 'INCOME',
-    'expense': 'EXPENSE',
     'destinar': 'ALLOCATE',
     'categories': 'CATEGORIES',
     'reparto': 'SPLIT',
@@ -403,23 +388,6 @@ const Map<String, Map<String, String>> _translations = {
     'aboutApp': 'About Hivefi',
     'appVersion': 'Version 2.0.0',
     'madeBy': 'Developed by',
-
-    // Premium
-    'premiumSubtitulo': 'One-time payment. No subscriptions.',
-    'premiumBeneficio1': 'Dark mode',
-    'premiumBeneficio1Desc': 'Easy on the eyes with a dark theme.',
-    'premiumBeneficio2': 'Unlimited categories',
-    'premiumBeneficio2Desc': 'Create as many envelopes as you need.',
-    'premiumBeneficio3': 'No ads forever',
-    'premiumBeneficio3Desc': 'Clean experience without interruptions.',
-    'premiumPagoUnico': 'One-time payment — lifetime access',
-    'premiumActivar': 'Activate Premium',
-    'premiumActivo': 'Premium active',
-    'premiumRestaurar': 'Restore previous purchase',
-    'premiumRestaurado': 'Purchase restored successfully.',
-    'premiumErrorCompra': 'Could not complete purchase. Please try again.',
-
-    // Perfil y Auth
     'saveName': 'SAVE NAME',
     'nameEmpty': 'Name cannot be empty.',
     'nameUpdated': 'Name updated successfully.',
@@ -444,6 +412,21 @@ const Map<String, Map<String, String>> _translations = {
     'passwordMismatch': 'Passwords do not match.',
     'passwordTooShort': 'Password must be at least 6 characters.',
 
+    // Premium
+    'premiumSubtitulo': 'One-time payment. No subscriptions.',
+    'premiumBeneficio1': 'Dark mode',
+    'premiumBeneficio1Desc': 'Easy on the eyes with a dark theme.',
+    'premiumBeneficio2': 'Unlimited categories',
+    'premiumBeneficio2Desc': 'Create as many envelopes as you need.',
+    'premiumBeneficio3': 'No ads forever',
+    'premiumBeneficio3Desc': 'Clean experience without interruptions.',
+    'premiumPagoUnico': 'One-time payment — lifetime access',
+    'premiumActivar': 'Activate Premium',
+    'premiumActivo': 'Premium active',
+    'premiumRestaurar': 'Restore previous purchase',
+    'premiumRestaurado': 'Purchase restored successfully.',
+    'premiumErrorCompra': 'Could not complete purchase. Please try again.',
+
     // Categorías y Sobres
     'newCategory': 'NEW\nCATEGORY',
     'categories_title': 'Categories',
@@ -454,9 +437,7 @@ const Map<String, Map<String, String>> _translations = {
     'no_categories_yet': 'No categories yet.',
     'tap_plus_to_create': 'Tap + to create one.',
     'search_category': 'Search category...',
-    'no_results': 'No results.',
     'cannot_delete_category_with_money': 'Cannot delete: the category has money assigned.',
-    'goal': 'Goal',
     'use_savings': 'Use savings',
     'delete_category': 'Delete category',
     'confirm_delete_category': 'Are you sure you want to delete this category?',
@@ -468,9 +449,7 @@ const Map<String, Map<String, String>> _translations = {
     'select_envelope': 'Select an envelope',
     'category_already_exists': 'A category with this name already exists.',
     'error_creating_category': 'Error creating category.',
-    'new_category': 'New category',
     'type': 'Type',
-    'saving': 'Saving',
     'example_category_name': 'Ex: Salary, Food, Travel...',
     'savings_goal_optional': 'Savings goal (optional)',
     'example_amount': 'Ex: 1,000,000',
@@ -483,7 +462,6 @@ const Map<String, Map<String, String>> _translations = {
     'confirmIncome': 'CONFIRM INCOME',
     'incomeRegistered': 'Income registered successfully.',
     'recentHistory': 'RECENT HISTORY',
-    'available': 'Available',
     'noIncomeCategories': 'No income categories.',
     'createInCategoriesFirst': 'Create one in Categories first.',
     'title_incomes': 'Incomes',
@@ -498,8 +476,6 @@ const Map<String, Map<String, String>> _translations = {
     'select_category_hint': 'Select a category',
     'income_amount_label': 'Income amount',
     'error_select_category': 'Select a category.',
-    'error_enter_amount': 'Enter an amount.',
-    'error_invalid_amount': 'The amount is invalid.',
     'error_registering_income': 'Error registering income.',
     'confirm_income': 'Confirm income',
     'edit_income_title': 'Edit income',
@@ -525,7 +501,6 @@ const Map<String, Map<String, String>> _translations = {
     'cancel_button': 'Cancel',
     'delete_button': 'Delete',
     'error_select_envelope': 'Select an envelope.',
-    'error_insufficient_funds': 'Not enough money. Available:',
     'error_registering_expense': 'Error registering the expense.',
     'register_expense_title': 'Register expense',
     'from_which_envelope': 'From which envelope does the money come?',
@@ -539,7 +514,7 @@ const Map<String, Map<String, String>> _translations = {
     'edit_expense_title': 'Edit expense',
     'envelope_label': 'Envelope',
 
-    // Destinar
+    // Destinar y Reparto
     'allocateMoney': 'ALLOCATE\nMONEY',
     'allocateSubtitle': 'Distribute your income into spending or savings envelopes.',
     'whereMoneyFrom': 'WHERE DOES THE MONEY COME FROM?',
@@ -555,11 +530,9 @@ const Map<String, Map<String, String>> _translations = {
     'register_income_first': 'Register an income first to allocate money.',
     'distribute_your_money': 'Distribute your money',
     'assign_money_to_envelopes': 'Assign your money to expense or savings envelopes.',
-    'view_all': 'View all',
     'all_incomes': 'All incomes',
     'expense_envelopes': 'Expense envelopes',
     'savings_envelopes': 'Savings envelopes',
-    'envelopes': 'envelopes',
     'search_envelope': 'Search envelope...',
     'enter_an_amount': 'Enter an amount.',
     'invalid_amount': 'The amount is invalid.',
@@ -580,47 +553,27 @@ const Map<String, Map<String, String>> _translations = {
     'insufficient_money': 'Not enough money. Available:',
     'error_allocating_money': 'Error allocating money.',
     'confirm_allocation': 'Confirm allocation',
-
-        // Reparto
     'reparto_title': 'Split',
     'no_envelopes_created': 'No envelopes created',
     'create_categories_first': 'Create expense or savings categories first.',
     'move_money_between_envelopes': 'Move money between envelopes',
     'reassign_money_desc': 'Reassign money between your expense and savings envelopes.',
     'savings_envelopes_title': 'Savings envelopes',
-    'goal_reached': 'Goal reached',
     'in_progress': 'In progress',
-    'goal': 'Goal',
-    'no_movements_yet': 'No movements yet.',
-    'view_all': 'View all',
-    'envelopes': 'envelopes',
-    'search_envelope_hint': 'Search envelope...',
-    'no_results': 'No results.',
-    'error_select_source': 'Select the source envelope.',
-    'error_select_destination': 'Select the destination envelope.',
-    'error_same_source_destination': 'Origin and destination cannot be the same.',
-    'error_enter_amount': 'Enter an amount.',
-    'error_invalid_amount': 'Invalid amount.',
-    'error_insufficient_funds': 'Not enough money in that envelope. Available:',
     'are_you_sure': 'Are you sure?',
     'saving_meta_warning_part1': 'This savings envelope has not reached its goal yet. If you move',
     'saving_meta_warning_part2': 'you will reduce the money allocated to that savings. Do you want to continue?',
-    'cancel': 'Cancel',
-    'continue': 'Continue',
     'error_performing_split': 'Error performing the transfer.',
     'move_money_title': 'Move money',
     'reassign_money_short_desc': 'Reassign money between your envelopes.',
     'from_which_envelope_question': 'From which envelope do you take the money?',
     'select_source_hint': 'Select the source',
-    'saving': 'Saving',
-    'expense': 'Expense',
-    'available': 'Available',
     'to_which_envelope_question': 'Which envelope do you send it to?',
     'select_destination_hint': 'Select the destination',
     'amount_to_move': 'Amount to move',
     'confirm_split_button': 'Confirm transfer',
 
-    // Historial
+    // Historial y Tooltips
     'historialTitle': 'ACCOUNT\nANALYSIS',
     'filterByMonth': 'FILTER BY MONTH',
     'year': 'YEAR',
@@ -648,8 +601,6 @@ const Map<String, Map<String, String>> _translations = {
     'progresoAhorrosTitulo': 'Savings progress',
     'movimientosTitulo': 'Movements',
     'sinMovimientosMes': 'No movements this month.',
-
-    // Tooltips
     'tooltip_ingreso': 'Here you register the money you receive. Select an account and confirm the amount.',
     'tooltip_gasto': 'Here you register your expenses. Money is deducted from the selected envelope.',
     'tooltip_destinar': 'Move money from your income into a spending or savings envelope.',
