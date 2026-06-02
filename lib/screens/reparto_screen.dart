@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
+import '../utils/app_translator.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
 
@@ -46,7 +47,7 @@ class _RepartoScreenState extends State<RepartoScreen> {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         bottomNavigationBar: const BannerAdWidget(),
-        appBar: AppBar(title: const Text('Reparto')),
+        appBar: AppBar(title: Text(context.tr('reparto_title'))),
         floatingActionButton: FloatingActionButton(
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
@@ -80,11 +81,11 @@ class _RepartoScreenState extends State<RepartoScreen> {
                                 size: 48,
                                 color: theme.colorScheme.onSurface.withOpacity(0.3)),
                             const SizedBox(height: 12),
-                            Text('Sin sobres creados',
+                            Text(context.tr('no_envelopes_created'),
                                 style: theme.textTheme.titleMedium
                                     ?.copyWith(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 4),
-                            Text('Creá categorías de gasto o ahorro primero.',
+                            Text(context.tr('create_categories_first'),
                                 style: theme.textTheme.bodySmall,
                                 textAlign: TextAlign.center),
                           ],
@@ -105,17 +106,17 @@ class _RepartoScreenState extends State<RepartoScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Mover dinero entre sobres',
+                        Text(context.tr('move_money_between_envelopes'),
                             style: theme.textTheme.headlineMedium
                                 ?.copyWith(fontWeight: FontWeight.w700)),
                         const SizedBox(height: 4),
-                        Text('Reasigná dinero entre tus sobres de gasto y ahorro.',
+                        Text(context.tr('reassign_money_desc'),
                             style: theme.textTheme.bodySmall),
                         const SizedBox(height: 16),
 
                         if (gastos.isNotEmpty) ...[
                           _SeccionSobresReparto(
-                            titulo: 'Sobres de gasto',
+                            titulo: context.tr('expense_envelopes_title'),
                             docs: gastos,
                             tipo: 'gasto',
                             provider: provider,
@@ -125,7 +126,7 @@ class _RepartoScreenState extends State<RepartoScreen> {
 
                         if (ahorros.isNotEmpty) ...[
                           _SeccionSobresReparto(
-                            titulo: 'Sobres de ahorro',
+                            titulo: context.tr('savings_envelopes_title'),
                             docs: ahorros,
                             tipo: 'ahorro',
                             provider: provider,
@@ -240,7 +241,7 @@ class _TarjetaSobreState extends State<_TarjetaSobre> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            metaAlcanzada ? 'Meta alcanzada' : 'En progreso',
+                            metaAlcanzada ? context.tr('goal_reached') : context.tr('in_progress'),
                             style: TextStyle(
                               color: metaAlcanzada ? Colors.green : honey,
                               fontSize: 9,
@@ -279,7 +280,7 @@ class _TarjetaSobreState extends State<_TarjetaSobre> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Meta: ${CurrencyFormatter.format(widget.meta, widget.currency)}',
+                    '${context.tr('goal')}: ${CurrencyFormatter.format(widget.meta, widget.currency)}',
                     style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
                   ),
                   Text(
@@ -352,7 +353,7 @@ class _HistorialReparto extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Text('Sin movimientos aún.',
+          return Text(context.tr('no_movements_yet'),
               style: theme.textTheme.bodySmall?.copyWith(fontSize: 11));
         }
 
@@ -465,7 +466,7 @@ class _SeccionSobresReparto extends StatelessWidget {
           TextButton.icon(
             onPressed: () => _verTodos(context, ordenados),
             icon: const Icon(Icons.expand_more_rounded, size: 18),
-            label: Text('Ver todos (${ordenados.length})'),
+            label: Text('${context.tr('view_all')} (${ordenados.length})'),
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               visualDensity: VisualDensity.compact,
@@ -564,7 +565,7 @@ class _BottomSheetTodosSobresRepartoState
                 Text(widget.titulo,
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
-                Text('${widget.docs.length} sobres',
+                Text('${widget.docs.length} ${context.tr('envelopes')}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     )),
@@ -579,7 +580,7 @@ class _BottomSheetTodosSobresRepartoState
               onChanged: (val) => setState(() => _query = val),
               style: theme.textTheme.bodySmall,
               decoration: InputDecoration(
-                hintText: 'Buscar sobre...',
+                hintText: context.tr('search_envelope_hint'),
                 hintStyle: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
@@ -618,7 +619,7 @@ class _BottomSheetTodosSobresRepartoState
             child: filtrados.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Text('Sin resultados.',
+                    child: Text(context.tr('no_results'),
                         style: theme.textTheme.bodySmall),
                   )
                 : ListView.separated(
@@ -759,19 +760,19 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
 
   Future<void> _confirmar() async {
     if (_origenId == null) {
-      setState(() => _errorMessage = 'Seleccioná el sobre de origen.');
+      setState(() => _errorMessage = context.tr('error_select_source'));
       return;
     }
     if (_destinoId == null) {
-      setState(() => _errorMessage = 'Seleccioná el sobre de destino.');
+      setState(() => _errorMessage = context.tr('error_select_destination'));
       return;
     }
     if (_origenId == _destinoId) {
-      setState(() => _errorMessage = 'El origen y destino no pueden ser iguales.');
+      setState(() => _errorMessage = context.tr('error_same_source_destination'));
       return;
     }
     if (_montoController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Ingresá un monto.');
+      setState(() => _errorMessage = context.tr('error_enter_amount'));
       return;
     }
 
@@ -779,13 +780,13 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
         _montoController.text, widget.provider.currency);
 
     if (monto <= 0) {
-      setState(() => _errorMessage = 'El monto no es válido.');
+      setState(() => _errorMessage = context.tr('error_invalid_amount'));
       return;
     }
 
     if (_origenDisponible != null && monto > _origenDisponible!) {
       setState(() => _errorMessage =
-          'No tenés suficiente dinero en ese sobre. Disponible: ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}');
+          '${context.tr('error_insufficient_funds')} ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}');
       return;
     }
 
@@ -798,20 +799,20 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
       final confirmado = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('¿Estás seguro?'),
+          title: Text(context.tr('are_you_sure')),
           content: Text(
-            'Este sobre de ahorro aún no alcanzó su meta. '
-            'Si movés ${CurrencyFormatter.format(monto, widget.provider.currency)}, '
-            'reducirás el dinero destinado a ese ahorro. ¿Querés continuar?',
+            '${context.tr('saving_meta_warning_part1')} '
+            '${CurrencyFormatter.format(monto, widget.provider.currency)}, '
+            '${context.tr('saving_meta_warning_part2')}',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
+              child: Text(context.tr('cancel')),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Continuar'),
+              child: Text(context.tr('continue')),
             ),
           ],
         ),
@@ -834,7 +835,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _errorMessage = 'Error al realizar el reparto.');
+      setState(() => _errorMessage = context.tr('error_performing_split'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -873,20 +874,20 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Mover dinero',
+              Text(context.tr('move_money_title'),
                   style: theme.textTheme.titleLarge
                       ?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
-              Text('Reasigná dinero entre tus sobres.',
+              Text(context.tr('reassign_money_short_desc'),
                   style: theme.textTheme.bodySmall),
               const SizedBox(height: 20),
-              Text('¿De qué sobre sacás el dinero?',
+              Text(context.tr('from_which_envelope_question'),
                   style: theme.textTheme.bodySmall
                       ?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _origenId,
-                hint: const Text('Seleccioná el origen'),
+                hint: Text(context.tr('select_source_hint')),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -921,7 +922,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  s['tipo'] == 'ahorro' ? 'Ahorro' : 'Gasto',
+                                  s['tipo'] == 'ahorro' ? context.tr('saving') : context.tr('expense'),
                                   style: TextStyle(
                                       color: honey,
                                       fontSize: 9,
@@ -949,7 +950,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    'Disponible: ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}',
+                    '${context.tr('available')}: ${CurrencyFormatter.format(_origenDisponible!, widget.provider.currency)}',
                     style: TextStyle(
                         color: honey,
                         fontWeight: FontWeight.w600,
@@ -958,13 +959,13 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 ),
               ],
               const SizedBox(height: 20),
-              Text('¿A qué sobre lo enviás?',
+              Text(context.tr('to_which_envelope_question'),
                   style: theme.textTheme.bodySmall
                       ?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _destinoId,
-                hint: const Text('Seleccioná el destino'),
+                hint: Text(context.tr('select_destination_hint')),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -989,7 +990,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  s['tipo'] == 'ahorro' ? 'Ahorro' : 'Gasto',
+                                  s['tipo'] == 'ahorro' ? context.tr('saving') : context.tr('expense'),
                                   style: TextStyle(
                                       color: honey,
                                       fontSize: 9,
@@ -1010,7 +1011,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                 },
               ),
               const SizedBox(height: 20),
-              Text('Monto a mover',
+              Text(context.tr('amount_to_move'),
                   style: theme.textTheme.bodySmall
                       ?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
@@ -1055,7 +1056,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
                           height: 22,
                           child: CircularProgressIndicator(
                               strokeWidth: 2.5, color: Colors.white))
-                      : const Text('Confirmar reparto'),
+                      : Text(context.tr('confirm_split_button')),
                 ),
               ),
             ],
