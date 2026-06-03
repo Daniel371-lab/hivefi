@@ -145,6 +145,7 @@ class _ListaGastosConBuscadorState extends State<_ListaGastosConBuscador> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
                 child: TextField(
+				key: const Key('search_field'),
                   controller: _searchController,
                   onChanged: (val) => setState(() => _query = val),
                   style: theme.textTheme.bodySmall,

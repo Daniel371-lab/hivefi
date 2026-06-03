@@ -99,7 +99,7 @@ class _CategoriasScreenState extends State<CategoriasScreen>
                       tabs: [
                         Tab(text: context.tr('incomes')),
                         Tab(text: context.tr('expenses')),
-                        Tab(text: context.tr('savings')),
+                        Tab(text: context.tr('savingsM')),
                       ],
                     ),
                   ],
@@ -195,6 +195,7 @@ class _ListaCategoriasState extends State<_ListaCategorias> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
                 child: TextField(
+				key: const Key('search_field'),
                   controller: _searchController,
                   onChanged: (val) => setState(() => _query = val),
                   style: theme.textTheme.bodySmall,
