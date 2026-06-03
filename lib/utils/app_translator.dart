@@ -31,9 +31,9 @@ const Map<String, Map<String, String>> _translations = {
     'no_results': 'Sin resultados.',
     'view_all': 'Ver todos',
     'envelopes': 'sobres',
-    'error_enter_amount': 'Ingresá un monto.',
+    'error_enter_amount': 'Ingresa un monto.',
     'error_invalid_amount': 'El monto no es válido.',
-    'error_insufficient_funds': 'No tenés suficiente dinero en ese sobre. Disponible:',
+    'error_insufficient_funds': 'No tienes suficiente dinero en ese sobre. Disponible:',
 
     // Home
     'balanceGeneral': 'BALANCE GENERAL',
