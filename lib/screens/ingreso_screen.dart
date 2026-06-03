@@ -77,6 +77,16 @@ class IngresoScreen extends StatelessWidget {
 
 // ─── Lista ingresos con buscador ─────────────────────────────────────────────
 
+class _ListaIngresosConBuscador extends StatefulWidget {
+  final AppProvider provider;
+
+  const _ListaIngresosConBuscador({required this.provider});
+
+  @override
+  State<_ListaIngresosConBuscador> createState() => 
+  _ListaIngresosConBuscadorState();
+}
+
 class _ListaIngresosConBuscadorState
     extends State<_ListaIngresosConBuscador> {
   final _searchController = TextEditingController();
