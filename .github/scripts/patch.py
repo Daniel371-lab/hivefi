@@ -10,54 +10,66 @@ if os.path.exists(settings_path):
         with open(settings_path, 'w') as f:
             f.write(content)
 
-app_path = 'android/app/build.gradle'
-if os.path.exists(app_path):
-    with open(app_path, 'r') as f:
-        content = f.read()
+app_gradle = """plugins {
+    id "com.google.gms.google-services"
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
 
-    if 'com.google.gms.google-services' not in content:
-        content = content.replace('plugins {', 'plugins {\n    id "com.google.gms.google-services"')
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
-    content = content.replace('minSdk = flutter.minSdkVersion', 'minSdk = 23')
-    content = content.replace('minSdkVersion = flutter.minSdkVersion', 'minSdk = 23')
+android {
+    namespace = "com.jplabs.hivefi"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
 
-    signing_block = (
-        "def keystoreProperties = new Properties()\n"
-        "def keystorePropertiesFile = rootProject.file('key.properties')\n"
-        "if (keystorePropertiesFile.exists()) {\n"
-        "    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n"
-        "}\n\n"
-    )
-    if 'keystoreProperties' not in content:
-        content = re.sub(r'(plugins \{[^}]*\})', r'\1\n\n' + signing_block, content, count=1)
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
 
-    signing_config_block = (
-        "    signingConfigs {\n"
-        "        release {\n"
-        "            keyAlias keystoreProperties['keyAlias']\n"
-        "            keyPassword keystoreProperties['keyPassword']\n"
-        "            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null\n"
-        "            storePassword keystoreProperties['storePassword']\n"
-        "        }\n"
-        "    }\n\n"
-        "    buildTypes {\n"
-        "        release {\n"
-        "            signingConfig signingConfigs.release\n"
-        "        }\n"
-        "    }\n"
-    )
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
 
-    # Reemplazar buildTypes completo incluyendo su contenido
-    content = re.sub(
-        r'buildTypes\s*\{.*?^\s*\}',
-        signing_config_block,
-        content,
-        count=1,
-        flags=re.DOTALL | re.MULTILINE
-    )
+    defaultConfig {
+        applicationId = "com.jplabs.hivefi"
+        minSdk = 23
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
 
-    with open(app_path, 'w') as f:
-        f.write(content)
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+"""
+
+with open('android/app/build.gradle', 'w') as f:
+    f.write(app_gradle)
 
 manifest_path = 'android/app/src/main/AndroidManifest.xml'
 if os.path.exists(manifest_path):
