@@ -16,7 +16,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _paginas = const [
     _PaginaOnboarding(
       imagen: 'assets/images/onboarding1.webp',
-      titulo: 'Tus finanzas, en tu mano',
+      titulo: 'Tus finanzas en tus manos',
       descripcion:
           'Registra tus ingresos y gastos desde donde estés, en segundos.',
     ),
@@ -24,13 +24,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       imagen: 'assets/images/onboarding2.webp',
       titulo: 'Organiza tu dinero en sobres',
       descripcion:
-          'Asigna cada peso a un propósito: comida, ahorro, transporte y más.',
+          'Asigna cada centavo a un propósito: comida, ahorro, transporte y más.',
     ),
     _PaginaOnboarding(
       imagen: 'assets/images/onboarding3.webp',
-      titulo: 'Analizá y tomá decisiones',
+      titulo: 'Analiza y toma decisiones',
       descripcion:
-          'Visualiza tus movimientos y entendé a dónde va tu dinero cada mes.',
+          'Visualiza tus movimientos y entiende a dónde va tu dinero cada mes.',
     ),
   ];
 
