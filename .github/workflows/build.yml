@@ -49,6 +49,36 @@ jobs:
                   content = content.replace('plugins {', 'plugins {\n    id "com.google.gms.google-services"')
               content = content.replace('minSdk = flutter.minSdkVersion', 'minSdk = 23')
               content = content.replace('minSdkVersion = flutter.minSdkVersion', 'minSdk = 23')
+
+              signing_block = """def keystoreProperties = new Properties()
+          def keystorePropertiesFile = rootProject.file('key.properties')
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+          }
+
+          """
+              if 'keystoreProperties' not in content:
+                  content = signing_block + content
+
+              signing_config = """
+              signingConfigs {
+                  release {
+                      keyAlias keystoreProperties['keyAlias']
+                      keyPassword keystoreProperties['keyPassword']
+                      storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                      storePassword keystoreProperties['storePassword']
+                  }
+              }
+          """
+              if 'signingConfigs' not in content:
+                  content = content.replace('buildTypes {', signing_config + '\n    buildTypes {')
+
+              content = content.replace(
+                  'release {',
+                  'release {\n            signingConfig signingConfigs.release',
+                  1
+              )
+
               with open(app_path, 'w') as f:
                   f.write(content)
 
@@ -64,6 +94,9 @@ jobs:
           EOF
           python3 patch.py
           rm patch.py
+
+      - name: Verificar build.gradle
+        run: cat android/app/build.gradle
 
       - name: Agregar permiso de Billing
         run: |
