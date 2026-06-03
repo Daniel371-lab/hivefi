@@ -51,14 +51,14 @@ jobs:
               content = content.replace('minSdkVersion = flutter.minSdkVersion', 'minSdk = 23')
 
               signing_block = """def keystoreProperties = new Properties()
-          def keystorePropertiesFile = rootProject.file('key.properties')
-          if (keystorePropertiesFile.exists()) {
-              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-          }
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
-          """
+"""
               if 'keystoreProperties' not in content:
-                  content = signing_block + content
+                  content = re.sub(r'(plugins \{[^}]*\})', r'\1\n\n' + signing_block.strip().replace('\\', '\\\\'), content, count=1)
 
               signing_config = """
               signingConfigs {
