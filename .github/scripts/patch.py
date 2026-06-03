@@ -32,7 +32,7 @@ if os.path.exists(app_path):
         content = re.sub(r'(plugins \{[^}]*\})', r'\1\n\n' + signing_block, content, count=1)
 
     signing_config_block = (
-        "\n    signingConfigs {\n"
+        "    signingConfigs {\n"
         "        release {\n"
         "            keyAlias keystoreProperties['keyAlias']\n"
         "            keyPassword keystoreProperties['keyPassword']\n"
@@ -40,16 +40,20 @@ if os.path.exists(app_path):
         "            storePassword keystoreProperties['storePassword']\n"
         "        }\n"
         "    }\n\n"
+        "    buildTypes {\n"
+        "        release {\n"
+        "            signingConfig signingConfigs.release\n"
+        "        }\n"
+        "    }\n"
     )
-    if 'signingConfigs' not in content:
-        content = re.sub(r'(android\s*\{)', r'\1' + signing_config_block, content, count=1)
 
-    # Reemplazar el bloque release completo
+    # Reemplazar buildTypes completo incluyendo su contenido
     content = re.sub(
-        r'release\s*\{[^}]*\}',
-        'release {\n            signingConfig signingConfigs.release\n        }',
+        r'buildTypes\s*\{.*?^\s*\}',
+        signing_config_block,
         content,
-        count=1
+        count=1,
+        flags=re.DOTALL | re.MULTILINE
     )
 
     with open(app_path, 'w') as f:
