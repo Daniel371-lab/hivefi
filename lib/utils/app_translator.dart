@@ -102,7 +102,7 @@ const Map<String, Map<String, String>> _translations = {
     'forgotPassword': '¿Olvidaste tu contraseña?',
     'noAccount': '¿No tienes cuenta?',
     'register': 'Registrate',
-    'tagline': 'Tus finanzas, organizadas.',
+    'tagline': 'Tus finanzas organizadas.',
     'name': 'NOMBRE',
     'nameHint': 'Tu nombre',
     'confirmPassword': 'CONFIRMAR CONTRASEÑA',
