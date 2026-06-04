@@ -832,6 +832,8 @@ class _SeccionTopSobres extends StatelessWidget {
     );
   }
 
+}
+
 // ─── Progreso ahorros ────────────────────────────────────────────────────────
 
 class _SeccionAhorros extends StatelessWidget {

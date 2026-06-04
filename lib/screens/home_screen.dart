@@ -35,7 +35,7 @@ class HomeScreen extends StatelessWidget {
           automaticallyImplyLeading: false,
           titleSpacing: 20,
           title: StreamBuilder(
-            stream: context.read<AppProvider>().authService.userChanges(),
+            stream: context.read<AppProvider>().authService.userChanges,
             builder: (context, snapshot) {
               final nombre = snapshot.data?.displayName?.split(' ').first ?? context.tr('default_user');
               return Text(
