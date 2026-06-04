@@ -523,9 +523,7 @@ class _SeccionTendencia extends StatelessWidget {
             ? (data['fecha'] as Timestamp).toDate()
             : null;
         if (docFecha == null) continue;
-        if (docFecha.month != fecha.month || docFecha.year != fecha.year) {
-          continue;
-        }
+        if (docFecha.month != fecha.month || docFecha.year != fecha.year) continue;
         final tipo = data['tipo'] as String;
         final monto = (data['monto'] as num).toDouble().abs();
         if (tipo == 'ingreso') ingresos += monto;
@@ -543,6 +541,15 @@ class _SeccionTendencia extends StatelessWidget {
         .map((d) => [d['ingresos'] as double, d['gastos'] as double])
         .expand((e) => e)
         .fold(0.0, (a, b) => a > b ? a : b);
+
+    final spots0 = List.generate(
+      datosMeses.length,
+      (i) => FlSpot(i.toDouble(), datosMeses[i]['ingresos'] as double),
+    );
+    final spots1 = List.generate(
+      datosMeses.length,
+      (i) => FlSpot(i.toDouble(), datosMeses[i]['gastos'] as double),
+    );
 
     return _TarjetaSeccion(
       titulo: context.tr('tendenciaTitulo'),
@@ -577,19 +584,34 @@ class _SeccionTendencia extends StatelessWidget {
       ),
       child: SizedBox(
         height: 160,
-        child: BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceAround,
+        child: LineChart(
+          LineChartData(
+            minY: 0,
             maxY: maxY * 1.2 == 0 ? 100 : maxY * 1.2,
-            barTouchData: BarTouchData(enabled: false),
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipItems: (spots) => spots.map((s) {
+                  final isIngreso = s.barIndex == 0;
+                  return LineTooltipItem(
+                    s.y.toStringAsFixed(0),
+                    TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isIngreso
+                          ? Colors.green.shade300
+                          : Colors.red.shade300,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
             titlesData: FlTitlesData(
-              show: true,
-              leftTitles:
-                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles:
-                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              topTitles:
-                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              leftTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
@@ -619,25 +641,46 @@ class _SeccionTendencia extends StatelessWidget {
               ),
             ),
             borderData: FlBorderData(show: false),
-            barGroups: List.generate(datosMeses.length, (i) {
-              return BarChartGroupData(
-                x: i,
-                barRods: [
-                  BarChartRodData(
-                    toY: datosMeses[i]['ingresos'] as double,
-                    color: Colors.green.withOpacity(0.7),
-                    width: 8,
-                    borderRadius: BorderRadius.circular(4),
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots0,
+                isCurved: true,
+                curveSmoothness: 0.3,
+                color: Colors.green.withOpacity(0.8),
+                barWidth: 2,
+                dotData: FlDotData(
+                  show: true,
+                  getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+                    radius: 3,
+                    color: Colors.green.shade400,
+                    strokeWidth: 0,
                   ),
-                  BarChartRodData(
-                    toY: datosMeses[i]['gastos'] as double,
-                    color: Colors.red.withOpacity(0.7),
-                    width: 8,
-                    borderRadius: BorderRadius.circular(4),
+                ),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: Colors.green.withOpacity(0.06),
+                ),
+              ),
+              LineChartBarData(
+                spots: spots1,
+                isCurved: true,
+                curveSmoothness: 0.3,
+                color: Colors.red.withOpacity(0.8),
+                barWidth: 2,
+                dotData: FlDotData(
+                  show: true,
+                  getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+                    radius: 3,
+                    color: Colors.red.shade400,
+                    strokeWidth: 0,
                   ),
-                ],
-              );
-            }),
+                ),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: Colors.red.withOpacity(0.06),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -676,66 +719,118 @@ class _SeccionTopSobres extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
     final top = sorted.take(3).toList();
     final maxMonto = top.first.value;
+    final total = top.fold(0.0, (sum, e) => sum + e.value);
+
+    final colores = [
+      Colors.red.shade400,
+      Colors.orange.shade400,
+      Colors.amber.shade400,
+    ];
 
     return _TarjetaSeccion(
       titulo: context.tr('topSobresTitulo'),
       child: Column(
-        children: List.generate(top.length, (i) {
-          final progreso = top[i].value / maxMonto;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          '${i + 1}.',
-                          style: TextStyle(
-                            color: honey,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(top.length, (i) {
+              final pct = top[i].value / maxMonto;
+              final maxBarHeight = 64.0;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: i < top.length - 1 ? 8 : 0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${(top[i].value / total * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: colores[i],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          height: maxBarHeight * pct,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                colores[i].withOpacity(0.5),
+                                colores[i],
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          top[i].key,
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      CurrencyFormatter.format(top[i].value, currency),
-                      style: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progreso,
-                    minHeight: 4,
-                    color: Colors.red.withOpacity(0.6),
-                    backgroundColor:
-                        theme.colorScheme.surfaceContainerHighest,
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          );
-        }),
+              );
+            }),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: List.generate(top.length, (i) {
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: i < top.length - 1 ? 8 : 0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              top[i].key,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              CurrencyFormatter.format(top[i].value, currency),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: colores[i],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
-}
 
 // ─── Progreso ahorros ────────────────────────────────────────────────────────
 
@@ -745,9 +840,6 @@ class _SeccionAhorros extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
-
     return StreamBuilder<QuerySnapshot>(
       stream: provider.firestoreService.getCategoriasPorTipo('ahorro'),
       builder: (context, snapshot) {
@@ -755,73 +847,181 @@ class _SeccionAhorros extends StatelessWidget {
           return const SizedBox();
         }
 
-        final docs = snapshot.data!.docs
-            .where((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              return (data['meta'] as num?)?.toDouble() != null &&
-                  (data['meta'] as num).toDouble() > 0;
-            })
-            .toList();
+        final docs = snapshot.data!.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return (data['meta'] as num?)?.toDouble() != null &&
+              (data['meta'] as num).toDouble() > 0;
+        }).toList();
 
         if (docs.isEmpty) return const SizedBox();
 
         return _TarjetaSeccion(
           titulo: context.tr('progresoAhorrosTitulo'),
-          child: Column(
-            children: docs.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
+          child: _AhorrosCarousel(docs: docs, provider: provider),
+        );
+      },
+    );
+  }
+}
+
+class _AhorrosCarousel extends StatefulWidget {
+  final List<QueryDocumentSnapshot> docs;
+  final AppProvider provider;
+
+  const _AhorrosCarousel({required this.docs, required this.provider});
+
+  @override
+  State<_AhorrosCarousel> createState() => _AhorrosCarouselState();
+}
+
+class _AhorrosCarouselState extends State<_AhorrosCarousel> {
+  int _pagina = 0;
+  late final PageController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
+    final docs = widget.docs;
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 120,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: docs.length,
+            onPageChanged: (i) => setState(() => _pagina = i),
+            itemBuilder: (context, i) {
+              final data = docs[i].data() as Map<String, dynamic>;
               final nombre = data['nombre'] as String;
               final disponible = (data['disponible'] as num).toDouble();
               final meta = (data['meta'] as num).toDouble();
               final progreso = (disponible / meta).clamp(0.0, 1.0);
               final metaAlcanzada = disponible >= meta;
+              final color = metaAlcanzada ? Colors.green.shade400 : honey;
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          nombre,
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 80,
+                              height: 80,
+                              child: CircularProgressIndicator(
+                                value: progreso,
+                                strokeWidth: 7,
+                                backgroundColor: theme.colorScheme.surface,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(color),
+                              ),
+                            ),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${(progreso * 100).toInt()}%',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: color,
+                                  ),
+                                ),
+                                if (metaAlcanzada)
+                                  Icon(Icons.check_rounded,
+                                      size: 12, color: color),
+                              ],
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${(progreso * 100).toInt()}%',
-                          style: TextStyle(
-                            color: metaAlcanzada ? Colors.green : honey,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${CurrencyFormatter.format(disponible, provider.currency)} / ${CurrencyFormatter.format(meta, provider.currency)}',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progreso,
-                        minHeight: 6,
-                        color: metaAlcanzada ? Colors.green : honey,
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              nombre,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              CurrencyFormatter.format(
+                                  disponible, widget.provider.currency),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: color,
+                              ),
+                            ),
+                            Text(
+                              context.tr('deMeta').replaceAll('{meta}',
+                                  CurrencyFormatter.format(
+                                      meta, widget.provider.currency)),
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
-            }).toList(),
+            },
           ),
-        );
-      },
+        ),
+        if (docs.length > 1) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(docs.length, (i) {
+              final activo = i == _pagina;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: activo ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: activo
+                      ? honey
+                      : theme.colorScheme.onSurface.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -849,39 +1049,72 @@ class _SeccionMovimientos extends StatelessWidget {
         children: movimientos.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final descripcion = data['descripcion'] as String? ?? '';
+          final tipo = data['tipo'] as String? ?? '';
           final monto = (data['monto'] as num).toDouble();
           final fecha = data['fecha'] != null
               ? (data['fecha'] as Timestamp).toDate()
               : DateTime.now();
           final esPositivo = monto >= 0;
+          final color = esPositivo ? Colors.green.shade400 : Colors.red.shade400;
+
+          IconData icono;
+          switch (tipo) {
+            case 'ingreso':
+              icono = Icons.arrow_downward_rounded;
+              break;
+            case 'gasto':
+              icono = Icons.arrow_upward_rounded;
+              break;
+            case 'destinar':
+              icono = Icons.swap_horiz_rounded;
+              break;
+            case 'reparto':
+              icono = Icons.call_split_rounded;
+              break;
+            default:
+              icono = Icons.circle_outlined;
+          }
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icono, size: 16, color: color),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        descripcion,
+                        descripcion.isEmpty ? context.tr(tipo) : descripcion,
                         style: theme.textTheme.bodySmall
-                            ?.copyWith(fontWeight: FontWeight.w500),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       Text(
                         '${fecha.day}/${fecha.month}/${fecha.year}',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(fontSize: 11),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 10,
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
-                  '${esPositivo ? '+' : ''}${CurrencyFormatter.format(monto.abs(), currency)}',
+                  '${esPositivo ? '+' : '-'}${CurrencyFormatter.format(monto.abs(), currency)}',
                   style: TextStyle(
-                    color: esPositivo ? Colors.green : Colors.red,
+                    color: color,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
