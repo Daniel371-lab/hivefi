@@ -107,7 +107,7 @@ class HomeScreen extends StatelessWidget {
                 _BalanceCarousel(provider: provider),
                 const SizedBox(height: 32),
                 _HexGrid(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 6),
                 _SeccionAhorros(provider: provider),
               ],
             ),
@@ -1094,7 +1094,7 @@ class _SeccionAhorrosState extends State<_SeccionAhorros> {
             const SizedBox(height: 12),
             if (multiple)
               SizedBox(
-                height: 140,
+                height: 110,
                 child: PageView.builder(
                   controller: _pageController,
                   itemCount: docs.length,
@@ -1234,15 +1234,7 @@ class _AhorroCard extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                context.tr('tap_to_use'),
-                style: const TextStyle(color: Color(0xFF8FB5A8), fontSize: 10),
-              ),
-            ),
+            ],           
           ],
         ),
       ),
