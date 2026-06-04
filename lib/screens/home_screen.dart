@@ -390,6 +390,8 @@ class _InformeGeneral extends StatelessWidget {
             }
           }
 
+          final total = totalGeneral == 0 ? 1.0 : totalGeneral;
+
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -404,7 +406,7 @@ class _InformeGeneral extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
@@ -412,45 +414,67 @@ class _InformeGeneral extends StatelessWidget {
                   children: [
                     Text(
                       context.tr('general_balance_upper'),
-                      style: const TextStyle(
-                        color: Color(0xFF8FB5A8),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.45),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 1.5,
+                        letterSpacing: 1.8,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       CurrencyFormatter.format(totalGeneral, currency),
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: SizedBox(
+                        height: 8,
+                        child: Row(
+                          children: [
+                            Flexible(
+                              flex: (totalIngresos / total * 1000).toInt(),
+                              child: Container(color: honey),
+                            ),
+                            Flexible(
+                              flex: (totalGastos / total * 1000).toInt(),
+                              child: Container(color: Colors.blue.shade400),
+                            ),
+                            Flexible(
+                              flex: (totalAhorros / total * 1000).toInt(),
+                              child: Container(color: Colors.green.shade400),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    _FilaInforme(
+                    _FilaInformeElegante(
                       label: context.tr('available_income'),
                       monto: totalIngresos,
                       currency: currency,
                       color: honey,
-                      total: totalGeneral,
+                      porcentaje: totalIngresos / total,
                     ),
-                    const SizedBox(height: 12),
-                    _FilaInforme(
+                    const Divider(height: 24),
+                    _FilaInformeElegante(
                       label: context.tr('assigned_to_expenses'),
                       monto: totalGastos,
                       currency: currency,
-                      color: Colors.blue,
-                      total: totalGeneral,
+                      color: Colors.blue.shade400,
+                      porcentaje: totalGastos / total,
                     ),
-                    const SizedBox(height: 12),
-                    _FilaInforme(
+                    const Divider(height: 24),
+                    _FilaInformeElegante(
                       label: context.tr('in_savings'),
                       monto: totalAhorros,
                       currency: currency,
-                      color: Colors.green,
-                      total: totalGeneral,
+                      color: Colors.green.shade400,
+                      porcentaje: totalAhorros / total,
                     ),
                     const SizedBox(height: 8),
                   ],
@@ -480,6 +504,7 @@ class _InformeDisponible extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
 
     return Container(
       decoration: BoxDecoration(
@@ -495,17 +520,14 @@ class _InformeDisponible extends StatelessWidget {
           final docs = snapshot.data?.docs ?? [];
 
           final ordenados = [...docs]..sort((a, b) {
-              final dA =
-                  ((a.data() as Map<String, dynamic>)['disponible'] as num)
-                      .toDouble();
-              final dB =
-                  ((b.data() as Map<String, dynamic>)['disponible'] as num)
-                      .toDouble();
+              final dA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+              final dB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
               return dB.compareTo(dA);
             });
 
           final top5 = ordenados.take(5).toList();
           final totalSobres = ordenados.length;
+          final total = totalDisponible == 0 ? 1.0 : totalDisponible;
 
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -521,7 +543,7 @@ class _InformeDisponible extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
@@ -529,59 +551,64 @@ class _InformeDisponible extends StatelessWidget {
                   children: [
                     Text(
                       context.tr('available_balance_upper'),
-                      style: const TextStyle(
-                        color: Color(0xFF8FB5A8),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.45),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 1.5,
+                        letterSpacing: 1.8,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       CurrencyFormatter.format(totalDisponible, currency),
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      context.tr('top_envelopes'),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 28),
                     if (top5.isEmpty)
                       Text(context.tr('no_expense_envelopes'),
                           style: theme.textTheme.bodySmall)
-                    else
-                      ...top5.map((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        final nombre = data['nombre'] as String;
-                        final disponible =
-                            (data['disponible'] as num).toDouble();
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _FilaInforme(
-                            label: nombre,
-                            monto: disponible,
-                            currency: currency,
-                            color: theme.colorScheme.primary,
-                            total: totalDisponible,
-                          ),
-                        );
-                      }),
-                    if (totalSobres > 5) ...[
-                      const SizedBox(height: 4),
+                    else ...[
                       Text(
-                        '${context.tr('and_word')} ${totalSobres - 5} ${context.tr('more_envelopes')}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        context.tr('top_envelopes'),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.45),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.8,
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      ...top5.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final doc = entry.value;
+                        final data = doc.data() as Map<String, dynamic>;
+                        final nombre = data['nombre'] as String;
+                        final disponible = (data['disponible'] as num).toDouble();
+                        return Column(
+                          children: [
+                            _FilaInformeElegante(
+                              label: nombre,
+                              monto: disponible,
+                              currency: currency,
+                              color: honey,
+                              porcentaje: disponible / total,
+                            ),
+                            if (i < top5.length - 1) const Divider(height: 24),
+                          ],
+                        );
+                      }),
+                      if (totalSobres > 5) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          '${context.tr('and_word')} ${totalSobres - 5} ${context.tr('more_envelopes')}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.45),
+                          ),
+                        ),
+                      ],
                     ],
                     const SizedBox(height: 8),
                   ],
@@ -645,9 +672,80 @@ class _FilaInforme extends StatelessWidget {
           child: LinearProgressIndicator(
             value: porcentaje,
             minHeight: 5,
-            backgroundColor:
-                theme.colorScheme.onSurface.withOpacity(0.08),
+            backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),
             valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Fila de informe elegante ─────────────────────────────────────────────────
+
+class _FilaInformeElegante extends StatelessWidget {
+  final String label;
+  final double monto;
+  final String currency;
+  final Color color;
+  final double porcentaje;
+
+  const _FilaInformeElegante({
+    required this.label,
+    required this.monto,
+    required this.currency,
+    required this.color,
+    required this.porcentaje,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                CurrencyFormatter.format(monto, currency),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            '${(porcentaje * 100).toStringAsFixed(0)}%',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
         ),
       ],
