@@ -34,7 +34,7 @@ class ThousandsFormatter extends TextInputFormatter {
         text: result,
         selection: TextSelection.collapsed(offset: result.length),
       );
-    }} else {
+    } else {
       String clean = text.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
 
       // Evitar múltiples puntos
