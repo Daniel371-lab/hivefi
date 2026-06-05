@@ -19,6 +19,10 @@ class _HistorialScreenState extends State<HistorialScreen> {
   int _mesSeleccionado = DateTime.now().month;
   int _anioSeleccionado = DateTime.now().year;
   int _mesesTendencia = 3;
+  
+  // Streams aislados para evitar fugas de memoria y lecturas redundantes
+  late Stream<QuerySnapshot> _movimientosStream;
+  late Stream<QuerySnapshot> _ahorrosStream;
 
   List<String> _nombresMeses(BuildContext context) => [
     context.tr('mes_1'), context.tr('mes_2'), context.tr('mes_3'),
@@ -26,6 +30,27 @@ class _HistorialScreenState extends State<HistorialScreen> {
     context.tr('mes_7'), context.tr('mes_8'), context.tr('mes_9'),
     context.tr('mes_10'), context.tr('mes_11'), context.tr('mes_12'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<AppProvider>();
+    // Aislamos el stream de ahorros para que no se reconecte en cada setState
+    _ahorrosStream = provider.firestoreService.getCategoriasPorTipo('ahorro');
+    _actualizarStream();
+  }
+
+  void _actualizarStream() {
+    final provider = context.read<AppProvider>();
+    // Calculamos el rango exacto necesario (desde el mes más antiguo de la tendencia hasta el fin del mes seleccionado)
+    // Esto evita descargar toda la base de datos de Firebase.
+    final inicioRango = DateTime(_anioSeleccionado, _mesSeleccionado - _mesesTendencia + 1, 1);
+    final finRango = DateTime(_anioSeleccionado, _mesSeleccionado + 1, 0, 23, 59, 59);
+
+    setState(() {
+      _movimientosStream = provider.firestoreService.getMovimientosPorRango(inicioRango, finRango);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +74,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
         appBar: AppBar(title: Text(context.tr('historialAppBar'))),
         body: SafeArea(
           child: StreamBuilder<QuerySnapshot>(
-            stream: provider.firestoreService.getMovimientos(),
+            stream: _movimientosStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -57,6 +82,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
               final todos = snapshot.data?.docs ?? [];
 
+              // Filtramos en memoria solo los del mes actual para los resúmenes y donas
               final movimientosMes = todos.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final fecha = data['fecha'] != null
@@ -76,10 +102,14 @@ class _HistorialScreenState extends State<HistorialScreen> {
                       mes: _mesSeleccionado,
                       anio: _anioSeleccionado,
                       nombresMeses: nombresMeses,
-                      onCambio: (mes, anio) => setState(() {
-                        _mesSeleccionado = mes;
-                        _anioSeleccionado = anio;
-                      }),
+                      onCambio: (mes, anio) {
+                        setState(() {
+                          _mesSeleccionado = mes;
+                          _anioSeleccionado = anio;
+                        });
+                        // Actualizamos la consulta en Firebase al cambiar la fecha
+                        _actualizarStream();
+                      },
                     ),
                     const SizedBox(height: 20),
                     _ResumenRapido(
@@ -97,8 +127,11 @@ class _HistorialScreenState extends State<HistorialScreen> {
                       meses: _mesesTendencia,
                       nombresMeses: nombresMeses,
                       currency: provider.currency,
-                      onCambioMeses: (val) =>
-                          setState(() => _mesesTendencia = val),
+                      onCambioMeses: (val) {
+                        setState(() => _mesesTendencia = val);
+                        // Actualizamos la consulta para expandir o reducir los meses descargados
+                        _actualizarStream();
+                      },
                     ),
                     const SizedBox(height: 20),
                     _SeccionTopSobres(
@@ -106,7 +139,10 @@ class _HistorialScreenState extends State<HistorialScreen> {
                       currency: provider.currency,
                     ),
                     const SizedBox(height: 20),
-                    _SeccionAhorros(provider: provider),
+                    _SeccionAhorros(
+                      stream: _ahorrosStream,
+                      provider: provider,
+                    ),
                     const SizedBox(height: 20),
                     _SeccionMovimientos(
                       movimientos: movimientosMes.take(10).toList(),
@@ -837,13 +873,15 @@ class _SeccionTopSobres extends StatelessWidget {
 // ─── Progreso ahorros ────────────────────────────────────────────────────────
 
 class _SeccionAhorros extends StatelessWidget {
+  final Stream<QuerySnapshot> stream;
   final AppProvider provider;
-  const _SeccionAhorros({required this.provider});
+  
+  const _SeccionAhorros({required this.stream, required this.provider});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: provider.firestoreService.getCategoriasPorTipo('ahorro'),
+      stream: stream,
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const SizedBox();

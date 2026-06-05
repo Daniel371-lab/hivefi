@@ -35,6 +35,7 @@ class HomeScreen extends StatelessWidget {
           automaticallyImplyLeading: false,
           titleSpacing: 20,
           title: StreamBuilder(
+            // Este StreamBuilder se mantiene porque escucha los cambios de sesión de autenticación, no a la base de datos de costos
             stream: context.read<AppProvider>().authService.userChanges,
             builder: (context, snapshot) {
               final nombre = snapshot.data?.displayName?.split(' ').first ?? context.tr('default_user');
@@ -140,66 +141,63 @@ class _BalanceCarouselState extends State<_BalanceCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<Map<String, double>>(
-      stream: widget.provider.firestoreService.getBalance(),
-      builder: (context, snapshot) {
-        final data = snapshot.data;
-        final balanceGeneral = data?['balanceGeneral'] ?? 0;
-        final balanceDisponible = data?['balanceDisponible'] ?? 0;
-        final progresoGeneral = data?['progresoGeneral'] ?? 0;
-        final progresoDisponible = data?['progresoDisponible'] ?? 0;
-        final currency = widget.provider.currency;
+    // Escuchamos el balance procesado en memoria, sin consultar Firebase
+    final balance = context.watch<AppProvider>().balance;
+    
+    final balanceGeneral = balance['balanceGeneral'] ?? 0;
+    final balanceDisponible = balance['balanceDisponible'] ?? 0;
+    final progresoGeneral = balance['progresoGeneral'] ?? 0;
+    final progresoDisponible = balance['progresoDisponible'] ?? 0;
+    final currency = widget.provider.currency;
 
-        return Column(
-          children: [
-            SizedBox(
-              height: 160,
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (i) => setState(() => _currentPage = i),
-                children: [
-                  _BalanceCard(
-                    titulo: context.tr('general_balance'),
-                    monto: balanceGeneral,
-                    subtitulo: context.tr('available_balance_subtitle'),
-                    progreso: progresoGeneral,
-                    currency: currency,
-                    provider: widget.provider,
-                    esGeneral: true,
-                  ),
-                  _BalanceCard(
-                    titulo: context.tr('available_balance_title'),
-                    monto: balanceDisponible,
-                    subtitulo: context.tr('money_assigned_to_expenses'),
-                    progreso: progresoDisponible,
-                    currency: currency,
-                    provider: widget.provider,
-                    esGeneral: false,
-                  ),
-                ],
+    return Column(
+      children: [
+        SizedBox(
+          height: 160,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (i) => setState(() => _currentPage = i),
+            children: [
+              _BalanceCard(
+                titulo: context.tr('general_balance'),
+                monto: balanceGeneral,
+                subtitulo: context.tr('available_balance_subtitle'),
+                progreso: progresoGeneral,
+                currency: currency,
+                provider: widget.provider,
+                esGeneral: true,
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(2, (i) {
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: _currentPage == i ? 20 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: _currentPage == i
-                        ? const Color(0xFFF59E0B)
-                        : Colors.grey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                );
-              }),
-            ),
-          ],
-        );
-      },
+              _BalanceCard(
+                titulo: context.tr('available_balance_title'),
+                monto: balanceDisponible,
+                subtitulo: context.tr('money_assigned_to_expenses'),
+                progreso: progresoDisponible,
+                currency: currency,
+                provider: widget.provider,
+                esGeneral: false,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(2, (i) {
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: _currentPage == i ? 20 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: _currentPage == i
+                    ? const Color(0xFFF59E0B)
+                    : Colors.grey.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }
@@ -363,6 +361,24 @@ class _InformeGeneral extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
+    
+    // Obtenemos los datos directamente desde la memoria
+    final categorias = context.watch<AppProvider>().todasLasCategorias;
+
+    double totalIngresos = 0;
+    double totalGastos = 0;
+    double totalAhorros = 0;
+
+    for (final doc in categorias) {
+      final data = doc.data() as Map<String, dynamic>;
+      final tipo = data['tipo'] as String;
+      final disponible = (data['disponible'] as num).toDouble();
+      if (tipo == 'ingreso') totalIngresos += disponible;
+      if (tipo == 'gasto') totalGastos += disponible;
+      if (tipo == 'ahorro') totalAhorros += disponible;
+    }
+
+    final total = totalGeneral == 0 ? 1.0 : totalGeneral;
 
     return Container(
       decoration: BoxDecoration(
@@ -372,117 +388,96 @@ class _InformeGeneral extends StatelessWidget {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 32,
       ),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: provider.firestoreService.getTodasLasCategorias(),
-        builder: (context, snapshot) {
-          double totalIngresos = 0;
-          double totalGastos = 0;
-          double totalAhorros = 0;
-
-          if (snapshot.hasData) {
-            for (final doc in snapshot.data!.docs) {
-              final data = doc.data() as Map<String, dynamic>;
-              final tipo = data['tipo'] as String;
-              final disponible = (data['disponible'] as num).toDouble();
-              if (tipo == 'ingreso') totalIngresos += disponible;
-              if (tipo == 'gasto') totalGastos += disponible;
-              if (tipo == 'ahorro') totalAhorros += disponible;
-            }
-          }
-
-          final total = totalGeneral == 0 ? 1.0 : totalGeneral;
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr('general_balance_upper'),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.8,
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.tr('general_balance_upper'),
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.45),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.8,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      CurrencyFormatter.format(totalGeneral, currency),
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: SizedBox(
-                        height: 8,
-                        child: Row(
-                          children: [
-                            Flexible(
-                              flex: (totalIngresos / total * 1000).toInt(),
-                              child: Container(color: honey),
-                            ),
-                            Flexible(
-                              flex: (totalGastos / total * 1000).toInt(),
-                              child: Container(color: Colors.blue.shade400),
-                            ),
-                            Flexible(
-                              flex: (totalAhorros / total * 1000).toInt(),
-                              child: Container(color: Colors.green.shade400),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _FilaInformeElegante(
-                      label: context.tr('available_income'),
-                      monto: totalIngresos,
-                      currency: currency,
-                      color: honey,
-                      porcentaje: totalIngresos / total,
-                    ),
-                    const Divider(height: 24),
-                    _FilaInformeElegante(
-                      label: context.tr('assigned_to_expenses'),
-                      monto: totalGastos,
-                      currency: currency,
-                      color: Colors.blue.shade400,
-                      porcentaje: totalGastos / total,
-                    ),
-                    const Divider(height: 24),
-                    _FilaInformeElegante(
-                      label: context.tr('in_savings'),
-                      monto: totalAhorros,
-                      currency: currency,
-                      color: Colors.green.shade400,
-                      porcentaje: totalAhorros / total,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+                const SizedBox(height: 6),
+                Text(
+                  CurrencyFormatter.format(totalGeneral, currency),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1,
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+                const SizedBox(height: 28),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: SizedBox(
+                    height: 8,
+                    child: Row(
+                      children: [
+                        // Bug de crash solucionado: asegurando que el flex mínimo sea 1
+                        Flexible(
+                          flex: (totalIngresos / total * 1000).toInt().clamp(1, 1000),
+                          child: Container(color: honey),
+                        ),
+                        Flexible(
+                          flex: (totalGastos / total * 1000).toInt().clamp(1, 1000),
+                          child: Container(color: Colors.blue.shade400),
+                        ),
+                        Flexible(
+                          flex: (totalAhorros / total * 1000).toInt().clamp(1, 1000),
+                          child: Container(color: Colors.green.shade400),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _FilaInformeElegante(
+                  label: context.tr('available_income'),
+                  monto: totalIngresos,
+                  currency: currency,
+                  color: honey,
+                  porcentaje: totalIngresos / total,
+                ),
+                const Divider(height: 24),
+                _FilaInformeElegante(
+                  label: context.tr('assigned_to_expenses'),
+                  monto: totalGastos,
+                  currency: currency,
+                  color: Colors.blue.shade400,
+                  porcentaje: totalGastos / total,
+                ),
+                const Divider(height: 24),
+                _FilaInformeElegante(
+                  label: context.tr('in_savings'),
+                  monto: totalAhorros,
+                  currency: currency,
+                  color: Colors.green.shade400,
+                  porcentaje: totalAhorros / total,
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -506,6 +501,19 @@ class _InformeDisponible extends StatelessWidget {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
 
+    // Lista ya procesada desde el provider, 0 lag.
+    final docs = context.watch<AppProvider>().categoriasGasto;
+
+    final ordenados = [...docs]..sort((a, b) {
+        final dA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+        final dB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+        return dB.compareTo(dA);
+      });
+
+    final top5 = ordenados.take(5).toList();
+    final totalSobres = ordenados.length;
+    final total = totalDisponible == 0 ? 1.0 : totalDisponible;
+
     return Container(
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
@@ -514,109 +522,92 @@ class _InformeDisponible extends StatelessWidget {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 32,
       ),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: provider.firestoreService.getCategoriasPorTipo('gasto'),
-        builder: (context, snapshot) {
-          final docs = snapshot.data?.docs ?? [];
-
-          final ordenados = [...docs]..sort((a, b) {
-              final dA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
-              final dB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
-              return dB.compareTo(dA);
-            });
-
-          final top5 = ordenados.take(5).toList();
-          final totalSobres = ordenados.length;
-          final total = totalDisponible == 0 ? 1.0 : totalDisponible;
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr('available_balance_upper'),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.8,
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.tr('available_balance_upper'),
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.45),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.8,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      CurrencyFormatter.format(totalDisponible, currency),
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    if (top5.isEmpty)
-                      Text(context.tr('no_expense_envelopes'),
-                          style: theme.textTheme.bodySmall)
-                    else ...[
-                      Text(
-                        context.tr('top_envelopes'),
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.45),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.8,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ...top5.asMap().entries.map((entry) {
-                        final i = entry.key;
-                        final doc = entry.value;
-                        final data = doc.data() as Map<String, dynamic>;
-                        final nombre = data['nombre'] as String;
-                        final disponible = (data['disponible'] as num).toDouble();
-                        return Column(
-                          children: [
-                            _FilaInformeElegante(
-                              label: nombre,
-                              monto: disponible,
-                              currency: currency,
-                              color: honey,
-                              porcentaje: disponible / total,
-                            ),
-                            if (i < top5.length - 1) const Divider(height: 24),
-                          ],
-                        );
-                      }),
-                      if (totalSobres > 5) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          '${context.tr('and_word')} ${totalSobres - 5} ${context.tr('more_envelopes')}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.45),
-                          ),
-                        ),
-                      ],
-                    ],
-                    const SizedBox(height: 8),
-                  ],
+                const SizedBox(height: 6),
+                Text(
+                  CurrencyFormatter.format(totalDisponible, currency),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1,
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+                const SizedBox(height: 28),
+                if (top5.isEmpty)
+                  Text(context.tr('no_expense_envelopes'),
+                      style: theme.textTheme.bodySmall)
+                else ...[
+                  Text(
+                    context.tr('top_envelopes'),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.45),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.8,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ...top5.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final doc = entry.value;
+                    final data = doc.data() as Map<String, dynamic>;
+                    final nombre = data['nombre'] as String;
+                    final disponible = (data['disponible'] as num).toDouble();
+                    return Column(
+                      children: [
+                        _FilaInformeElegante(
+                          label: nombre,
+                          monto: disponible,
+                          currency: currency,
+                          color: honey,
+                          porcentaje: disponible / total,
+                        ),
+                        if (i < top5.length - 1) const Divider(height: 24),
+                      ],
+                    );
+                  }),
+                  if (totalSobres > 5) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      '${context.tr('and_word')} ${totalSobres - 5} ${context.tr('more_envelopes')}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.45),
+                      ),
+                    ),
+                  ],
+                ],
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1054,65 +1045,62 @@ class _SeccionAhorrosState extends State<_SeccionAhorros> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
+    
+    // Obtenemos los ahorros ya filtrados en memoria, sin lecturas a Firebase
+    final ahorros = context.watch<AppProvider>().categoriasAhorro;
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: widget.provider.firestoreService.getCategoriasPorTipo('ahorro'),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const SizedBox();
-        }
+    if (ahorros.isEmpty) {
+      return const SizedBox();
+    }
 
-        final docs = snapshot.data!.docs;
-        final multiple = docs.length > 1;
+    final multiple = ahorros.length > 1;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    context.tr('savings'),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: honey,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  if (multiple)
-                    Text(
-                      '${_currentPage + 1} / ${docs.length}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                context.tr('savings'),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: honey,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            if (multiple)
-              SizedBox(
-                height: 110,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: docs.length,
-                  onPageChanged: (i) => setState(() => _currentPage = i),
-                  itemBuilder: (context, i) => Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: _AhorroCard(
-                      doc: docs[i],
-                      provider: widget.provider,
-                    ),
+              if (multiple)
+                Text(
+                  '${_currentPage + 1} / ${ahorros.length}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-              )
-            else
-              _AhorroCard(doc: docs[0], provider: widget.provider),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (multiple)
+          SizedBox(
+            height: 110,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: ahorros.length,
+              onPageChanged: (i) => setState(() => _currentPage = i),
+              itemBuilder: (context, i) => Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: _AhorroCard(
+                  doc: ahorros[i],
+                  provider: widget.provider,
+                ),
+              ),
+            ),
+          )
+        else
+          _AhorroCard(doc: ahorros[0], provider: widget.provider),
+      ],
     );
   }
 }

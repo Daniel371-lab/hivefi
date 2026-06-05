@@ -147,134 +147,124 @@ class _ListaCategoriasState extends State<_ListaCategorias> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.read<AppProvider>();
+    final provider = context.watch<AppProvider>();
     final theme = Theme.of(context);
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: provider.firestoreService.getCategoriasPorTipo(widget.tipo),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    // Filtramos localmente desde el array sincronizado en el Provider (Cero lecturas a Firebase)
+    final docs = provider.todasLasCategorias.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == widget.tipo;
+    }).toList();
 
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.inbox_outlined,
-                    size: 48,
-                    color: theme.colorScheme.onSurface.withOpacity(0.3)),
-                const SizedBox(height: 12),
-                Text(context.tr('no_categories_yet'), style: theme.textTheme.bodySmall),
-                const SizedBox(height: 4),
-                Text(context.tr('tap_plus_to_create'), style: theme.textTheme.bodySmall),
-              ],
-            ),
-          );
-        }
-
-        final docs = snapshot.data!.docs;
-        final tieneMuchas = docs.length > 10;
-
-        // Si hay búsqueda activa, filtrar todos; si no, mostrar últimos 10
-        final List<QueryDocumentSnapshot> visibles = _query.isNotEmpty
-            ? docs.where((doc) {
-                final nombre = (doc.data() as Map<String, dynamic>)['nombre']
-                    as String;
-                return nombre
-                    .toLowerCase()
-                    .contains(_query.toLowerCase());
-              }).toList()
-            : docs.take(10).toList();
-
-        return Column(
+    if (docs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Buscador: solo aparece si hay más de 10
-            if (tieneMuchas)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
-                child: TextField(
-				key: const Key('search_field'),
-                  controller: _searchController,
-                  onChanged: (val) => setState(() => _query = val),
-                  style: theme.textTheme.bodySmall,
-                  decoration: InputDecoration(
-                    hintText: context.tr('search_category'),
-                    hintStyle: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      size: 18,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                    suffixIcon: _query.isNotEmpty
-                        ? GestureDetector(
-                            onTap: () {
-                              _searchController.clear();
-                              setState(() => _query = '');
-                            },
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 16,
-                              color: theme.colorScheme.onSurface.withOpacity(0.4),
-                            ),
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+            Icon(Icons.inbox_outlined,
+                size: 48,
+                color: theme.colorScheme.onSurface.withOpacity(0.3)),
+            const SizedBox(height: 12),
+            Text(context.tr('no_categories_yet'), style: theme.textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Text(context.tr('tap_plus_to_create'), style: theme.textTheme.bodySmall),
+          ],
+        ),
+      );
+    }
+
+    final tieneMuchas = docs.length > 10;
+
+    // RESPETADO AL 100%: Lógica exacta solicitada para el comportamiento de tu App
+    final List<QueryDocumentSnapshot> visibles = _query.isNotEmpty
+        ? docs.where((doc) {
+            final nombre = (doc.data() as Map<String, dynamic>)['nombre'] as String;
+            return nombre.toLowerCase().contains(_query.toLowerCase());
+          }).toList()
+        : docs.take(10).toList();
+
+    return Column(
+      children: [
+        // Buscador: solo aparece si hay más de 10 en total
+        if (tieneMuchas)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+            child: TextField(
+              key: const Key('search_field'),
+              controller: _searchController,
+              onChanged: (val) => setState(() => _query = val),
+              style: theme.textTheme.bodySmall,
+              decoration: InputDecoration(
+                hintText: context.tr('search_category'),
+                hintStyle: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  size: 18,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                ),
+                suffixIcon: _query.isNotEmpty
+                    ? GestureDetector(
+                        onTap: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 16,
+                          color: theme.colorScheme.onSurface.withOpacity(0.4),
+                        ),
+                      )
+                    : null,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
                 ),
               ),
-
-            // Lista
-            Expanded(
-              child: visibles.isEmpty
-                  ? Center(
-                      child: Text(
-                        context.tr('no_results'),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
-                      itemCount: visibles.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, i) {
-                        final data =
-                            visibles[i].data() as Map<String, dynamic>;
-                        final id = visibles[i].id;
-                        final nombre = data['nombre'] as String;
-                        final disponible =
-                            (data['disponible'] as num).toDouble();
-                        final meta =
-                            (data['meta'] as num?)?.toDouble() ?? 0;
-                        final esAhorro = widget.tipo == 'ahorro';
-
-                        return _TarjetaCategoria(
-                          id: id,
-                          nombre: nombre,
-                          disponible: disponible,
-                          meta: meta,
-                          esAhorro: esAhorro,
-                          currency: widget.currency,
-                        );
-                      },
-                    ),
             ),
-          ],
-        );
-      },
+          ),
+
+        // Lista
+        Expanded(
+          child: visibles.isEmpty
+              ? Center(
+                  child: Text(
+                    context.tr('no_results'),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+                  itemCount: visibles.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, i) {
+                    final data = visibles[i].data() as Map<String, dynamic>;
+                    final id = visibles[i].id;
+                    final nombre = data['nombre'] as String;
+                    final disponible = (data['disponible'] as num).toDouble();
+                    final meta = (data['meta'] as num?)?.toDouble() ?? 0;
+                    final esAhorro = widget.tipo == 'ahorro';
+
+                    return _TarjetaCategoria(
+                      id: id,
+                      nombre: nombre,
+                      disponible: disponible,
+                      meta: meta,
+                      esAhorro: esAhorro,
+                      currency: widget.currency,
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -540,13 +530,16 @@ class _DialogoUsarAhorroState extends State<_DialogoUsarAhorro> {
     _cargarGastos();
   }
 
-  Future<void> _cargarGastos() async {
+  void _cargarGastos() {
     final provider = context.read<AppProvider>();
-    final snapshot = await provider.firestoreService
-        .getCategoriasPorTipo('gasto')
-        .first;
+    // Optimización: Carga directa sincrónica de memoria de los gastos locales
+    final gastos = provider.todasLasCategorias.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == 'gasto';
+    }).toList();
+
     setState(() {
-      _gastosDisponibles = snapshot.docs.map((doc) {
+      _gastosDisponibles = gastos.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return {'id': doc.id, 'nombre': data['nombre']};
       }).toList();
@@ -659,13 +652,16 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
       final provider = context.read<AppProvider>();
       final premium = context.read<PremiumService>();
 
-      // Verificar límite free
+      // Filtramos localmente de la memoria para validar límites y duplicados (Cero lecturas extra)
+      final categoriasLocales = provider.todasLasCategorias.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return data['tipo'] == _tipo;
+      }).toList();
+
+      // Verificar límite free localmente
       if (!premium.isPremium) {
         final limites = {'ingreso': 3, 'gasto': 8, 'ahorro': 2};
-        final snap = await provider.firestoreService
-            .getCategoriasPorTipo(_tipo)
-            .first;
-        if (snap.docs.length >= limites[_tipo]!) {
+        if (categoriasLocales.length >= limites[_tipo]!) {
           if (mounted) {
             Navigator.pop(context);
             showDialog(
@@ -677,16 +673,13 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
         }
       }
 
-      // Validar nombre duplicado
-      final existe = await provider.firestoreService
-          .getCategoriasPorTipo(_tipo)
-          .first
-          .then((snap) => snap.docs.any((doc) =>
-              (doc.data() as Map<String, dynamic>)['nombre']
-                  .toString()
-                  .trim()
-                  .toLowerCase() ==
-              _nombreController.text.trim().toLowerCase()));
+      // Validar nombre duplicado localmente
+      final existe = categoriasLocales.any((doc) =>
+          (doc.data() as Map<String, dynamic>)['nombre']
+              .toString()
+              .trim()
+              .toLowerCase() ==
+          _nombreController.text.trim().toLowerCase());
 
       if (existe) {
         setState(() {

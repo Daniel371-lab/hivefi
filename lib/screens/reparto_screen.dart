@@ -21,7 +21,8 @@ class _RepartoScreenState extends State<RepartoScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final provider = context.read<AppProvider>();
+    // 1. Escuchamos el Provider directamente. Cero lecturas a Firebase en esta vista.
+    final provider = context.watch<AppProvider>();
 
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     _SobreInfo? origenInicial;
@@ -33,6 +34,18 @@ class _RepartoScreenState extends State<RepartoScreen> {
         tipo: args['origenTipo'] as String,
       );
     }
+
+    // 2. Filtramos la lista local ya descargada en memoria
+    final todosLosSobres = provider.todasLasCategorias;
+    final gastos = todosLosSobres.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == 'gasto';
+    }).toList();
+    final ahorros = todosLosSobres.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == 'ahorro';
+    }).toList();
+    final todos = [...gastos, ...ahorros];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: theme.brightness == Brightness.dark
@@ -55,87 +68,72 @@ class _RepartoScreenState extends State<RepartoScreen> {
           child: const Icon(Icons.compare_arrows_rounded),
         ),
         body: SafeArea(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: provider.firestoreService.getCategoriasPorTipo('gasto'),
-            builder: (context, snapshotGastos) {
-              return StreamBuilder<QuerySnapshot>(
-                stream: provider.firestoreService.getCategoriasPorTipo('ahorro'),
-                builder: (context, snapshotAhorros) {
-                  if (snapshotGastos.connectionState == ConnectionState.waiting ||
-                      snapshotAhorros.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final gastos = snapshotGastos.data?.docs ?? [];
-                  final ahorros = snapshotAhorros.data?.docs ?? [];
-                  final todos = [...gastos, ...ahorros];
-
-                  if (todos.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.compare_arrows_rounded,
-                                size: 48,
-                                color: theme.colorScheme.onSurface.withOpacity(0.3)),
-                            const SizedBox(height: 12),
-                            Text(context.tr('no_envelopes_created'),
-                                style: theme.textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            Text(context.tr('create_categories_first'),
-                                style: theme.textTheme.bodySmall,
-                                textAlign: TextAlign.center),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  if (origenInicial != null && !_yaSeAbrio) {
-                    _yaSeAbrio = true;
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _mostrarFormulario(context, provider, origenInicial);
-                    });
-                  }
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+          child: Builder(
+            builder: (context) {
+              if (todos.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(context.tr('move_money_between_envelopes'),
-                            style: theme.textTheme.headlineMedium
-                                ?.copyWith(fontWeight: FontWeight.w700)),
+                        Icon(Icons.compare_arrows_rounded,
+                            size: 48,
+                            color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                        const SizedBox(height: 12),
+                        Text(context.tr('no_envelopes_created'),
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
-                        Text(context.tr('reassign_money_desc'),
-                            style: theme.textTheme.bodySmall),
-                        const SizedBox(height: 16),
-
-                        if (gastos.isNotEmpty) ...[
-                          _SeccionSobresReparto(
-                            titulo: context.tr('expense_envelopes_title'),
-                            docs: gastos,
-                            tipo: 'gasto',
-                            provider: provider,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        if (ahorros.isNotEmpty) ...[
-                          _SeccionSobresReparto(
-                            titulo: context.tr('savings_envelopes_title'),
-                            docs: ahorros,
-                            tipo: 'ahorro',
-                            provider: provider,
-                          ),
-                        ],
+                        Text(context.tr('create_categories_first'),
+                            style: theme.textTheme.bodySmall,
+                            textAlign: TextAlign.center),
                       ],
                     ),
-                  );
-                },
+                  ),
+                );
+              }
+
+              if (origenInicial != null && !_yaSeAbrio) {
+                _yaSeAbrio = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _mostrarFormulario(context, provider, origenInicial);
+                });
+              }
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(context.tr('move_money_between_envelopes'),
+                        style: theme.textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text(context.tr('reassign_money_desc'),
+                        style: theme.textTheme.bodySmall),
+                    const SizedBox(height: 16),
+
+                    if (gastos.isNotEmpty) ...[
+                      _SeccionSobresReparto(
+                        titulo: context.tr('expense_envelopes_title'),
+                        docs: gastos,
+                        tipo: 'gasto',
+                        provider: provider,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    if (ahorros.isNotEmpty) ...[
+                      _SeccionSobresReparto(
+                        titulo: context.tr('savings_envelopes_title'),
+                        docs: ahorros,
+                        tipo: 'ahorro',
+                        provider: provider,
+                      ),
+                    ],
+                  ],
+                ),
               );
             },
           ),
@@ -324,7 +322,8 @@ class _TarjetaSobreState extends State<_TarjetaSobre> {
 
 // ─── Historial de reparto ─────────────────────────────────────────────────────
 
-class _HistorialReparto extends StatelessWidget {
+// 3. Convertido a StatefulWidget para aislar la conexión y evitar cobros extra por re-render.
+class _HistorialReparto extends StatefulWidget {
   final String categoriaId;
   final String currency;
   final AppProvider provider;
@@ -336,14 +335,28 @@ class _HistorialReparto extends StatelessWidget {
   });
 
   @override
+  State<_HistorialReparto> createState() => _HistorialRepartoState();
+}
+
+class _HistorialRepartoState extends State<_HistorialReparto> {
+  late final Stream<QuerySnapshot> _movimientosStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // Guardamos la suscripción UNA sola vez
+    _movimientosStream = widget.provider.firestoreService.getMovimientosPorCategoria(
+      categoriaId: widget.categoriaId,
+      tipo: 'reparto',
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return StreamBuilder<QuerySnapshot>(
-      stream: provider.firestoreService.getMovimientosPorCategoria(
-        categoriaId: categoriaId,
-        tipo: 'reparto',
-      ),
+      stream: _movimientosStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
@@ -372,7 +385,7 @@ class _HistorialReparto extends StatelessWidget {
                 data['categoriaOrigenNombre'] as String? ?? '';
             final destinoNombre =
                 data['categoriaDestinoNombre'] as String? ?? '';
-            final esOrigen = data['categoriaOrigenId'] == categoriaId;
+            final esOrigen = data['categoriaOrigenId'] == widget.categoriaId;
 
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 3),
@@ -396,7 +409,7 @@ class _HistorialReparto extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    CurrencyFormatter.format(monto, currency),
+                    CurrencyFormatter.format(monto, widget.currency),
                     style: TextStyle(
                       color: esOrigen
                           ? Colors.red.withOpacity(0.8)
@@ -707,20 +720,25 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
       _destinoId = widget.destinoPreseleccionado!.id;
       _destinoNombre = widget.destinoPreseleccionado!.nombre;
     }
-    _cargarSobres();
+    _cargarSobresLocales();
   }
 
-  Future<void> _cargarSobres() async {
-    final snapshotGastos = await widget.provider.firestoreService
-        .getCategoriasPorTipo('gasto')
-        .first;
-    final snapshotAhorros = await widget.provider.firestoreService
-        .getCategoriasPorTipo('ahorro')
-        .first;
+  void _cargarSobresLocales() {
+    // 4. Eliminados los "await ... .first". Carga sincrónica en 0 ms desde la memoria.
+    final todas = widget.provider.todasLasCategorias;
+    
+    final gastos = todas.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == 'gasto';
+    });
+    final ahorros = todas.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == 'ahorro';
+    });
 
     setState(() {
       _sobres = [
-        ...snapshotGastos.docs.map((doc) {
+        ...gastos.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
           return {
             'id': doc.id,
@@ -730,7 +748,7 @@ class _FormularioRepartoState extends State<_FormularioReparto> {
             'meta': 0.0,
           };
         }),
-        ...snapshotAhorros.docs.map((doc) {
+        ...ahorros.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
           return {
             'id': doc.id,

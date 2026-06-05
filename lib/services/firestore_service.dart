@@ -45,19 +45,9 @@ class FirestoreService {
         .snapshots();
   }
 
+  // Este es el método estrella que alimenta tu AppProvider a costo casi cero
   Stream<QuerySnapshot> getTodasLasCategorias() {
     return _categorias.orderBy('creadoEn').snapshots();
-  }
-
-  Stream<QuerySnapshot> getMovimientosPorCategoria({
-    required String categoriaId,
-    required String tipo,
-  }) {
-    return _movimientos
-        .where('categoriaOrigenId', isEqualTo: categoriaId)
-        .where('tipo', isEqualTo: tipo)
-        .orderBy('fecha', descending: true)
-        .snapshots();
   }
 
   Future<void> eliminarCategoria(String categoriaId, double disponible) async {
@@ -214,56 +204,6 @@ class FirestoreService {
     await batch.commit();
   }
 
-  Stream<QuerySnapshot> getMovimientos() {
-    return _movimientos
-        .orderBy('fecha', descending: true)
-        .snapshots();
-  }
-
-  Future<void> eliminarMovimiento(String movimientoId) async {
-    await _verificarInternet();
-    await _movimientos.doc(movimientoId).delete();
-  }
-
-  Future<void> eliminarTodosLosDatos() async {
-    await _verificarInternet();
-    final categoriasSnap = await _categorias.get();
-    final movimientosSnap = await _movimientos.get();
-
-    final todosLosDocs = [
-      ...categoriasSnap.docs,
-      ...movimientosSnap.docs,
-    ];
-
-    const batchSize = 500;
-    for (int i = 0; i < todosLosDocs.length; i += batchSize) {
-      final batch = _db.batch();
-      final chunk = todosLosDocs.skip(i).take(batchSize);
-      for (final doc in chunk) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
-    }
-  }
-
-  Stream<QuerySnapshot> getMovimientosDestinarPorOrigen(String categoriaOrigenId) {
-    return _movimientos
-        .where('categoriaOrigenId', isEqualTo: categoriaOrigenId)
-        .where('tipo', isEqualTo: 'destinar')
-        .orderBy('fecha', descending: true)
-        .limit(3)
-        .snapshots();
-  }
-
-  Stream<QuerySnapshot> getMovimientosDestinarPorDestino(String categoriaDestinoId) {
-    return _movimientos
-        .where('categoriaDestinoId', isEqualTo: categoriaDestinoId)
-        .where('tipo', isEqualTo: 'destinar')
-        .orderBy('fecha', descending: true)
-        .limit(3)
-        .snapshots();
-  }
-
   Future<void> editarMontoDestinar({
     required String movimientoId,
     required String origenId,
@@ -306,13 +246,53 @@ class FirestoreService {
     await batch.commit();
   }
 
-  Future<bool> categoriaIngresaTieneMovimientos(String categoriaId) async {
-    final snapshot = await _movimientos
+  Future<void> eliminarMovimiento(String movimientoId) async {
+    await _verificarInternet();
+    await _movimientos.doc(movimientoId).delete();
+  }
+
+  // ─── CONSULTAS DE MOVIMIENTOS Y FILTROS ────────────────────────────────────
+
+  Stream<QuerySnapshot> getMovimientos() {
+    return _movimientos.orderBy('fecha', descending: true).snapshots();
+  }
+
+  // NUEVO: Método optimizado para el HistorialScreen para evitar lecturas infinitas
+  Stream<QuerySnapshot> getMovimientosPorRango(DateTime inicio, DateTime fin) {
+    return _movimientos
+        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
+        .where('fecha', isLessThanOrEqualTo: Timestamp.fromDate(fin))
+        .orderBy('fecha', descending: true)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getMovimientosPorCategoria({
+    required String categoriaId,
+    required String tipo,
+  }) {
+    return _movimientos
         .where('categoriaOrigenId', isEqualTo: categoriaId)
-        .where('tipo', isEqualTo: 'ingreso')
-        .limit(1)
-        .get();
-    return snapshot.docs.isNotEmpty;
+        .where('tipo', isEqualTo: tipo)
+        .orderBy('fecha', descending: true)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getMovimientosDestinarPorOrigen(String categoriaOrigenId) {
+    return _movimientos
+        .where('categoriaOrigenId', isEqualTo: categoriaOrigenId)
+        .where('tipo', isEqualTo: 'destinar')
+        .orderBy('fecha', descending: true)
+        .limit(3)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getMovimientosDestinarPorDestino(String categoriaDestinoId) {
+    return _movimientos
+        .where('categoriaDestinoId', isEqualTo: categoriaDestinoId)
+        .where('tipo', isEqualTo: 'destinar')
+        .orderBy('fecha', descending: true)
+        .limit(3)
+        .snapshots();
   }
 
   Stream<QuerySnapshot> getMovimientosIngresoPorCategoria(String categoriaId) {
@@ -324,6 +304,15 @@ class FirestoreService {
         .snapshots();
   }
 
+  Future<bool> categoriaIngresaTieneMovimientos(String categoriaId) async {
+    final snapshot = await _movimientos
+        .where('categoriaOrigenId', isEqualTo: categoriaId)
+        .where('tipo', isEqualTo: 'ingreso')
+        .limit(1)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
   Future<bool> movimientoIngresoFueDestinado(String movimientoId, String categoriaId) async {
     final snapshot = await _movimientos
         .where('categoriaOrigenId', isEqualTo: categoriaId)
@@ -331,6 +320,29 @@ class FirestoreService {
         .limit(1)
         .get();
     return snapshot.docs.isNotEmpty;
+  }
+
+  // ─── LIMPIEZA DE DATOS (OPTIMIZADO PARA MEMORIA) ───────────────────────────
+
+  Future<void> eliminarTodosLosDatos() async {
+    await _verificarInternet();
+    
+    // Función auxiliar para borrar en lotes pequeños y proteger la memoria RAM
+    Future<void> borrarColeccionEnLotes(CollectionReference ref) async {
+      var snapshot = await ref.limit(500).get();
+      while (snapshot.docs.isNotEmpty) {
+        final batch = _db.batch();
+        for (final doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+        // Buscar el siguiente lote
+        snapshot = await ref.limit(500).get();
+      }
+    }
+
+    await borrarColeccionEnLotes(_categorias);
+    await borrarColeccionEnLotes(_movimientos);
   }
 
   // ─── USUARIO ───────────────────────────────────────────────────────────────
@@ -358,43 +370,5 @@ class FirestoreService {
       },
       SetOptions(merge: true),
     );
-  }
-
-  // ─── BALANCE ───────────────────────────────────────────────────────────────
-
-  Stream<Map<String, double>> getBalance() {
-    return _categorias.snapshots().map((snapshot) {
-      double totalIngresado = 0;
-      double totalDestinadoGastos = 0;
-      double totalAhorros = 0;
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final disponible = (data['disponible'] as num).toDouble();
-        final tipo = data['tipo'] as String;
-
-        if (tipo == 'ingreso') totalIngresado += disponible;
-        if (tipo == 'gasto') totalDestinadoGastos += disponible;
-        if (tipo == 'ahorro') totalAhorros += disponible;
-      }
-
-      final balanceGeneral = totalIngresado + totalDestinadoGastos + totalAhorros;
-      final balanceDisponible = totalIngresado + totalDestinadoGastos;
-
-      final progresoGeneral = balanceGeneral > 0
-          ? (balanceDisponible / balanceGeneral).clamp(0.0, 1.0)
-          : 0.0;
-
-      final progresoDisponible = balanceDisponible > 0
-          ? (totalDestinadoGastos / balanceDisponible).clamp(0.0, 1.0)
-          : 0.0;
-
-      return {
-        'balanceGeneral': balanceGeneral,
-        'balanceDisponible': balanceDisponible,
-        'progresoGeneral': progresoGeneral,
-        'progresoDisponible': progresoDisponible,
-      };
-    });
   }
 }

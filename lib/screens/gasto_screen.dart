@@ -6,7 +6,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_provider.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
-import '../services/ad_service.dart';
 import '../utils/app_translator.dart';
 
 class GastoScreen extends StatelessWidget {
@@ -76,120 +75,138 @@ class GastoScreen extends StatelessWidget {
   }
 }
 
-// ─── Lista gastos con buscador ────────────────────────────────────────────────
+// ─── Lista gastos con buscador ─────────────────────────────────────────────
 
 class _ListaGastosConBuscador extends StatefulWidget {
   final AppProvider provider;
+
   const _ListaGastosConBuscador({required this.provider});
 
   @override
-  State<_ListaGastosConBuscador> createState() =>
+  State<_ListaGastosConBuscador> createState() => 
       _ListaGastosConBuscadorState();
 }
 
 class _ListaGastosConBuscadorState extends State<_ListaGastosConBuscador> {
   final _searchController = TextEditingController();
-  String _query = '';
+  final _queryNotifier = ValueNotifier<String>('');
+  List<QueryDocumentSnapshot> _docs = [];
 
   @override
   void dispose() {
     _searchController.dispose();
+    _queryNotifier.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    // Optimización: Carga directa desde la memoria RAM del teléfono (0 costo)
+    final providerLocal = context.watch<AppProvider>();
+    _docs = providerLocal.todasLasCategorias.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == 'gasto';
+    }).toList();
 
-    return StreamBuilder<QuerySnapshot>(
-      stream:
-          widget.provider.firestoreService.getCategoriasPorTipo('gasto'),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.inbox_outlined,
-                    size: 48,
-                    color: theme.colorScheme.onSurface.withOpacity(0.3)),
-                const SizedBox(height: 12),
-                Text(context.tr('noExpenseCategories'),
-                    style: theme.textTheme.bodySmall),
-                const SizedBox(height: 4),
-                Text(context.tr('createInCategoriesFirst'),
-                    style: theme.textTheme.bodySmall),
-              ],
-            ),
-          );
-        }
-
-        final docs = snapshot.data!.docs;
-        final tieneMuchas = docs.length > 10;
-
-        final visibles = _query.isNotEmpty
-            ? docs.where((doc) {
-                final nombre =
-                    (doc.data() as Map<String, dynamic>)['nombre'] as String;
-                return nombre.toLowerCase().contains(_query.toLowerCase());
-              }).toList()
-            : docs.take(10).toList();
-
-        return Column(
+    if (_docs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (tieneMuchas)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
-                child: TextField(
-				key: const Key('search_field'),
-                  controller: _searchController,
-                  onChanged: (val) => setState(() => _query = val),
-                  style: theme.textTheme.bodySmall,
-                  decoration: InputDecoration(
-                    hintText: context.tr('search_envelope_hint'),
-                    hintStyle: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                    prefixIcon: Icon(Icons.search_rounded,
-                        size: 18,
-                        color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                    suffixIcon: _query.isNotEmpty
-                        ? GestureDetector(
-                            onTap: () {
-                              _searchController.clear();
-                              setState(() => _query = '');
-                            },
-                            child: Icon(Icons.close_rounded,
-                                size: 16,
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.4)),
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+            Icon(Icons.inbox_outlined,
+                size: 48,
+                color: theme.colorScheme.onSurface.withOpacity(0.3)),
+            const SizedBox(height: 12),
+            Text(context.tr('noExpenseCategories'),
+                style: theme.textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Text(context.tr('createExCategoriesFirst'),
+                style: theme.textTheme.bodySmall),
+          ],
+        ),
+      );
+    }
+
+    // Ordenar de mayor a menor disponible para mejor experiencia
+    _docs.sort((a, b) {
+      final dispA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+      final dispB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+      return dispB.compareTo(dispA);
+    });
+
+    final tieneMuchas = _docs.length > 10;
+
+    return Column(
+      children: [
+        if (tieneMuchas)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+            child: TextField(
+              key: const Key('search_field'),
+              controller: _searchController,
+              onChanged: (val) => _queryNotifier.value = val,
+              style: theme.textTheme.bodySmall,
+              decoration: InputDecoration(
+                hintText: context.tr('search_category_hint'),
+                hintStyle: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                ),
+                prefixIcon: Icon(Icons.search_rounded,
+                    size: 18,
+                    color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                suffixIcon: ValueListenableBuilder<String>(
+                  valueListenable: _queryNotifier,
+                  builder: (context, query, _) => query.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () {
+                            _searchController.clear();
+                            _queryNotifier.value = '';
+                          },
+                          child: Icon(Icons.close_rounded,
+                              size: 16,
+                              color: theme.colorScheme.onSurface
+                                  .withOpacity(0.4)),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
                 ),
               ),
-            Expanded(
-              child: visibles.isEmpty
+            ),
+          ),
+        Expanded(
+          child: ValueListenableBuilder<String>(
+            valueListenable: _queryNotifier,
+            builder: (context, query, _) {
+              final visibles = query.isNotEmpty
+                  ? _docs.where((doc) {
+                      final nombre = (doc.data()
+                          as Map<String, dynamic>)['nombre'] as String;
+                      return nombre
+                          .toLowerCase()
+                          .contains(query.toLowerCase());
+                    }).toList()
+                  : _docs.take(10).toList();
+
+              return visibles.isEmpty
                   ? Center(
                       child: Text(context.tr('noResults'),
                           style: theme.textTheme.bodySmall))
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+                      padding:
+                          const EdgeInsets.fromLTRB(24, 8, 24, 100),
                       itemCount: visibles.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 8),
                       itemBuilder: (context, i) {
                         final data =
                             visibles[i].data() as Map<String, dynamic>;
@@ -205,11 +222,11 @@ class _ListaGastosConBuscadorState extends State<_ListaGastosConBuscador> {
                           provider: widget.provider,
                         );
                       },
-                    ),
-            ),
-          ],
-        );
-      },
+                    );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -242,7 +259,6 @@ class _TarjetaGastoState extends State<_TarjetaGasto> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final honey = theme.colorScheme.primary;
-    final sinFondos = widget.disponible <= 0;
 
     return GestureDetector(
       onTap: () => setState(() => _expandido = !_expandido),
@@ -268,38 +284,20 @@ class _TarjetaGastoState extends State<_TarjetaGasto> {
                           widget.nombre,
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.6),
                             fontSize: 11,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      if (sinFondos)
-                        Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            context.tr('no_funds'),
-                            style: const TextStyle(
-                                color: Colors.red,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600),
-                          ),
-                        ),
                       Text(
                         CurrencyFormatter.format(
                             widget.disponible, widget.currency),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: sinFondos
-                              ? theme.colorScheme.onSurface.withOpacity(0.3)
-                              : honey,
+                          color: honey,
                           fontSize: 14,
                         ),
                       ),
@@ -322,12 +320,10 @@ class _TarjetaGastoState extends State<_TarjetaGasto> {
                   height: 1,
                   color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
               const SizedBox(height: 8),
-              _HistorialGastos(
+              _HistorialGasto(
                 categoriaId: widget.id,
-                categoriaNombre: widget.nombre,
-                disponibleSobre: widget.disponible,
-                currency: widget.currency,
                 provider: widget.provider,
+                currency: widget.currency,
               ),
             ],
           ],
@@ -337,32 +333,42 @@ class _TarjetaGastoState extends State<_TarjetaGasto> {
   }
 }
 
-// ─── Historial de gastos ──────────────────────────────────────────────────────
+// ─── Historial de gastos por categoría ───────────────────────────────────────
 
-class _HistorialGastos extends StatelessWidget {
+// CRÍTICO: Mantenido como StatefulWidget para aislar la conexión a Firestore y evitar cobros extra por re-render al animar el scroll o expandir la tarjeta.
+class _HistorialGasto extends StatefulWidget {
   final String categoriaId;
-  final String categoriaNombre;
-  final double disponibleSobre;
-  final String currency;
   final AppProvider provider;
+  final String currency;
 
-  const _HistorialGastos({
+  const _HistorialGasto({
     required this.categoriaId,
-    required this.categoriaNombre,
-    required this.disponibleSobre,
-    required this.currency,
     required this.provider,
+    required this.currency,
   });
+
+  @override
+  State<_HistorialGasto> createState() => _HistorialGastoState();
+}
+
+class _HistorialGastoState extends State<_HistorialGasto> {
+  late final Stream<QuerySnapshot> _movimientosStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // Guardamos la suscripción UNA sola vez
+    _movimientosStream = widget.provider.firestoreService
+        .getMovimientosPorCategoria(
+            categoriaId: widget.categoriaId, tipo: 'gasto');
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return StreamBuilder<QuerySnapshot>(
-      stream: provider.firestoreService.getMovimientosPorCategoria(
-        categoriaId: categoriaId,
-        tipo: 'gasto',
-      ),
+      stream: _movimientosStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -379,27 +385,25 @@ class _HistorialGastos extends StatelessWidget {
           );
         }
 
-        final docs = snapshot.data!.docs.take(3).toList();
+        final docs = snapshot.data!.docs;
 
         return Column(
           children: docs.map((doc) {
             final data = doc.data() as Map<String, dynamic>;
-            final monto = (data['monto'] as num).toDouble().abs();
+            final monto = (data['monto'] as num).toDouble().abs(); // Convertir a positivo para la UI
             final fecha = data['fecha'] != null
                 ? (data['fecha'] as Timestamp).toDate()
                 : DateTime.now();
             final dia =
                 '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
 
-            return _FilaGasto(
+            return _FilaMovimientoGasto(
               movimientoId: doc.id,
-              categoriaId: categoriaId,
-              categoriaNombre: categoriaNombre,
+              categoriaId: widget.categoriaId,
               monto: monto,
               fecha: dia,
-              disponibleSobre: disponibleSobre,
-              currency: currency,
-              provider: provider,
+              provider: widget.provider,
+              currency: widget.currency,
             );
           }).toList(),
         );
@@ -408,27 +412,23 @@ class _HistorialGastos extends StatelessWidget {
   }
 }
 
-// ─── Fila de gasto ────────────────────────────────────────────────────────────
+// ─── Fila de movimiento de gasto ─────────────────────────────────────────────
 
-class _FilaGasto extends StatelessWidget {
+class _FilaMovimientoGasto extends StatelessWidget {
   final String movimientoId;
   final String categoriaId;
-  final String categoriaNombre;
   final double monto;
   final String fecha;
-  final double disponibleSobre;
-  final String currency;
   final AppProvider provider;
+  final String currency;
 
-  const _FilaGasto({
+  const _FilaMovimientoGasto({
     required this.movimientoId,
     required this.categoriaId,
-    required this.categoriaNombre,
     required this.monto,
     required this.fecha,
-    required this.disponibleSobre,
-    required this.currency,
     required this.provider,
+    required this.currency,
   });
 
   void _editar(BuildContext context) {
@@ -440,39 +440,7 @@ class _FilaGasto extends StatelessWidget {
         provider: provider,
         movimientoId: movimientoId,
         categoriaId: categoriaId,
-        categoriaNombre: categoriaNombre,
         montoActual: monto,
-        disponibleSobre: disponibleSobre,
-      ),
-    );
-  }
-
-  void _confirmarEliminar(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(context.tr('delete_expense_title')),
-        content: Text(
-          '${context.tr('delete_expense_desc_1')} ${CurrencyFormatter.format(monto, currency)} ${context.tr('delete_expense_desc_2')}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('cancel_button')),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () async {
-              Navigator.pop(context);
-              await provider.firestoreService.eliminarGasto(
-                movimientoId: movimientoId,
-                categoriaId: categoriaId,
-                monto: monto,
-              );
-            },
-            child: Text(context.tr('delete_button')),
-          ),
-        ],
       ),
     );
   }
@@ -480,6 +448,7 @@ class _FilaGasto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -488,39 +457,27 @@ class _FilaGasto extends StatelessWidget {
         children: [
           Text(
             fecha,
-            style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 11,
-                color: theme.colorScheme.onSurface.withOpacity(0.5)),
+            style: theme.textTheme.bodySmall
+                ?.copyWith(fontSize: 11, color: theme.colorScheme.onSurface.withOpacity(0.5)),
           ),
           Text(
-            '-${CurrencyFormatter.format(monto, currency)}',
-            style: const TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.w600,
+            CurrencyFormatter.format(monto, currency),
+            style: theme.textTheme.bodySmall?.copyWith(
               fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: honey,
             ),
           ),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => _editar(context),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Icon(Icons.edit_outlined,
-                      size: 14,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                ),
+          GestureDetector(
+            onTap: () => _editar(context),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(
+                Icons.edit_outlined,
+                size: 14,
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
               ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () => _confirmarEliminar(context),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Icon(Icons.delete_outline,
-                      size: 14, color: Colors.red.withOpacity(0.5)),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -528,12 +485,18 @@ class _FilaGasto extends StatelessWidget {
   }
 }
 
-// ─── Formulario registrar gasto ───────────────────────────────────────────────
+// ─── Formulario agregar gasto ────────────────────────────────────────────────
 
 class _FormularioGasto extends StatefulWidget {
   final AppProvider provider;
+  final String? categoriaId;
+  final String? categoriaNombre;
 
-  const _FormularioGasto({required this.provider});
+  const _FormularioGasto({
+    required this.provider,
+    this.categoriaId,
+    this.categoriaNombre,
+  });
 
   @override
   State<_FormularioGasto> createState() => _FormularioGastoState();
@@ -543,7 +506,6 @@ class _FormularioGastoState extends State<_FormularioGasto> {
   final _montoController = TextEditingController();
   String? _categoriaSeleccionada;
   String? _categoriaNombreSeleccionada;
-  double? _disponibleSeleccionado;
   List<Map<String, dynamic>> _categorias = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -551,25 +513,26 @@ class _FormularioGastoState extends State<_FormularioGasto> {
   @override
   void initState() {
     super.initState();
-    _cargarCategorias();
+    _categoriaSeleccionada = widget.categoriaId;
+    _categoriaNombreSeleccionada = widget.categoriaNombre;
+    _cargarCategoriasLocales();
   }
 
-  Future<void> _cargarCategorias() async {
-    final snapshot = await widget.provider.firestoreService
-        .getCategoriasPorTipo('gasto')
-        .first;
+  void _cargarCategoriasLocales() {
+    // Optimización: Carga sincrónica en 0 ms desde la memoria del Provider
+    final docsLocales = widget.provider.todasLasCategorias.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == 'gasto';
+    }).toList();
+
     setState(() {
-      _categorias = snapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return {
-              'id': doc.id,
-              'nombre': data['nombre'],
-              'disponible': (data['disponible'] as num).toDouble(),
-            };
-          })
-          .where((c) => (c['disponible'] as double) > 0)
-          .toList();
+      _categorias = docsLocales.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,
+          'nombre': data['nombre'],
+        };
+      }).toList();
     });
   }
 
@@ -581,7 +544,7 @@ class _FormularioGastoState extends State<_FormularioGasto> {
 
   Future<void> _confirmar() async {
     if (_categoriaSeleccionada == null) {
-      setState(() => _errorMessage = context.tr('error_select_envelope'));
+      setState(() => _errorMessage = context.tr('error_select_category'));
       return;
     }
 
@@ -598,12 +561,6 @@ class _FormularioGastoState extends State<_FormularioGasto> {
       return;
     }
 
-    if (_disponibleSeleccionado != null && monto > _disponibleSeleccionado!) {
-      setState(() => _errorMessage =
-          '${context.tr('error_insufficient_funds')} ${CurrencyFormatter.format(_disponibleSeleccionado!, widget.provider.currency)}');
-      return;
-    }
-
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -616,7 +573,6 @@ class _FormularioGastoState extends State<_FormularioGasto> {
         monto: monto,
       );
       if (mounted) Navigator.pop(context);
-      await AdService.instance.mostrarInterstitialSiCorresponde();
     } catch (e) {
       setState(() => _errorMessage = context.tr('error_registering_expense'));
     } finally {
@@ -627,7 +583,6 @@ class _FormularioGastoState extends State<_FormularioGasto> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
 
     return Padding(
       padding:
@@ -657,96 +612,58 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 20),
-            Text(context.tr('from_which_envelope'),
+            Text(context.tr('which_account_money_exits'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             _categorias.isEmpty
-                ? Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      context.tr('no_envelopes_available'),
-                      style: const TextStyle(color: Colors.orange, fontSize: 13),
-                    ),
-                  )
+                ? Text(context.tr('loading_categories'))
                 : DropdownButtonFormField<String>(
                     value: _categoriaSeleccionada,
-                    hint: Text(context.tr('select_envelope_hint')),
+                    hint: Text(context.tr('select_category_hint')),
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                            color: theme.colorScheme.surfaceContainerHighest),
+                            color:
+                                theme.colorScheme.surfaceContainerHighest),
                       ),
                     ),
                     items: _categorias
                         .map((c) => DropdownMenuItem(
                               value: c['id'] as String,
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(c['nombre'] as String),
-                                  Text(
-                                    CurrencyFormatter.format(
-                                        c['disponible'] as double,
-                                        widget.provider.currency),
-                                    style: TextStyle(
-                                        color: honey,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
+                              child: Text(c['nombre'] as String),
                             ))
                         .toList(),
                     onChanged: (val) {
                       setState(() {
                         _categoriaSeleccionada = val;
-                        final cat =
-                            _categorias.firstWhere((c) => c['id'] == val);
-                        _categoriaNombreSeleccionada = cat['nombre'] as String;
-                        _disponibleSeleccionado = cat['disponible'] as double;
+                        _categoriaNombreSeleccionada = _categorias
+                            .firstWhere((c) => c['id'] == val)['nombre']
+                            as String;
                       });
                     },
                   ),
-            if (_disponibleSeleccionado != null) ...[
-              const SizedBox(height: 6),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${context.tr('available_label')}: ${CurrencyFormatter.format(_disponibleSeleccionado!, widget.provider.currency)}',
-                  style: TextStyle(
-                      color: honey,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13),
-                ),
-              ),
-            ],
             const SizedBox(height: 20),
-            Text(context.tr('amount_to_spend_label'),
+            Text(context.tr('expense_amount_label'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextField(
               controller: _montoController,
               keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _confirmar(),
               inputFormatters: [
                 ThousandsFormatter(currencyCode: widget.provider.currency),
               ],
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _confirmar(),
               decoration: InputDecoration(
-                hintText:
-                    CurrencyFormatter.format(0, widget.provider.currency),
+                hintText: CurrencyFormatter.format(
+                    0, widget.provider.currency),
               ),
-              onChanged: (_) {
+              onChanged: (val) {
                 if (_errorMessage != null)
                   setState(() => _errorMessage = null);
               },
@@ -761,7 +678,8 @@ class _FormularioGastoState extends State<_FormularioGasto> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(_errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontSize: 13)),
+                    style:
+                        const TextStyle(color: Colors.red, fontSize: 13)),
               ),
             ],
             const SizedBox(height: 24),
@@ -769,14 +687,14 @@ class _FormularioGastoState extends State<_FormularioGasto> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: _categorias.isEmpty || _isLoading ? null : _confirmar,
+                onPressed: _isLoading ? null : _confirmar,
                 child: _isLoading
                     ? const SizedBox(
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.5, color: Colors.white))
-                    : Text(context.tr('confirm_expense_button')),
+                    : Text(context.tr('confirm_expense')),
               ),
             ),
           ],
@@ -786,27 +704,24 @@ class _FormularioGastoState extends State<_FormularioGasto> {
   }
 }
 
-// ─── Formulario editar gasto ──────────────────────────────────────────────────
+// ─── Formulario editar monto de gasto ────────────────────────────────────────
 
 class _FormularioEditarGasto extends StatefulWidget {
   final AppProvider provider;
   final String movimientoId;
   final String categoriaId;
-  final String categoriaNombre;
   final double montoActual;
-  final double disponibleSobre;
 
   const _FormularioEditarGasto({
     required this.provider,
     required this.movimientoId,
     required this.categoriaId,
-    required this.categoriaNombre,
     required this.montoActual,
-    required this.disponibleSobre,
   });
 
   @override
-  State<_FormularioEditarGasto> createState() => _FormularioEditarGastoState();
+  State<_FormularioEditarGasto> createState() =>
+      _FormularioEditarGastoState();
 }
 
 class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
@@ -840,14 +755,6 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
 
     if (nuevoMonto <= 0) {
       setState(() => _errorMessage = context.tr('error_invalid_amount'));
-      return;
-    }
-
-    // El máximo permitido es disponible actual + monto anterior
-    final maxPermitido = widget.disponibleSobre + widget.montoActual;
-    if (nuevoMonto > maxPermitido) {
-      setState(() => _errorMessage =
-          '${context.tr('error_amount_exceeds_limit')} ${CurrencyFormatter.format(maxPermitido, widget.provider.currency)}');
       return;
     }
 
@@ -902,9 +809,6 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
             Text(context.tr('edit_expense_title'),
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text('${context.tr('envelope_label')}: ${widget.categoriaNombre}',
-                style: theme.textTheme.bodySmall),
             const SizedBox(height: 20),
             Text(context.tr('new_amount_label'),
                 style: theme.textTheme.bodySmall
@@ -913,12 +817,12 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
             TextField(
               controller: _montoController,
               keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _guardar(),
               inputFormatters: [
                 ThousandsFormatter(currencyCode: widget.provider.currency),
               ],
-              onChanged: (_) {
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _guardar(),
+              onChanged: (val) {
                 if (_errorMessage != null)
                   setState(() => _errorMessage = null);
               },

@@ -14,7 +14,8 @@ class DestinarScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final provider = context.read<AppProvider>();
+    // 1. Escuchamos el Provider directamente. Cero lecturas a Firebase.
+    final provider = context.watch<AppProvider>();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: theme.brightness == Brightness.dark
@@ -37,20 +38,18 @@ class DestinarScreen extends StatelessWidget {
           child: const Icon(Icons.add),
         ),
         body: SafeArea(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: provider.firestoreService.getCategoriasPorTipo('ingreso'),
-            builder: (context, snapshotIngresos) {
-              if (snapshotIngresos.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          child: Builder(
+            builder: (context) {
+              // 2. Filtramos la lista ya descargada en la memoria RAM del teléfono
+              final todosIngresos = provider.todasLasCategorias.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return data['tipo'] == 'ingreso';
+              }).toList();
 
-              final todosIngresos = snapshotIngresos.data?.docs ?? [];
-              final ingresosConDinero = todosIngresos
-                  .where((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return (data['disponible'] as num).toDouble() > 0;
-                  })
-                  .toList();
+              final ingresosConDinero = todosIngresos.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return (data['disponible'] as num).toDouble() > 0;
+              }).toList();
 
               if (todosIngresos.isEmpty) {
                 return Center(
@@ -78,6 +77,13 @@ class DestinarScreen extends StatelessWidget {
                 );
               }
 
+              // Ordenamiento optimizado
+              final ordenados = [...todosIngresos]..sort((a, b) {
+                  final dA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+                  final dB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+                  return dB.compareTo(dA);
+                });
+
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
                 child: Column(
@@ -92,14 +98,7 @@ class DestinarScreen extends StatelessWidget {
                     const SizedBox(height: 12),
 
                     // Ingresos desplegables — top 10 por disponible
-                    ...(() {
-                      final ordenados = [...todosIngresos]..sort((a, b) {
-                          final dA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
-                          final dB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
-                          return dB.compareTo(dA);
-                        });
-                      return ordenados.take(10);
-                    })().map((doc) {
+                    ...ordenados.take(10).map((doc) {
                       final data = doc.data() as Map<String, dynamic>;
                       return _TarjetaIngreso(
                         id: doc.id,
@@ -112,17 +111,11 @@ class DestinarScreen extends StatelessWidget {
                     if (todosIngresos.length > 10)
                       TextButton.icon(
                         onPressed: () {
-                          final ordenados = [...todosIngresos]..sort((a, b) {
-                              final dA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
-                              final dB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
-                              return dB.compareTo(dA);
-                            });
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
                             backgroundColor: Colors.transparent,
                             builder: (_) => _BottomSheetTodosSobres(
-                              docs: ordenados,
                               tipo: 'ingreso',
                               titulo: context.tr('all_incomes'),
                               provider: provider,
@@ -287,67 +280,64 @@ class _SeccionDestino extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: provider.firestoreService.getCategoriasPorTipo(tipo),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const SizedBox();
-        }
+    // Filtramos localmente desde la RAM
+    final todos = provider.todasLasCategorias.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == tipo;
+    }).toList();
 
-        final todos = snapshot.data!.docs;
+    if (todos.isEmpty) {
+      return const SizedBox();
+    }
 
-        // Ordenar por disponible descendente
-        final ordenados = [...todos]..sort((a, b) {
-            final dispA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
-            final dispB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
-            return dispB.compareTo(dispA);
-          });
+    final ordenados = [...todos]..sort((a, b) {
+        final dispA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+        final dispB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+        return dispB.compareTo(dispA);
+      });
 
-        final visibles = ordenados.take(10).toList();
-        final tieneMas = ordenados.length > 10;
+    final visibles = ordenados.take(10).toList();
+    final tieneMas = ordenados.length > 10;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(titulo,
-                style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            ...visibles.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              return _TarjetaDestino(
-                id: doc.id,
-                nombre: data['nombre'] as String,
-                disponible: (data['disponible'] as num).toDouble(),
-                meta: (data['meta'] as num?)?.toDouble() ?? 0,
-                tipo: tipo,
-                currency: provider.currency,
-                provider: provider,
-              );
-            }),
-            if (tieneMas)
-              TextButton.icon(
-                onPressed: () => _verTodos(context, ordenados),
-                icon: const Icon(Icons.expand_more_rounded, size: 18),
-                label: Text('${context.tr('view_all')} (${ordenados.length})'),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-          ],
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(titulo,
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        ...visibles.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return _TarjetaDestino(
+            id: doc.id,
+            nombre: data['nombre'] as String,
+            disponible: (data['disponible'] as num).toDouble(),
+            meta: (data['meta'] as num?)?.toDouble() ?? 0,
+            tipo: tipo,
+            currency: provider.currency,
+            provider: provider,
+          );
+        }),
+        if (tieneMas)
+          TextButton.icon(
+            onPressed: () => _verTodos(context),
+            icon: const Icon(Icons.expand_more_rounded, size: 18),
+            label: Text('${context.tr('view_all')} (${ordenados.length})'),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+      ],
     );
   }
 
-  void _verTodos(BuildContext context, List<QueryDocumentSnapshot> docs) {
+  void _verTodos(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _BottomSheetTodosSobres(
-        docs: docs,
         tipo: tipo,
         titulo: titulo,
         provider: provider,
@@ -359,13 +349,11 @@ class _SeccionDestino extends StatelessWidget {
 // ─── Bottom sheet todos los sobres ────────────────────────────────────────────
 
 class _BottomSheetTodosSobres extends StatefulWidget {
-  final List<QueryDocumentSnapshot> docs;
   final String tipo;
   final String titulo;
   final AppProvider provider;
 
   const _BottomSheetTodosSobres({
-    required this.docs,
     required this.tipo,
     required this.titulo,
     required this.provider,
@@ -389,10 +377,23 @@ class _BottomSheetTodosSobresState extends State<_BottomSheetTodosSobres> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    // Al mirar al provider local, si se agrega un sobre, esta vista se actualiza sola sin romper Firebase
+    final provider = context.watch<AppProvider>();
+    final docsLocales = provider.todasLasCategorias.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['tipo'] == widget.tipo;
+    }).toList();
+
+    final docsOrdenados = [...docsLocales]..sort((a, b) {
+      final dispA = ((a.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+      final dispB = ((b.data() as Map<String, dynamic>)['disponible'] as num).toDouble();
+      return dispB.compareTo(dispA);
+    });
 
     final filtrados = _query.isEmpty
-        ? widget.docs
-        : widget.docs.where((doc) {
+        ? docsOrdenados
+        : docsOrdenados.where((doc) {
             final nombre =
                 (doc.data() as Map<String, dynamic>)['nombre'] as String;
             return nombre.toLowerCase().contains(_query.toLowerCase());
@@ -429,7 +430,7 @@ class _BottomSheetTodosSobresState extends State<_BottomSheetTodosSobres> {
                 Text(widget.titulo,
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
-                Text('${widget.docs.length} ${context.tr('envelopes')}',
+                Text('${docsOrdenados.length} ${context.tr('envelopes')}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     )),
@@ -653,7 +654,8 @@ class _TarjetaDestinoState extends State<_TarjetaDestino> {
 
 // ─── Historial de destinar ────────────────────────────────────────────────────
 
-class _HistorialDestinar extends StatelessWidget {
+// CRÍTICO: Transformado a StatefulWidget para no sobrecargar Firebase en cada render
+class _HistorialDestinar extends StatefulWidget {
   final String categoriaId;
   final double disponibleOrigen;
   final String currency;
@@ -669,17 +671,27 @@ class _HistorialDestinar extends StatelessWidget {
   });
 
   @override
+  State<_HistorialDestinar> createState() => _HistorialDestinarState();
+}
+
+class _HistorialDestinarState extends State<_HistorialDestinar> {
+  late final Stream<QuerySnapshot> _movimientosStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // 3. El Stream se crea y guarda UNA SOLA VEZ, evitando bucles de facturación.
+    _movimientosStream = widget.esOrigen
+        ? widget.provider.firestoreService.getMovimientosDestinarPorOrigen(widget.categoriaId)
+        : widget.provider.firestoreService.getMovimientosDestinarPorDestino(widget.categoriaId);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final stream = esOrigen
-        ? provider.firestoreService
-            .getMovimientosDestinarPorOrigen(categoriaId)
-        : provider.firestoreService
-            .getMovimientosDestinarPorDestino(categoriaId);
-
     return StreamBuilder<QuerySnapshot>(
-      stream: stream,
+      stream: _movimientosStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
@@ -717,10 +729,10 @@ class _HistorialDestinar extends StatelessWidget {
               destinoId: destinoId,
               monto: monto,
               fecha: dia,
-              disponibleOrigen: disponibleOrigen,
-              currency: currency,
-              provider: provider,
-              esOrigen: esOrigen,
+              disponibleOrigen: widget.disponibleOrigen,
+              currency: widget.currency,
+              provider: widget.provider,
+              esOrigen: widget.esOrigen,
               origenNombre: origenNombre,
               destinoNombre: destinoNombre,
             );
@@ -1028,24 +1040,19 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
   @override
   void initState() {
     super.initState();
-    _cargarDatos();
+    _cargarDatosLocales();
   }
 
-  Future<void> _cargarDatos() async {
-    final snapshotIngresos = await widget.provider.firestoreService
-        .getCategoriasPorTipo('ingreso')
-        .first;
-    final snapshotGastos = await widget.provider.firestoreService
-        .getCategoriasPorTipo('gasto')
-        .first;
-    final snapshotAhorros = await widget.provider.firestoreService
-        .getCategoriasPorTipo('ahorro')
-        .first;
-
-    if (!mounted) return;
+  void _cargarDatosLocales() {
+    // 4. Eliminados los "await ... .first". Carga sincrónica en 0 ms.
+    final todas = widget.provider.todasLasCategorias;
 
     setState(() {
-      _ingresos = snapshotIngresos.docs
+      _ingresos = todas
+          .where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['tipo'] == 'ingreso' && (data['disponible'] as num) > 0;
+          })
           .map((doc) {
             final data = doc.data() as Map<String, dynamic>;
             return {
@@ -1054,19 +1061,22 @@ class _FormularioDestinarState extends State<_FormularioDestinar> {
               'disponible': (data['disponible'] as num).toDouble(),
             };
           })
-          .where((c) => (c['disponible'] as double) > 0)
           .toList();
 
-      _destinos = [
-        ...snapshotGastos.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return {'id': doc.id, 'nombre': data['nombre'], 'tipo': 'gasto'};
-        }),
-        ...snapshotAhorros.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return {'id': doc.id, 'nombre': data['nombre'], 'tipo': 'ahorro'};
-        }),
-      ];
+      _destinos = todas
+          .where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['tipo'] == 'gasto' || data['tipo'] == 'ahorro';
+          })
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return {
+              'id': doc.id,
+              'nombre': data['nombre'],
+              'tipo': data['tipo'],
+            };
+          })
+          .toList();
     });
   }
 
