@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class AppProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
