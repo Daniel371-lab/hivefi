@@ -34,10 +34,8 @@ class ThousandsFormatter extends TextInputFormatter {
         text: result,
         selection: TextSelection.collapsed(offset: result.length),
       );
-    } else {
-      // Monedas con decimales: separador de miles con coma, decimal con punto
-      // Permitir solo dígitos, un punto decimal, y no más de 2 decimales
-      String clean = text.replaceAll(RegExp(r'[^0-9.]'), '');
+    }} else {
+      String clean = text.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
 
       // Evitar múltiples puntos
       final parts = clean.split('.');

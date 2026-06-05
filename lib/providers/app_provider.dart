@@ -56,13 +56,11 @@ class AppProvider extends ChangeNotifier {
 
   // Sincroniza los streams de Firebase automáticamente según el estado del usuario
   void _escucharCambiosDeUsuario() {
-    _authSubscription = authService.userChanges.listen((user) {
+    _authSubscription = authService.authStateChanges.listen((user) {
       if (user != null) {
-        // El usuario inició sesión: Activar escucha en tiempo real única
         _iniciarEscuchaCategorias();
         verificarMonedaConfigurada();
       } else {
-        // El usuario cerró sesión: Limpiar datos en memoria de inmediato
         _cancelarSuscripciones();
         _limpiarDatosUsuario();
       }
@@ -186,6 +184,10 @@ class AppProvider extends ChangeNotifier {
   Future<void> verificarMonedaConfigurada() async {
     final resultado = await firestoreService.monedaConfigurada();
     _monedaConfigurada = resultado;
+    if (resultado) {
+      final moneda = await firestoreService.leerMonedaUsuario();
+      if (moneda != null) await setCurrency(moneda);
+    }
     notifyListeners();
   }
 
