@@ -88,7 +88,7 @@ const Map<String, Map<String, String>> _translations = {
     'logoutConfirm': '¿Seguro que quieres cerrar sesión?',
     'deleteAccountConfirm': 'Esta acción es irreversible. Se borrarán todos tus datos y perderás tu beneficio Premium si lo adquiriste. ¿Deseas continuar?',
     'aboutApp': 'Acerca de Hivefi',
-    'appVersion': 'Versión 2.0.0',
+    'appVersion': 'Versión 2.0.1',
     'madeBy': 'Desarrollado por',
     'saveName': 'GUARDAR NOMBRE',
     'nameEmpty': 'El nombre no puede estar vacío.',
