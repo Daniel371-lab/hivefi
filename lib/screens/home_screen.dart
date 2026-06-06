@@ -759,7 +759,7 @@ class _HexGrid extends StatelessWidget {
       ),
       _HexItem(
         icon: Icons.arrow_upward_rounded,
-        label: context.tr('expense'),
+        label: context.tr('expensesM'),
         route: '/gasto',
         tooltipKey: 'tooltip_seen_gasto',
         tooltipMsg: context.tr('tooltip_gasto'),

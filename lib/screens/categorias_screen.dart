@@ -749,7 +749,7 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
             Row(
               children: [
                 _ChipTipo(
-                    label: context.tr('income'),
+                    label: context.tr('incomem'),
                     valor: 'ingreso',
                     seleccionado: _tipo,
                     onTap: () => setState(() => _tipo = 'ingreso')),

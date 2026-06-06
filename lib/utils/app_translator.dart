@@ -65,6 +65,7 @@ const Map<String, Map<String, String>> _translations = {
     'categories': 'CATEGORÍAS',
     'reparto': 'REPARTO',
     'history': 'HISTORIAL',
+	'expensesM': 'GASTOS',
 
     // Settings & Perfil y Auth
     'sectionAccount': 'CUENTA',
@@ -155,6 +156,8 @@ const Map<String, Map<String, String>> _translations = {
     'savings_goal_optional': 'Meta de ahorro (opcional)',
     'example_amount': 'Ej: 100',
     'create_category': 'CREAR CATEGORÍA',
+    'new_category': 'Nueva categoria',
+	'incomem': 'Ingreso',
 
     // Ingresos
     'registerIncome': 'REGISTRAR\nINGRESO',
@@ -214,6 +217,7 @@ const Map<String, Map<String, String>> _translations = {
     'error_editing_expense': 'Error al editar el gasto.',
     'edit_expense_title': 'Editar gasto',
     'envelope_label': 'Sobre',
+    'which_account_money_exits': '¿De qué cuenta sale el dinero?',
 
     // Destinar y Reparto
     'allocateMoney': 'DESTINAR\nDINERO',
@@ -311,6 +315,19 @@ const Map<String, Map<String, String>> _translations = {
     'emptyAmount': 'Ingresa un monto.',
     'invalidAmount': 'El monto no es válido.',
 	'deMeta': 'de {meta}',
+	'mes_1': 'Enero',
+'mes_2': 'Febrero',
+'mes_3': 'Marzo',
+'mes_4': 'Abril',
+'mes_5': 'Mayo',
+'mes_6': 'Junio',
+'mes_7': 'Julio',
+'mes_8': 'Agosto',
+'mes_9': 'Septiembre',
+'mes_10': 'Octubre',
+'mes_11': 'Noviembre',
+'mes_12': 'Diciembre',
+
   },
   'en': {
     // General
@@ -369,6 +386,7 @@ const Map<String, Map<String, String>> _translations = {
     'categories': 'CATEGORIES',
     'reparto': 'SPLIT',
     'history': 'HISTORY',
+	'expensesM': 'EXPENSES',
 
     // Settings
     'sectionAccount': 'ACCOUNT',
@@ -459,6 +477,8 @@ const Map<String, Map<String, String>> _translations = {
     'savings_goal_optional': 'Savings goal (optional)',
     'example_amount': 'Ex: 1,000,000',
     'create_category': 'CREATE CATEGORY',
+	'new_category': 'New category',
+	'incomem': 'Income',
 
     // Ingresos
     'registerIncome': 'REGISTER\nINCOME',
@@ -518,7 +538,8 @@ const Map<String, Map<String, String>> _translations = {
     'error_editing_expense': 'Error editing the expense.',
     'edit_expense_title': 'Edit expense',
     'envelope_label': 'Envelope',
-
+    'which_account_money_exits': 'Wich account money exits?',
+	
     // Destinar y Reparto
     'allocateMoney': 'ALLOCATE\nMONEY',
     'allocateSubtitle': 'Distribute your income into spending or savings envelopes.',
@@ -615,5 +636,18 @@ const Map<String, Map<String, String>> _translations = {
     'emptyAmount': 'Enter an amount.',
     'invalidAmount': 'The amount is not valid.',
 	'deMeta': 'of {meta}',
+	'mes_1': 'January',
+'mes_2': 'February',
+'mes_3': 'March',
+'mes_4': 'April',
+'mes_5': 'May',
+'mes_6': 'June',
+'mes_7': 'July',
+'mes_8': 'August',
+'mes_9': 'September',
+'mes_10': 'October',
+'mes_11': 'November',
+'mes_12': 'December',
+
   },
 };
