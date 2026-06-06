@@ -144,11 +144,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     if (provider.esNuevoUsuario) return _AuthDecision.currencySetup;
 
-    // Login normal: sincronizar moneda desde Firestore si SharedPreferences está vacío
+    final monedaConfigurada = await provider.firestoreService.monedaConfigurada();
+    if (!monedaConfigurada) return _AuthDecision.currencySetup;
+
     final monedaRemota = await provider.firestoreService.leerMonedaUsuario();
-    if (monedaRemota != null) {
-      await provider.setCurrency(monedaRemota);
-    }
+    if (monedaRemota != null) await provider.setCurrency(monedaRemota);
 
     return _AuthDecision.home;
   }

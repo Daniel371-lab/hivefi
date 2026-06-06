@@ -9,6 +9,7 @@ import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
 import '../screens/premium_screen.dart';
 import '../services/premium_service.dart';
+grep -n "currency_formatter" lib/screens/categorias_screen.dart
 
 class CategoriasScreen extends StatefulWidget {
   const CategoriasScreen({super.key});
@@ -689,8 +690,8 @@ class _FormularioCategoriaState extends State<_FormularioCategoria> {
         return;
       }
 
-      final meta = double.tryParse(
-            _metaController.text.replaceAll('.', '').replaceAll(',', '.'),
+      final meta = CurrencyFormatter.parseAmount(
+            _metaController.text, _currency,
           ) ??
           0;
 
