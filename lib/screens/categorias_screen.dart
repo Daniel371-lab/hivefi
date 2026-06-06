@@ -9,8 +9,6 @@ import '../utils/currency_formatter.dart';
 import '../utils/thousands_formatter.dart';
 import '../screens/premium_screen.dart';
 import '../services/premium_service.dart';
-grep -n "currency_formatter" lib/screens/categorias_screen.dart
-
 class CategoriasScreen extends StatefulWidget {
   const CategoriasScreen({super.key});
 
