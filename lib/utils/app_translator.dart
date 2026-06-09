@@ -113,6 +113,16 @@ const Map<String, Map<String, String>> _translations = {
     'loginLink': 'Iniciá sesión',
     'passwordMismatch': 'Las contraseñas no coinciden.',
     'passwordTooShort': 'La contraseña debe tener al menos 6 caracteres.',
+	'apoyoTitulo': 'Apoya al desarrollador',
+'apoyoSubtitulo': 'Hive-Fi es desarrollado por una sola persona. Tu apoyo hace posible seguir mejorando la app.',
+'apoyoCafe': 'Un café',
+'apoyoCafeDesc': 'El combustible del desarrollo.',
+'apoyoComida': 'Una comida',
+'apoyoComidaDesc': 'Para seguir construyendo con energía.',
+'apoyoBanquete': 'El banquete completo',
+'apoyoBanqueteDesc': 'Tu apoyo más generoso.',
+'apoyoNota': 'Las contribuciones no otorgan beneficios adicionales en la app.',
+'apoyoError': 'No se pudo procesar el pago. Intenta de nuevo.',
 
     // Premium
     'premiumSubtitulo': 'Pago único. Sin suscripciones.',
@@ -434,6 +444,16 @@ const Map<String, Map<String, String>> _translations = {
     'loginLink': 'Log in',
     'passwordMismatch': 'Passwords do not match.',
     'passwordTooShort': 'Password must be at least 6 characters.',
+	'apoyoTitulo': 'Support the developer',
+'apoyoSubtitulo': 'Hive-Fi is built by a single person. Your support helps keep improving the app.',
+'apoyoCafe': 'A coffee',
+'apoyoCafeDesc': 'The fuel of development.',
+'apoyoComida': 'A meal',
+'apoyoComidaDesc': 'To keep building with energy.',
+'apoyoBanquete': 'The full banquet',
+'apoyoBanqueteDesc': 'Your most generous support.',
+'apoyoNota': 'Contributions do not grant additional benefits in the app.',
+'apoyoError': 'Could not process the payment. Please try again.',
 
     // Premium
     'premiumSubtitulo': 'One-time payment. No subscriptions.',

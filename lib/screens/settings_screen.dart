@@ -58,10 +58,10 @@ class SettingsScreen extends StatelessWidget {
                 trailing: _BadgePremium(),
               ),
               const _AdFreeTile(),
-              _SettingsTile(
+            _SettingsTile(
                 icon: Icons.favorite_border_rounded,
                 label: context.tr('donate'),
-                onTap: () {},
+                onTap: () => Navigator.pushNamed(context, '/donar'),
               ),
               _SectionHeader(label: context.tr('sectionAbout')),
               _SettingsTile(

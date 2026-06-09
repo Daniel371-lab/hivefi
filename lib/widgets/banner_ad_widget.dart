@@ -18,6 +18,18 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   void initState() {
     super.initState();
     _init();
+    AdService.instance.adFreeNotifier.addListener(_onAdFreeChanged);
+  }
+
+  void _onAdFreeChanged() {
+    if (AdService.instance.adFreeNotifier.value && mounted) {
+      setState(() {
+        _adFree = true;
+        _bannerAd?.dispose();
+        _bannerAd = null;
+        _cargado = false;
+      });
+    }
   }
 
   Future<void> _init() async {
@@ -39,6 +51,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   void dispose() {
+    AdService.instance.adFreeNotifier.removeListener(_onAdFreeChanged);
     _bannerAd?.dispose();
     super.dispose();
   }

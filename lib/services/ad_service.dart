@@ -36,10 +36,13 @@ class AdService {
     return DateTime.now().millisecondsSinceEpoch < until;
   }
 
+  final ValueNotifier<bool> adFreeNotifier = ValueNotifier(false);
+
   Future<void> _setAdFree6Hours() async {
     final prefs = await SharedPreferences.getInstance();
     final until = DateTime.now().add(const Duration(hours: 6)).millisecondsSinceEpoch;
     await prefs.setInt(_keyAdFreeUntil, until);
+    adFreeNotifier.value = true;
   }
 
   // ─── Banner ────────────────────────────────────────────────────────────────

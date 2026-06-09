@@ -17,7 +17,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
   Future<void> _comprar() async {
     setState(() => _comprando = true);
     try {
-      final exito = await PremiumService.instance.comprar();
+      final exito = await PremiumService.instance.comprarPremium();
       if (!exito && mounted) {
         _mostrarError(context.tr('premiumErrorCompra'));
       }

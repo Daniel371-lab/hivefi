@@ -24,6 +24,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/currency_setup_screen.dart';
 import 'services/ad_service.dart';
 import 'services/premium_service.dart';
+import 'screens/apoyo_screen.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -115,6 +116,7 @@ class HivefiApp extends StatelessWidget {
         '/reparto': (_) => const RepartoScreen(),
         '/historial': (_) => const HistorialScreen(),
         '/currency-setup': (_) => const CurrencySetupScreen(),
+		'/donar': (_) => const ApoyoScreen(),
       },
     );
   }
