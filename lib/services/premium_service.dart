@@ -104,11 +104,16 @@ class PremiumService extends ChangeNotifier {
     }
   }
 
-  Future<void> _activarPremium() async {
+    Future<void> _activarPremium() async {
     _isPremium = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIsPremium, true);
+    
+    // Le avisamos al servicio de anuncios
     AdService.instance.setPremium(true);
+    // ¡ESTA LÍNEA DESTRUGUE EL BANNER AL INSTANTE!
+    AdService.instance.adFreeNotifier.value = true; 
+    
     notifyListeners();
   }
 
@@ -116,9 +121,14 @@ class PremiumService extends ChangeNotifier {
     _isPremium = false;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyIsPremium);
+    
     AdService.instance.setPremium(false);
+    // Si reseteás el estado, volvemos a habilitar los anuncios
+    AdService.instance.adFreeNotifier.value = false; 
+    
     notifyListeners();
   }
+
 
   String get precioFormateado => _productoPremium?.price ?? '\$8.00';
   String get precioCafe => _productoCafe?.price ?? '\$2.00';

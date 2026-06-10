@@ -123,6 +123,10 @@ const Map<String, Map<String, String>> _translations = {
 'apoyoBanqueteDesc': 'Tu apoyo más generoso.',
 'apoyoNota': 'Las contribuciones no otorgan beneficios adicionales en la app.',
 'apoyoError': 'No se pudo procesar el pago. Intenta de nuevo.',
+'rateApp': 'Calificar aplicación',
+  'shareApp': 'Compartir con amigos',
+  'shareMessage': 'Descarga Hivefi desde la Play Store:',
+}
 
     // Premium
     'premiumSubtitulo': 'Pago único. Sin suscripciones.',
@@ -457,6 +461,9 @@ const Map<String, Map<String, String>> _translations = {
 'apoyoBanqueteDesc': 'Your most generous support.',
 'apoyoNota': 'Contributions do not grant additional benefits in the app.',
 'apoyoError': 'Could not process the payment. Please try again.',
+'rateApp': 'Rate application',
+  'shareApp': 'Share with friends',
+  'shareMessage': 'Download Hivefi from the Play Store:',
 
     // Premium
     'premiumSubtitulo': 'One-time payment. No subscriptions.',

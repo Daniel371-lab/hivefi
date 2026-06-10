@@ -502,10 +502,15 @@ class _ProfileSheetState extends State<_ProfileSheet> {
   }
 }
 
-// --- ABOUT SHEET ---
+/// --- ABOUT SHEET ---
+import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class _AboutSheet extends StatelessWidget {
   const _AboutSheet();
+
+  static const String _appLink = 'https://play.google.com/store/apps/details?id=com.jplabs.hivefi';
 
   @override
   Widget build(BuildContext context) {
@@ -545,6 +550,32 @@ class _AboutSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+
+          // ==========================================
+          // BOTONES CON CLAVES DE TRADUCCIÓN
+          // ==========================================
+          ListTile(
+            dense: true,
+            leading: Icon(Icons.star_outline_rounded, color: theme.colorScheme.primary),
+            title: Text(context.tr('rateApp')),
+            onTap: () async {
+              final Uri url = Uri.parse(_appLink);
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
+          ListTile(
+            dense: true,
+            leading: Icon(Icons.share_outlined, color: theme.colorScheme.primary),
+            title: Text(context.tr('shareApp')),
+            onTap: () {
+              Share.share('${context.tr('shareMessage')} $_appLink');
+            },
+          ),
+          // ==========================================
+
+          const SizedBox(height: 8),
           Divider(color: theme.colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Row(
