@@ -126,7 +126,7 @@ const Map<String, Map<String, String>> _translations = {
 'rateApp': 'Calificar aplicación',
   'shareApp': 'Compartir con amigos',
   'shareMessage': 'Descarga Hivefi desde la Play Store:',
-}
+
 
     // Premium
     'premiumSubtitulo': 'Pago único. Sin suscripciones.',

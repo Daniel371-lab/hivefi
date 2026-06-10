@@ -9,6 +9,9 @@ import '../utils/app_translator.dart';
 import '../services/ad_service.dart';
 import '../screens/premium_screen.dart';
 import '../services/premium_service.dart';
+import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -503,9 +506,6 @@ class _ProfileSheetState extends State<_ProfileSheet> {
 }
 
 /// --- ABOUT SHEET ---
-import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class _AboutSheet extends StatelessWidget {
   const _AboutSheet();
