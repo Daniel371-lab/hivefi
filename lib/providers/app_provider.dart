@@ -50,8 +50,7 @@ class AppProvider extends ChangeNotifier {
   final FirestoreService firestoreService = FirestoreService();
 
   AppProvider() {
-    _loadPrefs();
-    _escucharCambiosDeUsuario();
+    _loadPrefs().then((_) => _escucharCambiosDeUsuario());
   }
 
   // Sincroniza los streams de Firebase automáticamente según el estado del usuario

@@ -125,6 +125,7 @@ class SettingsScreen extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
+              await PremiumService.instance.limpiarEstado();
               await provider.authService.logout();
               if (context.mounted) {
                 Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
@@ -183,6 +184,7 @@ class SettingsScreen extends StatelessWidget {
                 }
                 Navigator.pop(dialogContext);
                 try {
+                  await PremiumService.instance.limpiarEstado();
                   await provider.authService.deleteAccount(
                     firestoreService: provider.firestoreService,
                     password: password,
@@ -281,6 +283,7 @@ class _AdFreeTileState extends State<_AdFreeTile> {
         context.tr('adFreeMode'),
         style: theme.textTheme.bodyMedium?.copyWith(color: color),
       ),
+      enabled: !context.watch<PremiumService>().isPremium,
       trailing: _adFreeActivo && _hastaDateTime != null
           ? Text(
               'Hasta ${_hastaDateTime!.hour.toString().padLeft(2, '0')}:${_hastaDateTime!.minute.toString().padLeft(2, '0')}',

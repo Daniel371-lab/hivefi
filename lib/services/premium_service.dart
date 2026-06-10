@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'ad_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PremiumService extends ChangeNotifier {
@@ -35,6 +36,7 @@ class PremiumService extends ChangeNotifier {
   Future<void> inicializar() async {
     final prefs = await SharedPreferences.getInstance();
     _isPremium = prefs.getBool(_keyIsPremium) ?? false;
+    AdService.instance.setPremium(_isPremium);
     notifyListeners();
 
     _disponible = await InAppPurchase.instance.isAvailable();
@@ -106,6 +108,15 @@ class PremiumService extends ChangeNotifier {
     _isPremium = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIsPremium, true);
+    AdService.instance.setPremium(true);
+    notifyListeners();
+  }
+
+  Future<void> limpiarEstado() async {
+    _isPremium = false;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyIsPremium);
+    AdService.instance.setPremium(false);
     notifyListeners();
   }
 
