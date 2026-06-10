@@ -228,6 +228,9 @@ const Map<String, Map<String, String>> _translations = {
     'edit_expense_title': 'Editar gasto',
     'envelope_label': 'Sobre',
     'which_account_money_exits': '¿De qué cuenta sale el dinero?',
+	'expense_amount_label': 'Monto del gasto',
+	'delete': 'Eliminar',
+'delete_expense_confirm': '¿Eliminar este gasto? El monto se devolverá al sobre.',
 
     // Destinar y Reparto
     'allocateMoney': 'DESTINAR\nDINERO',
@@ -559,6 +562,9 @@ const Map<String, Map<String, String>> _translations = {
     'edit_expense_title': 'Edit expense',
     'envelope_label': 'Envelope',
     'which_account_money_exits': 'Wich account money exits?',
+	'expense_amount_label': 'Amount of expense',
+	'delete': 'Delete',
+'delete_expense_confirm': 'Delete this expense? The amount will be returned to the envelope.',
 	
     // Destinar y Reparto
     'allocateMoney': 'ALLOCATE\nMONEY',

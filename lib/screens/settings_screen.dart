@@ -614,7 +614,10 @@ class _CurrencyTile extends StatelessWidget {
             .map((c) => DropdownMenuItem(value: c.$1, child: Text(c.$1)))
             .toList(),
         onChanged: (val) {
-          if (val != null) provider.setCurrency(val);
+          if (val != null) {
+            provider.setCurrency(val);
+            provider.firestoreService.guardarMonedaUsuario(val);
+          }
         },
       ),
     );

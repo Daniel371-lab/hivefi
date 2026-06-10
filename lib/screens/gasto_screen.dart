@@ -322,6 +322,7 @@ class _TarjetaGastoState extends State<_TarjetaGasto> {
               const SizedBox(height: 8),
               _HistorialGasto(
                 categoriaId: widget.id,
+                categoriaNombre: widget.nombre,
                 provider: widget.provider,
                 currency: widget.currency,
               ),
@@ -338,11 +339,13 @@ class _TarjetaGastoState extends State<_TarjetaGasto> {
 // CRÍTICO: Mantenido como StatefulWidget para aislar la conexión a Firestore y evitar cobros extra por re-render al animar el scroll o expandir la tarjeta.
 class _HistorialGasto extends StatefulWidget {
   final String categoriaId;
+  final String categoriaNombre;
   final AppProvider provider;
   final String currency;
 
   const _HistorialGasto({
     required this.categoriaId,
+    required this.categoriaNombre,
     required this.provider,
     required this.currency,
   });
@@ -400,6 +403,7 @@ class _HistorialGastoState extends State<_HistorialGasto> {
             return _FilaMovimientoGasto(
               movimientoId: doc.id,
               categoriaId: widget.categoriaId,
+              categoriaNombre: widget.categoriaNombre,
               monto: monto,
               fecha: dia,
               provider: widget.provider,
@@ -417,6 +421,7 @@ class _HistorialGastoState extends State<_HistorialGasto> {
 class _FilaMovimientoGasto extends StatelessWidget {
   final String movimientoId;
   final String categoriaId;
+  final String categoriaNombre;
   final double monto;
   final String fecha;
   final AppProvider provider;
@@ -425,6 +430,7 @@ class _FilaMovimientoGasto extends StatelessWidget {
   const _FilaMovimientoGasto({
     required this.movimientoId,
     required this.categoriaId,
+    required this.categoriaNombre,
     required this.monto,
     required this.fecha,
     required this.provider,
@@ -440,8 +446,38 @@ class _FilaMovimientoGasto extends StatelessWidget {
         provider: provider,
         movimientoId: movimientoId,
         categoriaId: categoriaId,
+        categoriaNombre: categoriaNombre,
         montoActual: monto,
       ),
+    );
+  }
+
+  Future<void> _eliminar(BuildContext context) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.tr('delete_expense_title')),
+        content: Text(context.tr('delete_expense_confirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              context.tr('delete'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+    await provider.firestoreService.eliminarGasto(
+      movimientoId: movimientoId,
+      categoriaId: categoriaId,
+      monto: monto,
     );
   }
 
@@ -468,16 +504,32 @@ class _FilaMovimientoGasto extends StatelessWidget {
               color: honey,
             ),
           ),
-          GestureDetector(
-            onTap: () => _editar(context),
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Icon(
-                Icons.edit_outlined,
-                size: 14,
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () => _editar(context),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.edit_outlined,
+                    size: 14,
+                    color: theme.colorScheme.onSurface.withOpacity(0.4),
+                  ),
+                ),
               ),
-            ),
+              GestureDetector(
+                onTap: () => _eliminar(context),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 14,
+                    color: theme.colorScheme.error.withOpacity(0.6),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -710,12 +762,14 @@ class _FormularioEditarGasto extends StatefulWidget {
   final AppProvider provider;
   final String movimientoId;
   final String categoriaId;
+  final String categoriaNombre;
   final double montoActual;
 
   const _FormularioEditarGasto({
     required this.provider,
     required this.movimientoId,
     required this.categoriaId,
+    required this.categoriaNombre,
     required this.montoActual,
   });
 
@@ -767,6 +821,7 @@ class _FormularioEditarGastoState extends State<_FormularioEditarGasto> {
       await widget.provider.firestoreService.editarGasto(
         movimientoId: widget.movimientoId,
         categoriaId: widget.categoriaId,
+        categoriaNombre: widget.categoriaNombre,
         montoAnterior: widget.montoActual,
         montoNuevo: nuevoMonto,
       );

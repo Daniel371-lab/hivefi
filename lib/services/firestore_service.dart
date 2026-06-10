@@ -62,9 +62,26 @@ class FirestoreService {
     required String nuevoNombre,
   }) async {
     await _verificarInternet();
-    await _categorias.doc(categoriaId).update({
-      'nombre': nuevoNombre.toUpperCase().trim(),
-    });
+    final nombreFinal = nuevoNombre.toUpperCase().trim();
+
+    await _categorias.doc(categoriaId).update({'nombre': nombreFinal});
+
+    final movimientos = await _movimientos
+        .where('categoriaOrigenId', isEqualTo: categoriaId)
+        .get();
+
+    final movimientosDestino = await _movimientos
+        .where('categoriaDestinoId', isEqualTo: categoriaId)
+        .get();
+
+    final batch = _db.batch();
+    for (final doc in movimientos.docs) {
+      batch.update(doc.reference, {'categoriaOrigenNombre': nombreFinal});
+    }
+    for (final doc in movimientosDestino.docs) {
+      batch.update(doc.reference, {'categoriaDestinoNombre': nombreFinal});
+    }
+    await batch.commit();
   }
 
   // ─── MOVIMIENTOS ───────────────────────────────────────────────────────────
@@ -118,6 +135,7 @@ class FirestoreService {
   Future<void> editarGasto({
     required String movimientoId,
     required String categoriaId,
+    required String categoriaNombre,
     required double montoAnterior,
     required double montoNuevo,
   }) async {
@@ -129,7 +147,7 @@ class FirestoreService {
     });
     batch.update(_movimientos.doc(movimientoId), {
       'monto': -montoNuevo,
-      'descripcion': 'Gasto en $categoriaId',
+      'descripcion': 'Gasto en $categoriaNombre',
     });
     await batch.commit();
   }
