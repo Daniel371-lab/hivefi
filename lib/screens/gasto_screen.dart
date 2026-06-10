@@ -624,7 +624,18 @@ class _FormularioGastoState extends State<_FormularioGasto> {
         categoriaNombre: _categoriaNombreSeleccionada!,
         monto: monto,
       );
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('expenseRegistered')),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        AdService.instance.mostrarInterstitialSiCorresponde();
+      }
     } catch (e) {
       setState(() => _errorMessage = context.tr('error_registering_expense'));
     } finally {
