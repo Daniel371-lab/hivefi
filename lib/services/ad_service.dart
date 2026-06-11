@@ -79,7 +79,6 @@ class AdService {
     count++;
     await prefs.setInt(_keyGastoCount, count);
 
-    // Mostrar en 1, 3, 5, 7... (impares)
     if (count % 2 == 1) {
       if (_interstitialAd != null) {
         _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
@@ -96,6 +95,20 @@ class AdService {
         await _interstitialAd!.show();
       } else {
         await cargarIntersticial();
+        if (_interstitialAd != null) {
+          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _interstitialAd = null;
+              cargarIntersticial();
+            },
+            onAdFailedToShowFullScreenContent: (ad, _) {
+              ad.dispose();
+              _interstitialAd = null;
+            },
+          );
+          await _interstitialAd!.show();
+        }
       }
     }
   }
