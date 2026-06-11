@@ -75,6 +75,7 @@ manifest_path = 'android/app/src/main/AndroidManifest.xml'
 if os.path.exists(manifest_path):
     with open(manifest_path, 'r') as f:
         content = f.read()
+    content = re.sub(r'android:label="[^"]*"', 'android:label="Hive-Fi"', content)
     if 'APPLICATION_ID' not in content:
         admob_meta = (
             '\n        <meta-data\n'
@@ -82,5 +83,5 @@ if os.path.exists(manifest_path):
             '            android:value="ca-app-pub-2628699742979891~7557734775"/>'
         )
         content = re.sub(r'(<application[^>]*>)', r'\1' + admob_meta, content)
-        with open(manifest_path, 'w') as f:
-            f.write(content)
+    with open(manifest_path, 'w') as f:
+        f.write(content)
