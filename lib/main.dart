@@ -139,7 +139,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<_AuthDecision> _resolver() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = await FirebaseAuth.instance.authStateChanges().first;
     if (user == null) return _AuthDecision.login;
 
     final provider = context.read<AppProvider>();

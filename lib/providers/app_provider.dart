@@ -8,7 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 
 class AppProvider extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
   Locale _locale = const Locale('es');
   String _currency = 'USD';
 
@@ -145,7 +145,7 @@ class AppProvider extends ChangeNotifier {
   // ─── MÉTODOS DE CONFIGURACIÓN ORIGINALES ──────────────────────────────────
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final theme = prefs.getString('themeMode') ?? 'system';
+    final theme = prefs.getString('themeMode') ?? 'light';
     final lang = prefs.getString('locale') ?? 'es';
     final cur = prefs.getString('currency') ?? 'USD';
 
@@ -153,7 +153,7 @@ class AppProvider extends ChangeNotifier {
         ? ThemeMode.light
         : theme == 'dark'
             ? ThemeMode.dark
-            : ThemeMode.system;
+            : ThemeMode.light;
     _locale = Locale(lang);
     _currency = cur;
     notifyListeners();
