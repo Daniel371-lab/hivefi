@@ -14,17 +14,20 @@ if os.path.exists(settings_path):
         with open(settings_path, 'w') as f:
             f.write(content)
 
-app_gradle_kts = """plugins {
+app_gradle_kts = """import java.util.Properties
+import java.io.FileInputStream
+
+plugins {
     id("com.google.gms.google-services")
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-val keystoreProperties = java.util.Properties()
+val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
