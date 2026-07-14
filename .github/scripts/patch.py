@@ -57,8 +57,12 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
-            minifyEnabled false
-            shrinkResources false
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            ndk {
+                debugSymbolLevel = 'FULL'
+            }
         }
     }
 }
@@ -70,6 +74,17 @@ flutter {
 
 with open('android/app/build.gradle', 'w') as f:
     f.write(app_gradle)
+
+proguard_rules = """-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-keep class io.flutter.plugins.** { *; }
+-keep class com.android.billingclient.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+"""
+
+with open('android/app/proguard-rules.pro', 'w') as f:
+    f.write(proguard_rules)
 
 manifest_path = 'android/app/src/main/AndroidManifest.xml'
 if os.path.exists(manifest_path):
