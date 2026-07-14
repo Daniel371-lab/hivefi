@@ -1,26 +1,30 @@
 import os
 import re
 
-settings_path = 'android/settings.gradle'
+settings_path = 'android/settings.gradle.kts'
 if os.path.exists(settings_path):
     with open(settings_path, 'r') as f:
         content = f.read()
     if 'com.google.gms.google-services' not in content:
-        content = content.replace('plugins {', 'plugins {\n    id "com.google.gms.google-services" version "4.4.2" apply false')
+        content = content.replace(
+            'plugins {',
+            'plugins {\n    id("com.google.gms.google-services") version "4.4.2" apply false',
+            1
+        )
         with open(settings_path, 'w') as f:
             f.write(content)
 
-app_gradle = """plugins {
-    id "com.google.gms.google-services"
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
+app_gradle_kts = """plugins {
+    id("com.google.gms.google-services")
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
 }
 
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
+val keystoreProperties = java.util.Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -34,7 +38,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 
     defaultConfig {
@@ -46,22 +50,22 @@ android {
     }
 
     signingConfigs {
-        release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword keystoreProperties['storePassword']
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
+            storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
+            storePassword = keystoreProperties["storePassword"] as String?
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             ndk {
-                debugSymbolLevel = 'FULL'
+                debugSymbolLevel = "FULL"
             }
         }
     }
@@ -72,8 +76,8 @@ flutter {
 }
 """
 
-with open('android/app/build.gradle', 'w') as f:
-    f.write(app_gradle)
+with open('android/app/build.gradle.kts', 'w') as f:
+    f.write(app_gradle_kts)
 
 proguard_rules = """-keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
