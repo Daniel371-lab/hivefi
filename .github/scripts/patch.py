@@ -1,6 +1,15 @@
 import os
 import re
 
+gradle_properties_path = 'android/gradle.properties'
+if os.path.exists(gradle_properties_path):
+    with open(gradle_properties_path, 'r') as f:
+        content = f.read()
+    if 'android.newDsl' not in content:
+        content += '\nandroid.newDsl=false\nandroid.builtInKotlin=false\n'
+        with open(gradle_properties_path, 'w') as f:
+            f.write(content)
+
 settings_path = 'android/settings.gradle.kts'
 if os.path.exists(settings_path):
     with open(settings_path, 'r') as f:
