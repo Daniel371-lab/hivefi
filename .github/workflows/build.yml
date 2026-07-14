@@ -30,7 +30,7 @@ jobs:
         run: python3 .github/scripts/patch.py
 
       - name: Verificar build.gradle
-        run: cat android/app/build.gradle
+        run: cat android/app/build.gradle.kts
 
       - name: Agregar permiso de Billing
         run: |
