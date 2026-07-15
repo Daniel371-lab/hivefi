@@ -1,42 +1,57 @@
 import os
 import re
 
-gradle_properties_path = 'android/gradle.properties'
-if os.path.exists(gradle_properties_path):
-    with open(gradle_properties_path, 'r') as f:
-        content = f.read()
-    if 'android.newDsl' not in content:
-        content += '\nandroid.newDsl=false\nandroid.builtInKotlin=false\n'
-        with open(gradle_properties_path, 'w') as f:
-            f.write(content)
+def eliminar_si_existe(path):
+    if os.path.exists(path):
+        os.remove(path)
 
-settings_path = 'android/settings.gradle.kts'
-if os.path.exists(settings_path):
-    with open(settings_path, 'r') as f:
-        content = f.read()
-    if 'com.google.gms.google-services' not in content:
-        content = content.replace(
-            'plugins {',
-            'plugins {\n    id("com.google.gms.google-services") version "4.4.2" apply false',
-            1
-        )
-        with open(settings_path, 'w') as f:
-            f.write(content)
+# Elimina los archivos Kotlin DSL generados por flutter create
+# para evitar conflicto con los .gradle en Groovy que escribimos abajo
+eliminar_si_existe('android/settings.gradle.kts')
+eliminar_si_existe('android/app/build.gradle.kts')
 
-app_gradle_kts = """import java.util.Properties
-import java.io.FileInputStream
+settings_gradle = """pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdkPath = properties.getProperty("flutter.sdk")
+        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+        return flutterSdkPath
+    }()
 
-plugins {
-    id("com.google.gms.google-services")
-    id("com.android.application")
-    id("kotlin-android")
-    id("dev.flutter.flutter-gradle-plugin")
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
 }
 
-val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    id "com.android.application" version "8.13.0" apply false
+    id "org.jetbrains.kotlin.android" version "2.0.21" apply false
+    id "com.google.gms.google-services" version "4.4.2" apply false
+}
+
+include ":app"
+"""
+
+with open('android/settings.gradle', 'w') as f:
+    f.write(settings_gradle)
+
+app_gradle = """plugins {
+    id "com.google.gms.google-services"
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -50,7 +65,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8.toString()
+        jvmTarget = JavaVersion.VERSION_1_8
     }
 
     defaultConfig {
@@ -62,22 +77,22 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String?
-            keyPassword = keystoreProperties["keyPassword"] as String?
-            storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
-            storePassword = keystoreProperties["storePassword"] as String?
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             ndk {
-                debugSymbolLevel = "FULL"
+                debugSymbolLevel 'FULL'
             }
         }
     }
@@ -88,8 +103,8 @@ flutter {
 }
 """
 
-with open('android/app/build.gradle.kts', 'w') as f:
-    f.write(app_gradle_kts)
+with open('android/app/build.gradle', 'w') as f:
+    f.write(app_gradle)
 
 proguard_rules = """-keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
@@ -101,6 +116,18 @@ proguard_rules = """-keep class com.google.firebase.** { *; }
 
 with open('android/app/proguard-rules.pro', 'w') as f:
     f.write(proguard_rules)
+
+wrapper_path = 'android/gradle/wrapper/gradle-wrapper.properties'
+if os.path.exists(wrapper_path):
+    with open(wrapper_path, 'r') as f:
+        content = f.read()
+    content = re.sub(
+        r'distributionUrl=.*',
+        'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.13-bin.zip',
+        content
+    )
+    with open(wrapper_path, 'w') as f:
+        f.write(content)
 
 manifest_path = 'android/app/src/main/AndroidManifest.xml'
 if os.path.exists(manifest_path):
