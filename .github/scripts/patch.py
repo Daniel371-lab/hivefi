@@ -5,8 +5,6 @@ def eliminar_si_existe(path):
     if os.path.exists(path):
         os.remove(path)
 
-# Elimina los archivos Kotlin DSL generados por flutter create
-# para evitar conflicto con los .gradle en Groovy que escribimos abajo
 eliminar_si_existe('android/settings.gradle.kts')
 eliminar_si_existe('android/app/build.gradle.kts')
 
@@ -31,7 +29,7 @@ settings_gradle = """pluginManagement {
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
     id "com.android.application" version "8.13.0" apply false
-    id "org.jetbrains.kotlin.android" version "2.0.21" apply false
+    id "org.jetbrains.kotlin.android" version "2.2.20" apply false
     id "com.google.gms.google-services" version "4.4.2" apply false
 }
 
@@ -123,7 +121,7 @@ if os.path.exists(wrapper_path):
         content = f.read()
     content = re.sub(
         r'distributionUrl=.*',
-        'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.13-bin.zip',
+        'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14.2-bin.zip',
         content
     )
     with open(wrapper_path, 'w') as f:
