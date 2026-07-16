@@ -570,7 +570,9 @@ class _AboutSheet extends StatelessWidget {
             leading: Icon(Icons.share_outlined, color: theme.colorScheme.primary),
             title: Text(context.tr('shareApp')),
             onTap: () {
-              Share.share('${context.tr('shareMessage')} $_appLink');
+              SharePlus.instance.share(
+                ShareParams(text: '${context.tr('shareMessage')} $_appLink'),
+              );
             },
           ),
           // ==========================================
