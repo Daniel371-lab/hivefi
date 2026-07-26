@@ -96,10 +96,6 @@ android {
     }
 }
 
-dependencies {
-    implementation 'androidx.activity:activity-ktx:1.9.3'
-}
-
 flutter {
     source = "../.."
 }
@@ -136,13 +132,13 @@ if os.path.exists(main_activity_path):
     main_activity_kt = """package com.jplabs.hivefi
 
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
     }
 }
 """
