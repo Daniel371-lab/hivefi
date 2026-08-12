@@ -110,6 +110,9 @@ proguard_rules = """-keep class com.google.firebase.** { *; }
 -keep class com.android.billingclient.** { *; }
 -dontwarn com.google.firebase.**
 -dontwarn com.google.android.gms.**
+-keepattributes Signature
+-keepattributes *Annotation*
+-keepattributes InnerClasses,EnclosingMethod
 """
 
 with open('android/app/proguard-rules.pro', 'w') as f:
