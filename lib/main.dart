@@ -101,8 +101,9 @@ class HivefiApp extends StatelessWidget {
         Locale('es'),
         Locale('en'),
       ],
-      home: const SplashScreen(),
+      initialRoute: '/splash',
       routes: {
+        '/splash': (_) => const SplashScreen(),
         '/auth': (_) => const AuthWrapper(),
         '/onboarding': (_) => const OnboardingScreen(),
         '/': (_) => const HomeScreen(),
