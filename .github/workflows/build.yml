@@ -60,19 +60,12 @@ jobs:
         run: |
           flutter build apk --release
           flutter build appbundle --release
-          flutter build apk --debug
 
       - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
           name: hivefi-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Subir APK de debug (sin R8, solo para pruebas)
-        uses: actions/upload-artifact@v4
-        with:
-          name: hivefi-apk-debug
-          path: build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Subir AppBundle
         uses: actions/upload-artifact@v4
