@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,14 +14,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () async {
       if (!mounted) return;
-      final prefs = await SharedPreferences.getInstance();
-      final completado = prefs.getBool('onboarding_completado') ?? false;
-      if (!mounted) return;
-      if (completado) {
-        Navigator.pushReplacementNamed(context, '/auth');
-      } else {
-        Navigator.pushReplacementNamed(context, '/onboarding');
-      }
+      Navigator.pushReplacementNamed(context, '/auth');
     });
   }
 

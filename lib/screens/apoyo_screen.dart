@@ -3,6 +3,11 @@ import 'package:provider/provider.dart';
 import '../services/premium_service.dart';
 import '../utils/app_translator.dart';
 
+// Paleta especial de Hivefi (definida en el prompt)
+const Color _kPremiumDark = Color(0xFF0F3A30);
+const Color _kPremiumTrack = Color(0xFF1D5244);
+const Color _kPremiumLabel = Color(0xFF8FB5A8);
+
 class ApoyoScreen extends StatefulWidget {
   const ApoyoScreen({super.key});
 
@@ -39,85 +44,25 @@ class _ApoyoScreenState extends State<ApoyoScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
     final premium = context.watch<PremiumService>();
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          body: Column(
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Material(
+          color: theme.colorScheme.surface,
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
-                decoration: const BoxDecoration(color: Color(0xFF0F3A30)),
-                child: Column(
-                  children: [
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.close_rounded,
-                              color: Colors.white, size: 18),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: honey.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.favorite_rounded, color: honey, size: 40),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'HIVE-FI',
-                      style: TextStyle(
-                        color: honey,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 3,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      context.tr('apoyoTitulo'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.tr('apoyoSubtitulo'),
-                      style: const TextStyle(
-                        color: Color(0xFF8FB5A8),
-                        fontSize: 13,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
+              _HeaderApoyo(onClose: () => Navigator.pop(context)),
               Flexible(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _FilaApoyo(
                         icono: Icons.coffee_rounded,
@@ -126,7 +71,6 @@ class _ApoyoScreenState extends State<ApoyoScreen> {
                         precio: premium.precioCafe,
                         cargando: _comprando == PremiumService.productIdCafe,
                         onTap: () => _donar(PremiumService.productIdCafe),
-                        color: const Color(0xFF92400E),
                       ),
                       const SizedBox(height: 12),
                       _FilaApoyo(
@@ -136,7 +80,6 @@ class _ApoyoScreenState extends State<ApoyoScreen> {
                         precio: premium.precioComida,
                         cargando: _comprando == PremiumService.productIdComida,
                         onTap: () => _donar(PremiumService.productIdComida),
-                        color: const Color(0xFF0F766E),
                       ),
                       const SizedBox(height: 12),
                       _FilaApoyo(
@@ -144,18 +87,21 @@ class _ApoyoScreenState extends State<ApoyoScreen> {
                         titulo: context.tr('apoyoBanquete'),
                         subtitulo: context.tr('apoyoBanqueteDesc'),
                         precio: premium.precioBanquete,
-                        cargando: _comprando == PremiumService.productIdBanquete,
+                        cargando:
+                            _comprando == PremiumService.productIdBanquete,
                         onTap: () => _donar(PremiumService.productIdBanquete),
-                        color: honey,
                       ),
                       const SizedBox(height: 20),
                       Text(
                         context.tr('apoyoNota'),
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.4),
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.4,
                         ),
                         textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: 16),
+                      const _MicrocopyConfianza(),
                     ],
                   ),
                 ),
@@ -168,6 +114,103 @@ class _ApoyoScreenState extends State<ApoyoScreen> {
   }
 }
 
+// ─── Header ───────────────────────────────────────────────────────────────────
+
+class _HeaderApoyo extends StatelessWidget {
+  final VoidCallback onClose;
+
+  const _HeaderApoyo({required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    final honey = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_kPremiumDark, _kPremiumTrack],
+        ),
+      ),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: GestureDetector(
+              onTap: onClose,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: honey.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.favorite_rounded,
+              color: honey,
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                'Hivefi',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                context.tr('apoyoTitulo'),
+                style: TextStyle(
+                  color: honey,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.tr('apoyoSubtitulo'),
+            style: const TextStyle(
+              color: _kPremiumLabel,
+              fontSize: 13,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Fila de apoyo ────────────────────────────────────────────────────────────
+
 class _FilaApoyo extends StatelessWidget {
   final IconData icono;
   final String titulo;
@@ -175,7 +218,6 @@ class _FilaApoyo extends StatelessWidget {
   final String precio;
   final bool cargando;
   final VoidCallback onTap;
-  final Color color;
 
   const _FilaApoyo({
     required this.icono,
@@ -184,31 +226,31 @@ class _FilaApoyo extends StatelessWidget {
     required this.precio,
     required this.cargando,
     required this.onTap,
-    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
 
     return GestureDetector(
       onTap: cargando ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.07),
+          color: honey.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: honey.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: honey.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icono, color: color, size: 22),
+              child: Icon(icono, color: honey, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -225,6 +267,7 @@ class _FilaApoyo extends StatelessWidget {
                     subtitulo,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.3,
                     ),
                   ),
                 ],
@@ -236,13 +279,13 @@ class _FilaApoyo extends StatelessWidget {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: color),
+                        strokeWidth: 2, color: honey),
                   )
                 : Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: color,
+                      color: honey,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -257,6 +300,39 @@ class _FilaApoyo extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Microcopy de confianza ───────────────────────────────────────────────────
+
+class _MicrocopyConfianza extends StatelessWidget {
+  const _MicrocopyConfianza();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.lock_outline_rounded,
+          size: 14,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            context.tr('premiumCompraSegura'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 11,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
     );
   }
 }

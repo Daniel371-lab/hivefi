@@ -3,6 +3,11 @@ import 'package:provider/provider.dart';
 import '../services/premium_service.dart';
 import '../utils/app_translator.dart';
 
+// Paleta especial de Hivefi (definida en el prompt)
+const Color _kPremiumDark = Color(0xFF0F3A30);
+const Color _kPremiumTrack = Color(0xFF1D5244);
+const Color _kPremiumLabel = Color(0xFF8FB5A8);
+
 class PremiumScreen extends StatefulWidget {
   const PremiumScreen({super.key});
 
@@ -38,7 +43,8 @@ class _PremiumScreenState extends State<PremiumScreen> {
             content: Text(context.tr('premiumRestaurado')),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -55,8 +61,9 @@ class _PremiumScreenState extends State<PremiumScreen> {
         content: Text(mensaje),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Theme.of(context).colorScheme.error,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
       ),
     );
   }
@@ -64,234 +71,67 @@ class _PremiumScreenState extends State<PremiumScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final honey = theme.colorScheme.primary;
     final premium = context.watch<PremiumService>();
+    final esPremium = premium.isPremium;
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          body: Column(
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Material(
+          color: theme.colorScheme.surface,
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0F3A30),
-                ),
-                child: Column(
-                  children: [
-                    // Botón cerrar
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Icono corona
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: honey.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.workspace_premium_rounded,
-                        color: honey,
-                        size: 40,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'HIVEFI',
-                      style: TextStyle(
-                        color: honey,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 3,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Premium',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.tr('premiumSubtitulo'),
-                      style: const TextStyle(
-                        color: Color(0xFF8FB5A8),
-                        fontSize: 13,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+              _HeaderPremium(
+                onClose: () => Navigator.pop(context),
+                esPremium: esPremium,
               ),
-
-              // Beneficios
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _FilaBeneficio(
                         icono: Icons.dark_mode_outlined,
                         titulo: context.tr('premiumBeneficio1'),
                         subtitulo: context.tr('premiumBeneficio1Desc'),
-                        color: const Color(0xFF6366F1),
+                        color: theme.colorScheme.primary,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       _FilaBeneficio(
                         icono: Icons.grid_view_rounded,
                         titulo: context.tr('premiumBeneficio2'),
                         subtitulo: context.tr('premiumBeneficio2Desc'),
-                        color: const Color(0xFF14B8A6),
+                        color: theme.colorScheme.secondary,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       _FilaBeneficio(
                         icono: Icons.block_outlined,
                         titulo: context.tr('premiumBeneficio3'),
                         subtitulo: context.tr('premiumBeneficio3Desc'),
-                        color: honey,
+                        color: theme.colorScheme.tertiary,
                       ),
-                      const SizedBox(height: 24),
-
-                      // Pago único
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: honey.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: honey.withOpacity(0.25)),
+                      const SizedBox(height: 28),
+                      if (!esPremium) ...[
+                        _PrecioDestacado(precio: premium.precioFormateado),
+                        const SizedBox(height: 20),
+                        _BotonComprar(
+                          onPressed: _comprando ? null : _comprar,
+                          comprando: _comprando,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.all_inclusive_rounded,
-                                color: honey, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              context.tr('premiumPagoUnico'),
-                              style: TextStyle(
-                                color: honey,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Botón comprar
-                      if (premium.isPremium)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                                color: Colors.green.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.check_circle_rounded,
-                                  color: Colors.green, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                context.tr('premiumActivo'),
-                                style: const TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: _comprando ? null : _comprar,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: honey,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: _comprando
-                                ? const SizedBox(
-                                    height: 22,
-                                    width: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    '${context.tr('premiumActivar')} — ${premium.precioFormateado}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                          ),
-                        ),
-
-                      const SizedBox(height: 12),
-
-                      // Restaurar compra
-                      if (!premium.isPremium)
-                        TextButton(
+                        const SizedBox(height: 12),
+                        _BotonRestaurar(
                           onPressed: _restaurando ? null : _restaurar,
-                          child: _restaurando
-                              ? const SizedBox(
-                                  height: 16,
-                                  width: 16,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2),
-                                )
-                              : Text(
-                                  context.tr('premiumRestaurar'),
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    fontSize: 12,
-                                  ),
-                                ),
+                          restaurando: _restaurando,
                         ),
-                      const SizedBox(height: 8),
+                        const SizedBox(height: 16),
+                        const _MicrocopyConfianza(),
+                      ] else
+                        const _BannerPremiumActivo(),
                     ],
                   ),
                 ),
@@ -299,6 +139,104 @@ class _PremiumScreenState extends State<PremiumScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+
+class _HeaderPremium extends StatelessWidget {
+  final VoidCallback onClose;
+  final bool esPremium;
+
+  const _HeaderPremium({required this.onClose, required this.esPremium});
+
+  @override
+  Widget build(BuildContext context) {
+    final honey = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_kPremiumDark, _kPremiumTrack],
+        ),
+      ),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: GestureDetector(
+              onTap: onClose,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: honey.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              esPremium
+                  ? Icons.verified_rounded
+                  : Icons.workspace_premium_rounded,
+              color: honey,
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                'Hivefi',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Premium',
+                style: TextStyle(
+                  color: honey,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.tr('premiumSubtitulo'),
+            style: const TextStyle(
+              color: _kPremiumLabel,
+              fontSize: 13,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -324,14 +262,15 @@ class _FilaBeneficio extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
+            color: color.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icono, color: color, size: 22),
+          child: Icon(icono, color: color, size: 20),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -349,13 +288,223 @@ class _FilaBeneficio extends StatelessWidget {
                 subtitulo,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.4,
                 ),
               ),
             ],
           ),
         ),
-        Icon(Icons.check_rounded, color: color, size: 18),
       ],
+    );
+  }
+}
+
+// ─── Precio destacado ─────────────────────────────────────────────────────────
+
+class _PrecioDestacado extends StatelessWidget {
+  final String precio;
+
+  const _PrecioDestacado({required this.precio});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        color: honey.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: honey.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            precio,
+            style: TextStyle(
+              color: honey,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.tr('premiumPagoUnico'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Botón comprar ────────────────────────────────────────────────────────────
+
+class _BotonComprar extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final bool comprando;
+
+  const _BotonComprar({required this.onPressed, required this.comprando});
+
+  @override
+  Widget build(BuildContext context) {
+    final honey = Theme.of(context).colorScheme.primary;
+
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: honey,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: comprando
+            ? const SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                context.tr('premiumActivar'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+// ─── Botón restaurar ──────────────────────────────────────────────────────────
+
+class _BotonRestaurar extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final bool restaurando;
+
+  const _BotonRestaurar({required this.onPressed, required this.restaurando});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SizedBox(
+      width: double.infinity,
+      height: 46,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: restaurando
+            ? const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                context.tr('premiumRestaurar'),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+// ─── Microcopy de confianza ───────────────────────────────────────────────────
+
+class _MicrocopyConfianza extends StatelessWidget {
+  const _MicrocopyConfianza();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.lock_outline_rounded,
+          size: 14,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            context.tr('premiumCompraSegura'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 11,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Banner de usuario Premium activo ─────────────────────────────────────────
+
+class _BannerPremiumActivo extends StatelessWidget {
+  const _BannerPremiumActivo();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final honey = theme.colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      decoration: BoxDecoration(
+        color: honey.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: honey.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.verified_rounded, color: honey, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            context.tr('premiumActivo'),
+            style: TextStyle(
+              color: honey,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.tr('premiumGracias'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }

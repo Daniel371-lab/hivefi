@@ -142,6 +142,8 @@ const Map<String, Map<String, String>> _translations = {
     'premiumRestaurar': 'Restaurar compra anterior',
     'premiumRestaurado': 'Compra restaurada correctamente.',
     'premiumErrorCompra': 'No se pudo completar la compra. Intenta de nuevo.',
+	'premiumCompraSegura': 'Compra segura a través de Google Play',
+'premiumGracias': 'Gracias por apoyar Hivefi',
 
     // Categorías y Sobres
     'newCategory': 'NUEVA\nCATEGORÍA',
@@ -172,6 +174,25 @@ const Map<String, Map<String, String>> _translations = {
     'create_category': 'CREAR CATEGORÍA',
     'new_category': 'Nueva categoria',
 	'incomem': 'Ingreso',
+	
+	//Guía
+	'guiaTitulo': 'Cómo funciona Hivefi',
+'guiaSubtitulo': 'Así se organiza tu dinero dentro de la app.',
+'guiaFlujoEtiqueta': 'FLUJO BÁSICO',
+'guiaIngreso': 'Ingreso',
+'guiaIngresoDesc': 'Aquí entra tu dinero. Crea una categoría de tipo Ingreso y registra lo que recibes.',
+'guiaDestinar': 'Destinar',
+'guiaDestinarDesc': 'Mueve dinero desde tu Ingreso hacia tus sobres de Gasto o Ahorro.',
+'guiaGasto': 'Gasto',
+'guiaGastoDesc': 'Usa el dinero disponible de un sobre para registrar un gasto.',
+'guiaReparto': 'Reparto',
+'guiaRepartoDesc': 'Mueve dinero entre sobres de Gasto o Ahorro cuando necesites reorganizarlo.',
+'guiaCategorias': 'Categorías',
+'guiaCategoriasDesc': 'Crea, edita o elimina tus sobres. Cada uno guarda su propio dinero.',
+'guiaHistorial': 'Historial',
+'guiaHistorialDesc': 'Consulta todos tus movimientos por fecha, tipo o categoría.',
+'guiaEntendido': 'Entendido',
+'guiaAyuda': 'Cómo funciona',
 
     // Ingresos
     'registerIncome': 'REGISTRAR\nINGRESO',
@@ -479,6 +500,8 @@ const Map<String, Map<String, String>> _translations = {
     'premiumRestaurar': 'Restore previous purchase',
     'premiumRestaurado': 'Purchase restored successfully.',
     'premiumErrorCompra': 'Could not complete purchase. Please try again.',
+	'premiumCompraSegura': 'Secure purchase through Google Play',
+'premiumGracias': 'Thanks for supporting Hivefi',
 
     // Categorías y Sobres
     'newCategory': 'NEW\nCATEGORY',
@@ -509,6 +532,25 @@ const Map<String, Map<String, String>> _translations = {
     'create_category': 'CREATE CATEGORY',
 	'new_category': 'New category',
 	'incomem': 'Income',
+
+//Guía
+'guiaTitulo': 'How Hivefi works',
+'guiaSubtitulo': 'This is how your money is organized inside the app.',
+'guiaFlujoEtiqueta': 'BASIC FLOW',
+'guiaIngreso': 'Income',
+'guiaIngresoDesc': 'Your money enters here. Create an Income category and log what you receive.',
+'guiaDestinar': 'Allocate',
+'guiaDestinarDesc': 'Move money from Income to your Expense or Savings envelopes.',
+'guiaGasto': 'Expense',
+'guiaGastoDesc': 'Use the available money in an envelope to register an expense.',
+'guiaReparto': 'Rebalance',
+'guiaRepartoDesc': 'Move money between Expense or Savings envelopes when you need to reorganize.',
+'guiaCategorias': 'Categories',
+'guiaCategoriasDesc': 'Create, edit, or delete your envelopes. Each one holds its own money.',
+'guiaHistorial': 'History',
+'guiaHistorialDesc': 'See all your transactions by date, type, or category.',
+'guiaEntendido': 'Got it',
+'guiaAyuda': 'How it works',
 
     // Ingresos
     'registerIncome': 'REGISTER\nINCOME',

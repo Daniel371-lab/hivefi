@@ -7,10 +7,30 @@ import '../providers/app_provider.dart';
 import '../utils/app_translator.dart';
 import '../utils/currency_formatter.dart';
 import 'package:lottie/lottie.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/guia_flujo_sheet.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _mostrarGuiaSiEsPrimeraVez();
+  }
+
+  Future<void> _mostrarGuiaSiEsPrimeraVez() async {
+    final esPrimeraVez = await GuiaFlujoSheet.esPrimeraVez();
+    if (!esPrimeraVez) return;
+    // Pequeña espera para que termine la animación de entrada del Home
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    await GuiaFlujoSheet.mostrar(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +69,16 @@ class HomeScreen extends StatelessWidget {
           ),
           centerTitle: false,
           actions: [
-            IconButton(
-              icon: const Icon(Icons.tune_rounded),
-              onPressed: () => Navigator.pushNamed(context, '/settings'),
-            ),
-          ],
+  IconButton(
+    icon: const Icon(Icons.help_outline_rounded),
+    tooltip: context.tr('guiaAyuda'),
+    onPressed: () => GuiaFlujoSheet.mostrar(context),
+  ),
+  IconButton(
+    icon: const Icon(Icons.tune_rounded),
+    onPressed: () => Navigator.pushNamed(context, '/settings'),
+  ),
+],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(88),
             child: Padding(
@@ -108,7 +133,6 @@ class HomeScreen extends StatelessWidget {
                 _BalanceCarousel(provider: provider),
                 const SizedBox(height: 32),
                 _HexGrid(),
-                const SizedBox(height: 6),
                 _SeccionAhorros(provider: provider),
               ],
             ),
@@ -318,30 +342,32 @@ class _BalanceCard extends StatelessWidget {
   }
 
   void _mostrarInformeGeneral(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _InformeGeneral(
-        provider: provider,
-        currency: currency,
-        totalGeneral: monto,
-      ),
-    );
-  }
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _InformeGeneral(
+      provider: provider,
+      currency: currency,
+      totalGeneral: monto,
+    ),
+  );
+}
 
-  void _mostrarInformeDisponible(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _InformeDisponible(
-        provider: provider,
-        currency: currency,
-        totalDisponible: monto,
-      ),
-    );
-  }
+void _mostrarInformeDisponible(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _InformeDisponible(
+      provider: provider,
+      currency: currency,
+      totalDisponible: monto,
+    ),
+  );
+}
 }
 
 // ─── Informe balance general ──────────────────────────────────────────────────
@@ -744,7 +770,7 @@ class _FilaInformeElegante extends StatelessWidget {
   }
 }
 
-// ─── Grid Hexagonal ──────────────────────────────────────────────────────────
+/// ─── Grid Hexagonal ──────────────────────────────────────────────────────────
 
 class _HexGrid extends StatelessWidget {
   @override
@@ -754,43 +780,31 @@ class _HexGrid extends StatelessWidget {
         icon: Icons.arrow_downward_rounded,
         label: context.tr('income'),
         route: '/ingreso',
-        tooltipKey: 'tooltip_seen_ingreso',
-        tooltipMsg: context.tr('tooltip_ingreso'),
       ),
       _HexItem(
         icon: Icons.arrow_upward_rounded,
         label: context.tr('expensesM'),
         route: '/gasto',
-        tooltipKey: 'tooltip_seen_gasto',
-        tooltipMsg: context.tr('tooltip_gasto'),
       ),
       _HexItem(
         icon: Icons.pie_chart_rounded,
         label: context.tr('destinar'),
         route: '/destinar',
-        tooltipKey: 'tooltip_seen_destinar',
-        tooltipMsg: context.tr('tooltip_destinar'),
       ),
       _HexItem(
         icon: Icons.grid_view_rounded,
         label: context.tr('categories'),
         route: '/categorias',
-        tooltipKey: 'tooltip_seen_categorias',
-        tooltipMsg: context.tr('tooltip_categorias'),
       ),
       _HexItem(
         icon: Icons.compare_arrows_rounded,
         label: context.tr('reparto'),
         route: '/reparto',
-        tooltipKey: 'tooltip_seen_reparto',
-        tooltipMsg: context.tr('tooltip_reparto'),
       ),
       _HexItem(
         icon: Icons.history_rounded,
         label: context.tr('history'),
         route: '/historial',
-        tooltipKey: 'tooltip_seen_historial',
-        tooltipMsg: context.tr('tooltip_historial'),
       ),
     ];
 
@@ -813,158 +827,16 @@ class _HexItem {
   final IconData icon;
   final String label;
   final String route;
-  final String tooltipKey;
-  final String tooltipMsg;
   const _HexItem({
     required this.icon,
     required this.label,
     required this.route,
-    required this.tooltipKey,
-    required this.tooltipMsg,
   });
 }
 
-class _HexButton extends StatefulWidget {
+class _HexButton extends StatelessWidget {
   final _HexItem item;
   const _HexButton({required this.item, super.key});
-
-  @override
-  State<_HexButton> createState() => _HexButtonState();
-}
-
-class _HexButtonState extends State<_HexButton>
-    with SingleTickerProviderStateMixin {
-  bool _showingTooltip = false;
-  bool _tooltipVisto = true;
-  OverlayEntry? _overlayEntry;
-  late AnimationController _controller;
-  late Animation<double> _fadeAnim;
-  final _key = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
-    _checkTooltip();
-  }
-
-  Future<void> _checkTooltip() async {
-    final prefs = await SharedPreferences.getInstance();
-    final visto = prefs.getBool(widget.item.tooltipKey) ?? false;
-    if (mounted) setState(() => _tooltipVisto = visto);
-  }
-
-  void _showOverlay() {
-    final renderBox = _key.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-    final theme = Theme.of(context);
-
-    _overlayEntry = OverlayEntry(
-      builder: (_) => Positioned(
-        left: offset.dx - 8,
-        top: offset.dy - 90,
-        width: size.width + 16,
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: Material(
-            color: Colors.transparent,
-            child: GestureDetector(
-              onTap: _dismissAndNavigate,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.18),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.3),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.item.tooltipMsg,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 10,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      context.tr('tap_to_continue'),
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 9,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    Overlay.of(context).insert(_overlayEntry!);
-    _controller.forward();
-  }
-
-  Future<void> _dismissAndNavigate() async {
-    await _controller.reverse();
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    if (mounted) {
-      setState(() => _showingTooltip = false);
-      Navigator.pushNamed(context, widget.item.route);
-    }
-  }
-
-  Future<void> _handleTap() async {
-    if (!_tooltipVisto && !_showingTooltip) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(widget.item.tooltipKey, true);
-      if (mounted) {
-        setState(() {
-          _showingTooltip = true;
-          _tooltipVisto = true;
-        });
-        _showOverlay();
-      }
-      return;
-    }
-
-    if (_showingTooltip) {
-      await _dismissAndNavigate();
-      return;
-    }
-
-    Navigator.pushNamed(context, widget.item.route);
-  }
-
-  @override
-  void dispose() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -973,8 +845,7 @@ class _HexButtonState extends State<_HexButton>
     final onPrimary = theme.colorScheme.onPrimary;
 
     return GestureDetector(
-      key: _key,
-      onTap: _handleTap,
+      onTap: () => Navigator.pushNamed(context, item.route),
       child: ClipPath(
         clipper: _HexClipper(),
         child: Container(
@@ -982,10 +853,10 @@ class _HexButtonState extends State<_HexButton>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(widget.item.icon, color: onPrimary, size: 26),
+              Icon(item.icon, color: onPrimary, size: 26),
               const SizedBox(height: 6),
               Text(
-                widget.item.label,
+                item.label,
                 style: TextStyle(
                   color: onPrimary,
                   fontWeight: FontWeight.w700,

@@ -20,7 +20,6 @@ import 'screens/destinar_screen.dart';
 import 'screens/reparto_screen.dart';
 import 'screens/historial_screen.dart';
 import 'screens/splash_screen.dart';
-import 'screens/onboarding_screen.dart';
 import 'screens/currency_setup_screen.dart';
 import 'services/ad_service.dart';
 import 'services/premium_service.dart';
@@ -105,7 +104,6 @@ class HivefiApp extends StatelessWidget {
       routes: {
         '/splash': (_) => const SplashScreen(),
         '/auth': (_) => const AuthWrapper(),
-        '/onboarding': (_) => const OnboardingScreen(),
         '/': (_) => const HomeScreen(),
         '/settings': (_) => const SettingsScreen(),
         '/login': (_) => const LoginScreen(),
@@ -117,7 +115,7 @@ class HivefiApp extends StatelessWidget {
         '/reparto': (_) => const RepartoScreen(),
         '/historial': (_) => const HistorialScreen(),
         '/currency-setup': (_) => const CurrencySetupScreen(),
-		'/donar': (_) => const ApoyoScreen(),
+        '/donar': (_) => const ApoyoScreen(),
       },
     );
   }
