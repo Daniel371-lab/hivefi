@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'ad_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'ad_service.dart';
+import 'firestore_service.dart';
 
 class PremiumService extends ChangeNotifier {
   PremiumService._();
@@ -50,6 +51,48 @@ class PremiumService extends ChangeNotifier {
     await _cargarProductos();
   }
 
+  // Se llama cuando el usuario inicia sesión.
+  // Restaura el premium desde SharedPreferences y Firestore.
+  Future<void> vincularUsuario(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final local = prefs.getBool(_keyIsPremium) ?? false;
+
+    // Si ya sabemos localmente que es premium, no dependemos de la red
+    if (local && !_isPremium) {
+      _isPremium = true;
+      AdService.instance.setPremium(true);
+      AdService.instance.adFreeNotifier.value = true;
+      notifyListeners();
+    }
+
+    // Consultamos Firestore como fuente de verdad
+    try {
+      final remoto = await FirestoreService().leerPremiumUsuario();
+      if (remoto && !_isPremium) {
+        _isPremium = true;
+        await prefs.setBool(_keyIsPremium, true);
+        AdService.instance.setPremium(true);
+        AdService.instance.adFreeNotifier.value = true;
+        notifyListeners();
+      } else if (!remoto && !local) {
+        // Restauración silenciosa por si Google Play tiene la compra registrada
+        await restaurar();
+      }
+    } catch (_) {
+      // Sin red y sin caché: confiamos en el estado local
+    }
+  }
+
+  // Se llama cuando el usuario cierra sesión
+  Future<void> desvincularUsuario() async {
+    _isPremium = false;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyIsPremium);
+    AdService.instance.setPremium(false);
+    AdService.instance.adFreeNotifier.value = false;
+    notifyListeners();
+  }
+
   Future<void> _cargarProductos() async {
     final response = await InAppPurchase.instance.queryProductDetails({
       productIdPremium,
@@ -95,7 +138,9 @@ class PremiumService extends ChangeNotifier {
       if (purchase.status == PurchaseStatus.purchased ||
           purchase.status == PurchaseStatus.restored) {
         if (purchase.productID == productIdPremium) {
-          await _activarPremium();
+          await _activarPremium(
+            token: purchase.verificationData.serverVerificationData,
+          );
         }
       }
       if (purchase.pendingCompletePurchase) {
@@ -104,16 +149,23 @@ class PremiumService extends ChangeNotifier {
     }
   }
 
-    Future<void> _activarPremium() async {
+  Future<void> _activarPremium({String? token}) async {
     _isPremium = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIsPremium, true);
-    
-    // Le avisamos al servicio de anuncios
+
     AdService.instance.setPremium(true);
-    // ¡ESTA LÍNEA DESTRUGUE EL BANNER AL INSTANTE!
-    AdService.instance.adFreeNotifier.value = true; 
-    
+    AdService.instance.adFreeNotifier.value = true;
+
+    try {
+      await FirestoreService().guardarPremiumUsuario(
+        premium: true,
+        token: token,
+      );
+    } catch (_) {
+      // Si falla la escritura remota, al menos queda persistido localmente
+    }
+
     notifyListeners();
   }
 
@@ -121,14 +173,12 @@ class PremiumService extends ChangeNotifier {
     _isPremium = false;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyIsPremium);
-    
+
     AdService.instance.setPremium(false);
-    // Si reseteás el estado, volvemos a habilitar los anuncios
-    AdService.instance.adFreeNotifier.value = false; 
-    
+    AdService.instance.adFreeNotifier.value = false;
+
     notifyListeners();
   }
-
 
   String get precioFormateado => _productoPremium?.price ?? '\$8.00';
   String get precioCafe => _productoCafe?.price ?? '\$2.00';

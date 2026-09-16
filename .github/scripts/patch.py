@@ -148,11 +148,26 @@ class MainActivity : FlutterActivity() {
     with open(main_activity_path, 'w') as f:
         f.write(main_activity_kt)
 
+keep_xml_dir = 'android/app/src/main/res/raw'
+os.makedirs(keep_xml_dir, exist_ok=True)
+keep_xml = """<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@string/google_*,@string/gcm_*,@string/default_web*,@string/project_id" />
+"""
+with open(f'{keep_xml_dir}/keep.xml', 'w') as f:
+    f.write(keep_xml)
+
 manifest_path = 'android/app/src/main/AndroidManifest.xml'
 if os.path.exists(manifest_path):
     with open(manifest_path, 'r') as f:
         content = f.read()
     content = re.sub(r'android:label="[^"]*"', 'android:label="Hive-Fi"', content)
+    if 'android:allowBackup' not in content:
+        content = re.sub(
+            r'(<application\b[^>]*?)>',
+            r'\1 android:allowBackup="false" android:fullBackupContent="false">',
+            content
+        )
     if 'APPLICATION_ID' not in content:
         admob_meta = (
             '\n        <meta-data\n'

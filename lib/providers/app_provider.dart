@@ -4,8 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/premium_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 
 class AppProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.light;
@@ -15,7 +15,7 @@ class AppProvider extends ChangeNotifier {
   bool? _monedaConfigurada;
   bool _esNuevoUsuario = false;
 
-  // ─── NUEVAS PROPIEDADES PARA OPTIMIZACIÓN EN TIEMPO REAL ─────────────────
+  // ─── DATOS EN TIEMPO REAL ─────────────────────────────────────────────────
   List<QueryDocumentSnapshot> _todasLasCategorias = [];
   Map<String, double> _balance = {
     'balanceGeneral': 0.0,
@@ -23,7 +23,7 @@ class AppProvider extends ChangeNotifier {
     'progresoGeneral': 0.0,
     'progresoDisponible': 0.0,
   };
-  
+
   // Controladores de suscripciones para evitar fugas de memoria
   StreamSubscription<User?>? _authSubscription;
   StreamSubscription<QuerySnapshot>? _categoriasSubscription;
@@ -34,14 +34,14 @@ class AppProvider extends ChangeNotifier {
   String get currency => _currency;
   bool? get monedaConfigurada => _monedaConfigurada;
   bool get esNuevoUsuario => _esNuevoUsuario;
-  
-  // Getters optimizados: Filtran en memoria local instantáneamente (0 FPS de impacto)
+
+  // Getters optimizados: filtran en memoria local sin costo de red
   List<QueryDocumentSnapshot> get todasLasCategorias => _todasLasCategorias;
-  
-  List<QueryDocumentSnapshot> get categoriasAhorro => 
+
+  List<QueryDocumentSnapshot> get categoriasAhorro =>
       _todasLasCategorias.where((doc) => doc['tipo'] == 'ahorro').toList();
-      
-  List<QueryDocumentSnapshot> get categoriasGasto => 
+
+  List<QueryDocumentSnapshot> get categoriasGasto =>
       _todasLasCategorias.where((doc) => doc['tipo'] == 'gasto').toList();
 
   Map<String, double> get balance => _balance;
@@ -59,9 +59,11 @@ class AppProvider extends ChangeNotifier {
       if (user != null) {
         _iniciarEscuchaCategorias();
         verificarMonedaConfigurada();
+        PremiumService.instance.vincularUsuario(user.uid);
       } else {
         _cancelarSuscripciones();
         _limpiarDatosUsuario();
+        PremiumService.instance.desvincularUsuario();
       }
     });
   }
@@ -70,15 +72,15 @@ class AppProvider extends ChangeNotifier {
     // Cancelamos cualquier suscripción previa por seguridad
     _categoriasSubscription?.cancel();
 
-    // UN SOLO LISTENER para toda la colección. Firebase usará la caché local automáticamente.
-    _categoriasSubscription = firestoreService.getTodasLasCategorias().listen((snapshot) {
+    // Un solo listener para toda la colección. Firebase usa la caché local automáticamente.
+    _categoriasSubscription =
+        firestoreService.getTodasLasCategorias().listen((snapshot) {
       _todasLasCategorias = snapshot.docs;
-      
-      // OPTIMIZACIÓN MASIVA: Calculamos el balance localmente en el hilo principal
-      // sin pedirle cálculos recurrentes ni lecturas extra a Firestore.
+
+      // Calculamos el balance localmente sin lecturas extra a Firestore
       _calcularBalanceLocal();
-      
-      notifyListeners(); // Notifica a toda la UI de una sola vez
+
+      notifyListeners();
     }, onError: (error) {
       debugPrint("Error en stream de categorías: $error");
     });
@@ -142,7 +144,7 @@ class AppProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  // ─── MÉTODOS DE CONFIGURACIÓN ORIGINALES ──────────────────────────────────
+  // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final theme = prefs.getString('themeMode') ?? 'light';

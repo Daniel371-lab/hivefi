@@ -275,7 +275,7 @@ class FirestoreService {
     return _movimientos.orderBy('fecha', descending: true).snapshots();
   }
 
-  // NUEVO: Método optimizado para el HistorialScreen para evitar lecturas infinitas
+  // Método optimizado para el HistorialScreen para evitar lecturas infinitas
   Stream<QuerySnapshot> getMovimientosPorRango(DateTime inicio, DateTime fin) {
     return _movimientos
         .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
@@ -344,8 +344,7 @@ class FirestoreService {
 
   Future<void> eliminarTodosLosDatos() async {
     await _verificarInternet();
-    
-    // Función auxiliar para borrar en lotes pequeños y proteger la memoria RAM
+
     Future<void> borrarColeccionEnLotes(CollectionReference ref) async {
       var snapshot = await ref.limit(500).get();
       while (snapshot.docs.isNotEmpty) {
@@ -354,7 +353,6 @@ class FirestoreService {
           batch.delete(doc.reference);
         }
         await batch.commit();
-        // Buscar el siguiente lote
         snapshot = await ref.limit(500).get();
       }
     }
@@ -388,5 +386,29 @@ class FirestoreService {
       },
       SetOptions(merge: true),
     );
+  }
+
+  // ─── PREMIUM ───────────────────────────────────────────────────────────────
+
+  Future<void> guardarPremiumUsuario({
+    required bool premium,
+    String? token,
+  }) async {
+    await _verificarInternet();
+    await _db.collection('users').doc(_uid).set(
+      {
+        'premium': premium,
+        'premiumToken': token,
+        'premiumFecha': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
+  Future<bool> leerPremiumUsuario() async {
+    final doc = await _db.collection('users').doc(_uid).get();
+    if (!doc.exists) return false;
+    final data = doc.data() as Map<String, dynamic>?;
+    return data?['premium'] as bool? ?? false;
   }
 }
