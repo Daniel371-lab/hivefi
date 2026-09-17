@@ -17,20 +17,23 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
+ @override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
     _mostrarGuiaSiEsPrimeraVez();
-  }
+  });
+}
 
-  Future<void> _mostrarGuiaSiEsPrimeraVez() async {
-    final esPrimeraVez = await GuiaFlujoSheet.esPrimeraVez();
-    if (!esPrimeraVez) return;
-    // Pequeña espera para que termine la animación de entrada del Home
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    await GuiaFlujoSheet.mostrar(context);
-  }
+Future<void> _mostrarGuiaSiEsPrimeraVez() async {
+  final esPrimeraVez = await GuiaFlujoSheet.esPrimeraVez();
+  if (!esPrimeraVez) return;
+  await Future.delayed(const Duration(milliseconds: 1200));
+  if (!mounted) return;
+  final ruta = ModalRoute.of(context);
+  if (ruta?.isCurrent != true) return;
+  await GuiaFlujoSheet.mostrar(context);
+}
 
   @override
   Widget build(BuildContext context) {
